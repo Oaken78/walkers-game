@@ -297,7 +297,11 @@ already allow it.
 - **Landforms:**
   - `canyon-river.jpg` and `desert-arc.jpg`: the canyon and mesa language for M0.
   - `fog.jpg`: a cloud-sea plateau for a later zone.
-  - `open-pit.jpg` and `valley.jpg`: actually AVIF files with a .jpg name; not reviewed yet.
+  - `valley.jpg`: the M0 map layout and the muted palette. A wide valley floor between cliff walls (natural map
+    bounds), a meandering dry wash that leads the eye outward, cloud shadows and sunlit patches, and a rain shaft
+    as a distant landmark.
+  - `open-pit.jpg`: actually a slot canyon. An overhanging wall with vertical varnish streaks (these read well as
+    flat ink bands), an arch, olive shrubs and a wet sand floor.
 - **Muted world:** the refs' red sandstone is desaturated toward dusty beige-grey so the orange accent and the
   threat red stay readable. Actor hues are unchanged.
 - **Earlier pitch references** (Borderlands, Robocraft, Kenshi) still stand for outlines and the garage.
