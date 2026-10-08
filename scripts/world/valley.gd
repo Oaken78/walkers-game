@@ -6,7 +6,6 @@ extends Node3D
 signal built
 
 const MAT_GROUND: Material = preload("res://assets/world/ground.tres")
-const MAT_STREAK: Material = preload("res://assets/world/ground_streak.tres")
 const MAT_ROCK: Material = preload("res://assets/world/rock_base.tres")
 const MAT_FAR: Material = preload("res://assets/world/rock_far.tres")
 const MAT_RUINS: Material = preload("res://assets/world/ruins.tres")
@@ -52,7 +51,7 @@ var terrain: TerrainBuilder = null
 func _ready() -> void:
 	terrain = TerrainBuilder.new()
 	terrain.build()
-	_terrain_mesh.mesh = terrain.make_mesh([MAT_GROUND, MAT_STREAK, MAT_ROCK, MAT_FAR, MAT_RUINS])
+	_terrain_mesh.mesh = terrain.make_mesh([MAT_GROUND, MAT_ROCK, MAT_FAR, MAT_RUINS])
 	_terrain_shape.shape = terrain.make_shape()
 	_workshop.position = Vector3(0.0, terrain.height_at(0.0, 0.0), 0.0)
 	_build_wash_path()

@@ -5,7 +5,7 @@ extends RefCounted
 ## differ in height a VERTICAL wall quad joins them. That is how the cliffs (40 m), the 0.8 m ledge face and
 ## the ruins get real vertical faces; a later art pass can add strata above 30 m without touching floor edges.
 
-enum Surf { GROUND, STREAK, ROCK, PLATEAU, RUINS }
+enum Surf { GROUND, ROCK, PLATEAU, RUINS }
 
 const KIND_ROCK: int = 0
 const KIND_FLOOR: int = 1
@@ -30,9 +30,9 @@ var streak: PackedFloat32Array = PackedFloat32Array()
 var color_ground: Color = Color("#CAB294")
 var color_streak: Color = Color("#B99F82")
 ## The visible streak starts at the workshop pad's front edge (z), not behind the workshop.
-var streak_start_z: float = 12.0
-## Wash half-width at its start and after taper_length metres of path (width 4 m -> 10 m).
-var wash_half_width_start: float = 2.0
+var streak_start_z: float = 10.5
+## Wash half-width at its start and after taper_length metres of path (width 6 m -> 10 m).
+var wash_half_width_start: float = 3.0
 var wash_taper_length: float = 30.0
 
 var _verts: Array = []
@@ -228,7 +228,9 @@ func _carve_wash() -> void:
 					var d: float = ValleyLayout.WASH_DEPTH * depth_scale * profile * fade
 					var vi: int = iz * stride + ix
 					carve[vi] = maxf(carve[vi], d)
-					var w: float = profile * smoothstep(streak_start_z - 1.0, streak_start_z + 1.0, p.y)
+					# Solid streak colour in the core, blended only over the outer 30 % of the half-width.
+					var core: float = 1.0 - smoothstep(0.7 * hw, hw, r)
+					var w: float = core * smoothstep(streak_start_z - 1.0, streak_start_z + 1.0, p.y)
 					streak[vi] = maxf(streak[vi], w)
 
 
