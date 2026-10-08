@@ -253,8 +253,49 @@ already allow it.
 | Legs | 3 (short, medium, long) | 5 (+wide-foot, climber) | 7 |
 | Top parts | 2 (pulse cannon, armor plate) | 5 (+shield, scanner, cargo pod) | 9 |
 | Enemies | 1 drone | + walker sentinel | + drone carrier |
-| Map | 1 area 400 x 400 m, rings 0-2, plus one ring-2 pocket behind a 0.8 m ledge with a 60-scrap node (Scout can't climb it; Strider can) | 2 zones + terrain gates | 3 zones |
+| Map | The valley (9.1): 400 m long, floor about 200 m wide, rings 0-2, a ledge pocket (Strider) and a talus pocket (Crawler) | 2 zones + terrain gates | 3 zones |
 | Audio | placeholder | footsteps per leg, weapon set | full pass |
+
+### 9.1 M0 map: the valley
+Layout reference: `design/refs/valley.jpg`. The point of the shape: rings become bands along the valley, so
+"deeper" is always down-valley and "home" is always up-valley. Push-or-return (Pillar 3) is then a direction you
+can see, with no minimap.
+
+```
+            up-valley = home
+ ████████████████████████████████  cliff wall, >= 30 m tall, >= 60 deg
+ ██   [W] workshop on a bench    ██  ring 0   0-60 m     no drones
+ ██      ~~ dry wash ~~          ██
+ ██           ~~~        ░ talus ██  ring 1   60-150 m
+ ██ ▓ ledge          ~~  ░ pocket██
+ ██ ▓ pocket           ~~        ██  ring 2   150-250 m
+ ██                 ~~           ██
+ ██   ruins + smoke column  ▒▒▒  ██  far end: ruins block the valley (M1 gate)
+ ████████████████████████████████
+```
+
+| Element | Spec |
+|---|---|
+| Footprint | 400 x 400 m area; the valley runs 400 m north to south. Walkable floor about 200 m wide (minimum 150 m anywhere) |
+| Cliff walls | >= 30 m tall and >= 60 deg along the whole floor edge, so no build can leave (max step-up 1.0 m, max slope grip 45 deg). These are the map bounds; there are no invisible walls |
+| Floor | Gentle 0-10 deg overall. Bumpy patches up to 30 deg (the gait show). Boulders 0.3-1.0 m high as step-up content: the Crawler (0.36 m) goes around them, the Strider (0.96 m) steps over |
+| Workshop | On a bench at the north end, 20-40 m from the head wall. Ring distances are measured from it |
+| Dry wash | A winding riverbed from the workshop down to the far end. It is the main path and the route the test scenarios walk |
+| Ledge pocket | West wall, ring 2, 160-240 m from the workshop. A 0.8 m ledge leads up to it; one 60-scrap node. The Scout can't climb it; the Strider can |
+| Talus pocket | East wall, ring 2, 150-220 m from the workshop. A 40 deg talus slope leads up to it; one 60-scrap node. Only the Crawler (45 deg grip) can climb it; the Scout (35 deg) and Strider (30 deg) can't |
+| Far end | Ruins half buried in a dune bank close the valley at 270-300 m, the gate to the M1 zone. The smoke column behind them, at about 350 m, is the down-valley landmark and is visible from the workshop |
+| Scrap nodes | Ring 0: 2 nodes (5 scrap each, no respawn). Ring 1: 3 nodes (10 each). Ring 2: 3 nodes (20 each) plus the two pockets (60 each). Wash nodes are 70-110 m apart, and side nodes fill the gaps, so a node comes into view every 15-25 s of walking (section 5) |
+| Drone encounters | Three sites along the wash at about 140 m (1-2 drones), 190 m (2-3) and 235 m (2-3), plus 1 drone guarding the ledge pocket. The first site at about 140 m keeps "first drone after 45-75 s" (section 5) once ring 0 pickups are counted |
+
+- **Income check:** clearing rings 1 and 2 without the pockets yields 90 scrap plus drone drops, which matches
+  the economy estimate in section 18.
+- **Tests:**
+  - T05 geometry check: sample the floor edge; every cliff sample is >= 30 m above the floor and >= 60 deg.
+  - `map_bounds` scenario (T12, needs the walker): the Strider and the Crawler walk into both walls and into the
+    far-end ruins. Neither leaves the floor polygon or climbs more than 2 m above the floor, except inside the
+    pockets.
+  - `loop_full` (T12): the Strider reaches the ledge pocket but not the talus pocket, and the Crawler the
+    reverse.
 
 ## 10. Visual direction
 **Readability rules (in priority order):**
@@ -380,7 +421,9 @@ World palette, from the 50 % style mix (look-test mockup):
    turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate.
 4. **Toon outline cost** on a 400 m terrain. The outline is built in M1; measure its draw calls there.
    M0 ships the toon ramp without it.
-5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T01.
+5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T00 (section 13).
+6. **The valley feels like a corridor.** The floor stays at least 150 m wide, the wash winds, and there are side
+   nodes and two pockets off the path. Playtest-critic checks this at the M0 review.
 
 ## 17. Decisions log (append-only)
 | Date | Decision | Why | Rejected alternatives |
@@ -411,6 +454,8 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-08 | M0 biome: canyon mesa (muted); later zones: buried ruined city, cloud-sea plateau | Mesas give the ledge pocket and natural rings | Ruined city or open flats for M0 |
 | 2026-10-08 | design/ has a .gdignore | Keep reference images and docs out of the Godot import | Import everything |
 | 2026-10-08 | Style anchor: 50/50 mix of crystal.webp and the buried ruined city; palette, fog, ink and grain numbers from the look-test mockup | Klas picked 50 % on the mockup slider | Pure comic (crystal.webp); semi-real renders |
+| 2026-10-08 | M0 map is a valley (ref valley.jpg): cliff walls as bounds, workshop at the head, dry wash as the main path, ruins closing the far end | Rings become a readable direction (deeper = down-valley); no invisible walls; cheap greybox; ready M1 gate | Open 400 x 400 m area with concentric rings |
+| 2026-10-08 | Second M0 pocket: a 40 deg talus slope only the Crawler can climb, mirroring the Strider's 0.8 m ledge pocket | Makes the Crawler's slope grip (the "both" niche) matter in M0, not only in fights | Ledge pocket only |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
