@@ -6,6 +6,8 @@ extends Node3D
 ## from_workshop: camera offset from the workshop site (8 m behind, 3 m above) and field of view.
 @export var workshop_camera_offset: Vector3 = Vector3(0.0, 3.0, -8.0)
 @export var workshop_camera_fov: float = 70.0
+## toward_home: camera position, looking back up-valley (-Z) at the workshop.
+@export var home_camera_position: Vector3 = Vector3(-20.0, 3.0, 230.0)
 ## top_down: orthographic height in metres (covers z -60..380) and camera height.
 @export var top_down_size: float = 440.0
 @export var top_down_height: float = 300.0
@@ -29,10 +31,12 @@ var _debug: Node3D = null
 
 
 func _ready() -> void:
+	# Own copy of the environment so toggling fog here never touches the shared scene resource.
+	_world_env.environment = _world_env.environment.duplicate()
 	show_view("from_workshop")
 
 
-## Switches the camera to one of: from_workshop, top_down, ledge_pocket, talus_pocket.
+## Switches the camera to one of: from_workshop, toward_home, top_down, ledge_pocket, talus_pocket.
 func show_view(view: String) -> void:
 	_clear_debug()
 	_world_env.environment.fog_enabled = view != "top_down"
@@ -50,6 +54,9 @@ func show_view(view: String) -> void:
 			_camera.position = Vector3(0.0, top_down_height, top_down_center_z)
 			_camera.look_at(Vector3(0.0, 0.0, top_down_center_z), Vector3(0.0, 0.0, -1.0))
 			_build_debug()
+		"toward_home":
+			_camera.position = home_camera_position
+			_camera.look_at(Vector3(0.0, 8.0, 0.0))
 		"ledge_pocket":
 			var c: Vector2 = ValleyLayout.entrance_center("ledge")
 			var y: float = ValleyLayout.ledge_apron_y()

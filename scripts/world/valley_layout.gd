@@ -18,7 +18,7 @@ const PLATEAU_BASE: float = 42.0
 ## Far end: the floor stops at the ruins; the cliff behind them begins here.
 const RUINS_BACK_Z: float = 286.0
 ## Dune bank in front of the ruins: height at the ruins and the z where it starts.
-const DUNE_HEIGHT: float = 3.5
+const DUNE_HEIGHT: float = 8.0
 const DUNE_START_Z: float = 236.0
 
 const HEAD_WALL_Z: float = -30.0
@@ -34,23 +34,33 @@ const LEDGE_RISE: float = 0.8
 const TALUS_Z0: float = 164.0
 const TALUS_Z1: float = 176.0
 const TALUS_DEPTH: float = 18.0
-const TALUS_SLOPE_LEN: float = 6.0
+const TALUS_SLOPE_LEN: float = 4.9
 const TALUS_DEG: float = 40.0
 
 const WASH_HALF_WIDTH: float = 5.0
-const WASH_DEPTH: float = 0.8
+const WASH_DEPTH: float = 1.0
 
 ## Ruin blocks, west to east: x0, x1, front z (where the floor ends), top height above the floor line at the
-## ruins. Two-metre slots between some of them are dead ends (the cliff behind closes them).
+## ruins. Blocks touch, so there are no slots a foot or the camera could snag in.
 const RUIN_BLOCKS: Array = [
 	{"x0": -100.0, "x1": -76.0, "front": 272.0, "h": 44.0},
-	{"x0": -74.0, "x1": -50.0, "front": 278.0, "h": 38.0},
+	{"x0": -76.0, "x1": -50.0, "front": 278.0, "h": 40.0},
 	{"x0": -50.0, "x1": -24.0, "front": 270.0, "h": 66.0},
-	{"x0": -24.0, "x1": 2.0, "front": 276.0, "h": 40.0},
+	{"x0": -24.0, "x1": 4.0, "front": 276.0, "h": 40.0},
 	{"x0": 4.0, "x1": 28.0, "front": 270.0, "h": 52.0},
-	{"x0": 28.0, "x1": 52.0, "front": 280.0, "h": 36.0},
-	{"x0": 52.0, "x1": 74.0, "front": 272.0, "h": 72.0},
+	{"x0": 28.0, "x1": 52.0, "front": 280.0, "h": 40.0},
+	{"x0": 52.0, "x1": 76.0, "front": 272.0, "h": 72.0},
 	{"x0": 76.0, "x1": 96.0, "front": 276.0, "h": 42.0},
+]
+
+## Crowns on the two tallest towers (separate bodies on top of the blocks, far above the 30 m cliff band):
+## block index, x centre, width (x), depth (z), height, lean about Z in degrees. Leaning pieces and the
+## gap between two crowns give the notched, ruined skyline.
+const RUIN_CROWNS: Array = [
+	{"block": 2, "x": -42.0, "w": 8.0, "d": 10.0, "h": 14.0, "lean": 7.0},
+	{"block": 2, "x": -31.0, "w": 8.0, "d": 10.0, "h": 5.0, "lean": 0.0},
+	{"block": 6, "x": 57.0, "w": 8.0, "d": 10.0, "h": 8.0, "lean": 0.0},
+	{"block": 6, "x": 68.0, "w": 8.0, "d": 10.0, "h": 17.0, "lean": -8.0},
 ]
 
 ## Bump mounds (cosine bumps): x, z, radius, amplitude. Peak slope = amplitude * PI / (2 * radius).
@@ -61,7 +71,11 @@ const BUMP_PATCHES: Array = [
 ]
 
 ## Dry wash centreline waypoints (x, z). Smoothed with Catmull-Rom into a dense polyline.
+## The first waypoint is the lead-in behind the workshop camera (within 10 m of the site, on the flat pad);
+## site and boulder arc lengths are measured from the second waypoint (WASH_S_ORIGIN_INDEX).
+const WASH_S_ORIGIN_INDEX: int = 1
 const WASH_WAYPOINTS: Array = [
+	[0.0, -8.0],
 	[2.0, 8.0],
 	[10.0, 34.0],
 	[30.0, 60.0],
@@ -87,7 +101,7 @@ const SCRAP_SITES: Array = [
 	{"name": "ScrapSite_R2_OffA", "ring": 2, "amount": 20, "respawns": true, "pos": [14.0, 196.0]},
 	{"name": "ScrapSite_R2_OffB", "ring": 2, "amount": 20, "respawns": true, "pos": [20.0, 236.0]},
 	{"name": "ScrapSite_Ledge", "ring": 2, "amount": 60, "respawns": true, "pos": [-107.0, 190.0], "in_pocket": true},
-	{"name": "ScrapSite_Talus", "ring": 2, "amount": 60, "respawns": true, "pos": [108.0, 170.0], "in_pocket": true},
+	{"name": "ScrapSite_Talus", "ring": 2, "amount": 60, "respawns": true, "pos": [103.5, 170.0], "in_pocket": true},
 ]
 
 const DRONE_SITES: Array = [
@@ -102,10 +116,12 @@ const BOULDER_CLUSTERS: Array = [
 	[30.0, 11.0], [70.0, -12.0], [105.0, 13.0], [140.0, -11.0],
 	[175.0, 12.0], [210.0, -14.0], [250.0, 11.0], [290.0, -12.0],
 ]
-const BOULDER_HEIGHTS: Array = [0.34, 0.55, 0.8, 0.98, 0.45, 0.7, 0.3, 0.9, 0.6]
+## Nominal heights (m): every side of every boulder must stay inside 0.4-0.9 m (GDD 9.1 with margin).
+const BOULDER_HEIGHTS: Array = [0.5, 0.62, 0.74, 0.8, 0.55, 0.68, 0.78, 0.6, 0.7]
 
 static var _wash_pts: PackedVector2Array = PackedVector2Array()
 static var _wash_arc: PackedFloat32Array = PackedFloat32Array()
+static var _wash_origin: float = 0.0
 
 
 ## Floor line height at z (the 2 deg fall; the workshop pad is at y = 0).
@@ -241,7 +257,10 @@ static func _build_wash() -> void:
 	var w: Array = WASH_WAYPOINTS
 	var n: int = w.size()
 	var pts := PackedVector2Array()
+	var origin_idx: int = 0
 	for i in range(n - 1):
+		if i == WASH_S_ORIGIN_INDEX:
+			origin_idx = pts.size()
 		var p0: Vector2 = _wp(maxi(i - 1, 0))
 		var p1: Vector2 = _wp(i)
 		var p2: Vector2 = _wp(i + 1)
@@ -259,6 +278,7 @@ static func _build_wash() -> void:
 		arcs.append(s)
 	_wash_pts = pts
 	_wash_arc = arcs
+	_wash_origin = arcs[origin_idx]
 
 
 static func _wp(i: int) -> Vector2:
@@ -279,7 +299,7 @@ static func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: floa
 static func wash_at(s: float) -> Vector2:
 	var pts: PackedVector2Array = wash_points()
 	var arcs: PackedFloat32Array = wash_arcs()
-	s = clampf(s, 0.0, arcs[arcs.size() - 1])
+	s = clampf(s + _wash_origin, 0.0, arcs[arcs.size() - 1])
 	for i in range(1, pts.size()):
 		if arcs[i] >= s:
 			var span: float = arcs[i] - arcs[i - 1]

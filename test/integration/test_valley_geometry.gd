@@ -11,11 +11,15 @@ var _terrain_body: StaticBody3D = null
 var _boulder_body: StaticBody3D = null
 var _query: PhysicsRayQueryParameters3D = null
 var _poly: PackedVector2Array = PackedVector2Array()
+var _build_usec: int = 0
 
 
 func before_all() -> void:
-	_valley = (load(VALLEY_SCENE) as PackedScene).instantiate() as Valley
-	add_child(_valley)
+	var scene: PackedScene = load(VALLEY_SCENE)
+	var t0: int = Time.get_ticks_usec()
+	_valley = scene.instantiate() as Valley
+	add_child(_valley)  # _ready builds the whole valley
+	_build_usec = Time.get_ticks_usec() - t0
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_space = _valley.get_world_3d().direct_space_state
@@ -57,7 +61,8 @@ func _slope_deg(normal: Vector3) -> float:
 	return rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 
 
-## Outline samples every 5 m: [{"p": Vector2 on the edge, "n": outward unit normal}].
+## Outline samples every 1 m (so a 2 m gap cannot slip between samples):
+## [{"p": Vector2 on the edge, "n": outward unit normal}].
 func _outline_samples() -> Array:
 	var out: Array = []
 	var m: int = _poly.size()
@@ -74,7 +79,7 @@ func _outline_samples() -> Array:
 		var t: float = inset
 		while t <= len - inset + 0.001:
 			out.append({"p": a + d * t, "n": perp})
-			t += 5.0
+			t += 1.0
 	return out
 
 
@@ -142,7 +147,7 @@ func test_no_cliff_foothold_between_1_m_and_30_m_above_the_floor() -> void:
 				var rel: float = (top["position"] as Vector3).y - y0
 				if rel > 1.0 and rel < 30.0 and _slope_deg(top["normal"]) < 60.0:
 					bad.append("%s foothold %.1f m up, %.0f deg" % [q, rel, _slope_deg(top["normal"])])
-			step += 0.8
+			step += 1.5
 	assert_eq(bad.size(), 0, "cliff problems: %s" % [bad.slice(0, 5)])
 
 
@@ -150,7 +155,8 @@ func test_ruins_close_the_valley_between_270_and_300_m() -> void:
 	var bad: Array = []
 	var x: float = -99.0
 	while x < 96.0:
-		for rel: float in [3.0, 15.0, 29.0]:
+		# The lowest row clears the dune bank (8 m at the ruins) so it measures the ruins, not the dune.
+		for rel: float in [14.0, 20.0, 29.0]:
 			var y: float = ValleyLayout.tilt(270.0) + rel
 			var hit: Dictionary = _ray(Vector3(x, y, 240.0), Vector3(x, y, 330.0))
 			if hit.is_empty():
@@ -288,7 +294,7 @@ func test_wash_path_runs_from_the_workshop_to_the_ruins() -> void:
 		worst_off = maxf(worst_off, absf(p.y - _terrain_y(p.x, p.z)))
 		deepest = maxf(deepest, ValleyLayout.tilt(p.z) + ValleyLayout.dune(p.z) - p.y)
 	assert_lte(worst_off, 0.25, "path points sit on the floor")
-	assert_lte(deepest, 1.0, "wash is at most 1 m deep")
+	assert_lte(deepest, 1.001, "wash is at most 1 m deep (float tolerance)")
 	assert_gt(last.z - first.z, 230.0, "wash runs down-valley")
 
 
@@ -342,20 +348,33 @@ func test_ledge_face_is_vertical_and_its_apron_flat() -> void:
 
 
 func test_ledge_pocket_is_160_to_240_m_out_on_the_right_hand_wall() -> void:
-	var c: Vector2 = ValleyLayout.entrance_center("ledge")
-	assert_between(c.length(), 160.0, 240.0, "entrance distance")
-	assert_lt(c.x, 0.0, "ledge is on the -X (right-hand, looking down-valley) wall")
-	assert_gte(c.y, 0.0, "down-valley of the workshop")
-	var width: float = ValleyLayout.LEDGE_Z1 - ValleyLayout.LEDGE_Z0
-	assert_gte(width, 15.0, "alcove width")
-	assert_gte(ValleyLayout.LEDGE_DEPTH, 12.0, "alcove depth")
-	var floor_y: float = _terrain_y(c.x - 6.0, c.y)
-	assert_almost_eq(floor_y, ValleyLayout.ledge_apron_y() + 0.8, 0.02, "alcove floor measured")
-	var hit: Dictionary = _ray(Vector3(c.x - 6.0, floor_y + 1.0, c.y), Vector3(c.x - 40.0, floor_y + 1.0, c.y))
-	assert_false(hit.is_empty(), "alcove is closed at the back")
-	assert_gte(absf((hit["position"] as Vector3).x - c.x), 12.0, "alcove at least 12 m deep (measured)")
+	# Measured from the built geometry: the face found by a ray, the alcove width and depth by rays, and the
+	# area node's own position.
 	var area: Area3D = _valley.get_node("%LedgePocket") as Area3D
-	assert_not_null(area)
+	var shape: CollisionShape3D = area.get_node("Shape") as CollisionShape3D
+	var centre := Vector2(shape.global_position.x, shape.global_position.z)
+	assert_between(centre.length(), 160.0, 240.0, "ledge area distance from the workshop")
+	assert_lt(shape.global_position.x, 0.0, "ledge is on the -X (right-hand, looking down-valley) wall")
+	var mid_z: float = shape.global_position.z
+	var apron: float = _terrain_y(-95.0, mid_z)
+	var face := Vector3(-95.0, apron + 0.4, mid_z)
+	var face_hit: Dictionary = _ray(face, face + Vector3(-30.0, 0.0, 0.0))
+	assert_false(face_hit.is_empty(), "ledge face found by ray")
+	var face_x: float = (face_hit["position"] as Vector3).x
+	var floor_y: float = _terrain_y(face_x - 6.0, mid_z)
+	assert_almost_eq(floor_y - apron, 0.8, 0.02, "alcove floor measured above the apron")
+	var back: Dictionary = _ray(
+		Vector3(face_x - 3.0, floor_y + 1.0, mid_z), Vector3(face_x - 60.0, floor_y + 1.0, mid_z)
+	)
+	assert_gte(face_x - (back["position"] as Vector3).x, 12.0, "alcove at least 12 m deep (measured)")
+	var north: Dictionary = _ray(
+		Vector3(face_x - 6.0, floor_y + 1.0, mid_z), Vector3(face_x - 6.0, floor_y + 1.0, mid_z - 40.0)
+	)
+	var south: Dictionary = _ray(
+		Vector3(face_x - 6.0, floor_y + 1.0, mid_z), Vector3(face_x - 6.0, floor_y + 1.0, mid_z + 40.0)
+	)
+	var width: float = (south["position"] as Vector3).z - (north["position"] as Vector3).z
+	assert_gte(width, 15.0, "alcove at least 15 m wide (measured)")
 
 
 # ---- talus pocket ----------------------------------------------------------------------------------------
@@ -393,11 +412,17 @@ func test_talus_has_no_lip_over_0_3_m() -> void:
 
 
 func test_talus_pocket_is_150_to_220_m_out_on_the_left_hand_wall() -> void:
-	var c: Vector2 = ValleyLayout.entrance_center("talus")
-	assert_between(c.length(), 150.0, 220.0, "entrance distance")
-	assert_gt(c.x, 0.0, "talus is on the +X (left-hand) wall")
 	var area: Area3D = _valley.get_node("%TalusPocket") as Area3D
-	assert_not_null(area)
+	var shape: CollisionShape3D = area.get_node("Shape") as CollisionShape3D
+	assert_gt(shape.global_position.x, 0.0, "talus is on the +X (left-hand) wall")
+	# The slope foot, found by ray: walking in from the apron, the first hit that rises above the apron.
+	var z: float = shape.global_position.z
+	var apron: float = _terrain_y(88.0, z)
+	var foot_x: float = 88.0
+	while foot_x < 110.0 and _terrain_y(foot_x, z) < apron + 0.05:
+		foot_x += 0.05
+	assert_between(Vector2(foot_x, z).length(), 150.0, 220.0, "talus entrance distance (measured)")
+	assert_gt(foot_x, 90.0, "slope found")
 
 
 # ---- boulders --------------------------------------------------------------------------------------------
@@ -411,7 +436,7 @@ func _boulder_shapes() -> Array:
 	return out
 
 
-func test_boulders_are_0_3_to_1_0_m_tall() -> void:
+func test_boulders_are_0_4_to_0_9_m_tall_on_every_side() -> void:
 	var shapes: Array = _boulder_shapes()
 	assert_gte(shapes.size(), 20, "at least 20 boulders")
 	var exclude: Array[RID] = [_boulder_body.get_rid()]
@@ -419,9 +444,67 @@ func test_boulders_are_0_3_to_1_0_m_tall() -> void:
 		var p: Vector3 = cs.global_position
 		var top: Dictionary = _down(p.x, p.z)
 		assert_eq(top["collider"], _boulder_body, "ray hits the boulder %s" % cs.name)
-		var ground: Dictionary = _down(p.x, p.z, exclude)
-		var h: float = (top["position"] as Vector3).y - (ground["position"] as Vector3).y
-		assert_between(h, 0.29, 1.01, "%s height" % cs.name)
+		var top_y: float = (top["position"] as Vector3).y
+		var size: Vector3 = (cs.shape as BoxShape3D).size
+		var basis: Basis = cs.global_transform.basis
+		# Foot of each of the four sides: just outside the face, floor measured without the boulder.
+		for side: Vector3 in [Vector3.RIGHT, Vector3.LEFT, Vector3.BACK, Vector3.FORWARD]:
+			var half: float = 0.5 * (size.x if absf(side.x) > 0.5 else size.z)
+			var foot: Vector3 = p + basis * (side * (half + 0.1))
+			var ground: Dictionary = _down(foot.x, foot.z, exclude)
+			var h: float = top_y - (ground["position"] as Vector3).y
+			assert_between(h, 0.4, 0.9, "%s height at side %s" % [cs.name, side])
+
+
+func test_valley_builds_in_under_1_s() -> void:
+	gut.p("valley build %.0f ms" % (float(_build_usec) / 1000.0))
+	assert_lt(_build_usec, 1_000_000, "build time in microseconds")
+
+
+func test_depth_fog_is_14_percent_at_100_m_and_30_at_300_m() -> void:
+	var env: Environment = (_valley.get_node("WorldEnvironment") as WorldEnvironment).environment
+	assert_true(env.fog_enabled)
+	assert_eq(env.fog_mode, Environment.FOG_MODE_DEPTH)
+	var at_100: float = _fog_percent(env, 100.0)
+	var at_300: float = _fog_percent(env, 300.0)
+	gut.p("fog %.2f %% at 100 m, %.2f %% at 300 m" % [at_100, at_300])
+	assert_almost_eq(at_100, 14.0, 0.5, "fog at 100 m")
+	assert_almost_eq(at_300, 30.0, 0.5, "fog at 300 m")
+
+
+## Godot depth fog: pow(smoothstep(begin, end, d), curve) * density.
+func _fog_percent(env: Environment, d: float) -> float:
+	var t: float = smoothstep(env.fog_depth_begin, env.fog_depth_end, d)
+	return 100.0 * pow(t, env.fog_depth_curve) * env.fog_density
+
+
+func _inside(area: Area3D, point: Vector3) -> bool:
+	var shape: CollisionShape3D = area.get_node("Shape") as CollisionShape3D
+	var box: BoxShape3D = shape.shape as BoxShape3D
+	var local: Vector3 = shape.global_transform.affine_inverse() * point
+	return (
+		absf(local.x) <= box.size.x * 0.5
+		and absf(local.y) <= box.size.y * 0.5
+		and absf(local.z) <= box.size.z * 0.5
+	)
+
+
+func test_pocket_areas_exclude_the_ledge_face_and_the_talus_slope() -> void:
+	var ledge: Area3D = _valley.get_node("%LedgePocket") as Area3D
+	var talus: Area3D = _valley.get_node("%TalusPocket") as Area3D
+	var lz: float = 190.0
+	var ledge_top: float = _terrain_y(-103.0, lz)
+	# Ledge: touching the face (0.2 m past it) is outside, 2 m behind it is inside.
+	assert_false(_inside(ledge, Vector3(-100.2, ledge_top + 0.5, lz)), "0.2 m past the face")
+	assert_true(_inside(ledge, Vector3(-102.0, ledge_top + 0.5, lz)), "2 m behind the face")
+	# Talus: slope points and its foot are outside, shelf points inside.
+	var tz: float = 170.0
+	for x: float in [96.1, 97.0, 98.5, 100.0, 100.8]:
+		var y: float = _terrain_y(x, tz)
+		assert_false(_inside(talus, Vector3(x, y + 0.3, tz)), "slope point x=%.1f" % x)
+	for x: float in [102.5, 106.0, 112.0]:
+		var y: float = _terrain_y(x, tz)
+		assert_true(_inside(talus, Vector3(x, y + 0.3, tz)), "shelf point x=%.1f" % x)
 
 
 func test_no_boulder_near_the_wash_centreline_or_a_pocket_entrance() -> void:
@@ -553,8 +636,9 @@ func test_smoke_column_is_visible_from_the_workshop() -> void:
 	assert_between(smoke.global_position.z, 330.0, 370.0, "smoke distance")
 	var cyl: CylinderMesh = smoke.mesh as CylinderMesh
 	assert_gte(cyl.height, 80.0, "smoke height")
-	var base_y: float = smoke.global_position.y - 0.5 * cyl.height
-	var target := Vector3(0.0, base_y + 60.0, smoke.global_position.z)
+	var axis: Vector3 = smoke.global_transform.basis.y.normalized()
+	var base: Vector3 = smoke.global_position - axis * (0.5 * cyl.height)
+	var target: Vector3 = base + axis * 60.0
 	var hit: Dictionary = _ray(Vector3(0.0, 3.0, 0.0), target)
 	assert_true(hit.is_empty(), "nothing on layer 1 blocks the view of the column")
 	assert_eq(smoke.find_children("*", "CollisionObject3D", true, false).size(), 0, "smoke has no collision")

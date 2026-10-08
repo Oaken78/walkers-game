@@ -74,6 +74,8 @@ func height_at(x: float, z: float) -> float:
 	var ix: int = clampi(int(floor(fx)), 0, nx - 1)
 	var iz: int = clampi(int(floor(fz)), 0, nz - 1)
 	var k: int = kinds[iz * nx + ix]
+	if k == KIND_TALUS:
+		return ValleyLayout.talus_y(x)
 	var tx: float = fx - float(ix)
 	var tz: float = fz - float(iz)
 	var xa: float = x0 + float(ix) * ValleyLayout.CELL
@@ -192,7 +194,7 @@ func _carve_wash() -> void:
 	for i in range(1, pts.size()):
 		var a: Vector2 = pts[i - 1]
 		var b: Vector2 = pts[i]
-		var fade: float = smoothstep(6.0, 30.0, arcs[i])
+		var fade: float = smoothstep(0.0, 8.0, arcs[i])
 		var mid: Vector2 = (a + b) * 0.5
 		var rx: Vector2i = _vertex_range(mid.x, hw + 3.0, x0, nx)
 		var rz: Vector2i = _vertex_range(mid.y, hw + 3.0, z0, nz)
@@ -205,7 +207,7 @@ func _carve_wash() -> void:
 					var d: float = ValleyLayout.WASH_DEPTH * 0.5 * (1.0 + cos(PI * r / hw)) * fade
 					var vi: int = iz * stride + ix
 					carve[vi] = maxf(carve[vi], d)
-					if r < hw * 0.6 and d > 0.15:
+					if r < hw * 0.9 and d > 0.05:
 						streak[vi] = 1
 
 
@@ -264,6 +266,23 @@ func _emit_floor_cells() -> void:
 				continue
 			var xa: float = x0 + float(ix) * cell
 			var xb: float = xa + cell
+			if k == KIND_TALUS:
+				# The slope ends mid-cell: split at the break so every piece is planar.
+				var cuts: Array = [xa]
+				if xa < slope_end_x - 0.001 and xb > slope_end_x + 0.001:
+					cuts.append(slope_end_x)
+				cuts.append(xb)
+				for ci in range(cuts.size() - 1):
+					var sx0: float = cuts[ci]
+					var sx1: float = cuts[ci + 1]
+					var sn: Vector3 = slope_n if sx1 <= slope_end_x + 0.001 else Vector3.UP
+					var q0 := Vector3(sx0, ValleyLayout.talus_y(sx0), za)
+					var q1 := Vector3(sx1, ValleyLayout.talus_y(sx1), za)
+					var q2 := Vector3(sx1, ValleyLayout.talus_y(sx1), zb)
+					var q3 := Vector3(sx0, ValleyLayout.talus_y(sx0), zb)
+					_add_tri(Surf.GROUND, q0, q1, q2, sn, sn, sn)
+					_add_tri(Surf.GROUND, q0, q2, q3, sn, sn, sn)
+				continue
 			var v: int = iz * stride + ix
 			var ha: float = _corner_h(k, xa, za, v)
 			var hb: float = _corner_h(k, xb, za, v + 1)
@@ -281,11 +300,6 @@ func _emit_floor_cells() -> void:
 				nd = _grid_normal(ix, iz + 1)
 				if streak[v] + streak[v + 1] + streak[v + stride] + streak[v + stride + 1] >= 2:
 					surf = Surf.STREAK
-			elif k == KIND_TALUS and xb <= slope_end_x + 0.001:
-				na = slope_n
-				nb = slope_n
-				nc = slope_n
-				nd = slope_n
 			var pa := Vector3(xa, ha, za)
 			var pb := Vector3(xb, hb, za)
 			var pc := Vector3(xb, hc, zb)

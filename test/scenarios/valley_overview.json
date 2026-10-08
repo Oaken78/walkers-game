@@ -19,6 +19,9 @@
     {"call": {"node": ".", "method": "show_view", "args": ["talus_pocket"]}},
     {"wait_frames": 10},
     {"screenshot": "talus_pocket"},
+    {"call": {"node": ".", "method": "show_view", "args": ["toward_home"]}},
+    {"wait_frames": 10},
+    {"screenshot": "toward_home"},
     {"call": {"node": ".", "method": "show_view", "args": ["from_workshop"]}},
     {"assert_no_errors": true}
   ]
