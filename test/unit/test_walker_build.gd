@@ -197,13 +197,10 @@ func test_no_armed_build_with_6_or_8_legs_hits_the_speed_clamp() -> void:
 							for i in 3:
 								if tops[i] != &"":
 									b.place(TOP_IDS[i], tops[i])
-							# Legs are balanced and 6 or 8 by construction; only overload can invalidate.
-							var s := b.stats()
-							if s["mass"] > s["lift"]:
-								continue
 							checked += 1
-							var speed := s["top_speed"] as float
-							if speed <= 2.5 or speed >= 7.0:
+							var speed := b.stats()["top_speed"] as float
+							# is_valid() decides which builds count; only ask it for out-of-range ones.
+							if (speed <= 2.5 or speed >= 7.0) and b.is_valid():
 								clamped.append(b.parts())
 	assert_gt(checked, 0)
 	assert_eq(clamped.size(), 0, "clamped builds: %s" % [clamped])
