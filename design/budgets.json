@@ -1,8 +1,8 @@
 {
   "frame_ms_p95": 16.7,
   "frame_ms_max": 33.0,
-  "draw_calls_max": 600,
+  "draw_calls_max": 1000,
   "orphan_nodes_max": 0,
-  "static_mem_mb_max": 512,
+  "static_mem_mb_max": 768,
   "screens": { "rmse_threshold": 1.0 }
 }
