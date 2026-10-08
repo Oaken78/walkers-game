@@ -196,9 +196,11 @@ already allow it.
 ### 8.2 Locomotion - body controller and gait
 - **Body:** CharacterBody3D, moved kinematically from input and build stats, with the accel and decel from
   section 5. Height and tilt are fitted to the plane of the planted feet (least-squares, then smoothed).
-- **Gait (`GaitSolver`, pure):** legs split into two alternating groups (tripod for 6+ legs, wave for 4-5).
+- **Gait (`GaitSolver`, pure):** legs split into alternating groups: two tripods for 6+ legs; for 4-5 legs a wave
+  gait with one leg per group.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
-  foot of the active group is planted, or 85 % into the step.
+  foot of the active group is planted, or 85 % into the step, but a leg never lifts while that would put more legs
+  in the air than the section 5 limit.
 - **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5. When the target is
   higher than step_up or steeper than the max slope, it is invalid, the leg blocks, and the body stops on that
   side.
@@ -456,6 +458,8 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-08 | Style anchor: 50/50 mix of crystal.webp and the buried ruined city; palette, fog, ink and grain numbers from the look-test mockup | Klas picked 50 % on the mockup slider | Pure comic (crystal.webp); semi-real renders |
 | 2026-10-08 | M0 map is a valley (ref valley.jpg): cliff walls as bounds, workshop at the head, dry wash as the main path, ruins closing the far end | Rings become a readable direction (deeper = down-valley); no invisible walls; cheap greybox; ready M1 gate | Open 400 x 400 m area with concentric rings |
 | 2026-10-08 | Second M0 pocket: a 40 deg talus slope only the Crawler can climb, mirroring the Strider's 0.8 m ledge pocket | Makes the Crawler's slope grip (the "both" niche) matter in M0, not only in fights | Ledge pocket only |
+| 2026-10-08 | Clarification: the 4-5 leg wave gait lifts one leg at a time (one leg per group); only 6+ legs use two tripod groups | 8.2 said "two alternating groups" for every gait, but section 5 caps 4 legs at 1 airborne; two groups of 2 would break it | Two diagonal pairs (trot) for 4 legs |
+| 2026-10-08 | Clarification: the airborne limit beats the 85 % handover; the next group gets the turn at 85 % but its legs lift only within the limit | A literal 85 % overlap puts all 6 legs of a tripod in the air, against Pillar 2 and M0 criterion 2 | Overlapping swings at 85 % |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).

@@ -25,11 +25,11 @@ Status: ready, in-progress, review-passed, done.
 | Id | Title | Owned paths | Tier | Status | Branch |
 |---|---|---|---|---|---|
 | T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot, test/unit/test_input_map.gd | 2 | done | main |
-| T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 1 | | |
-| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 1 | | |
+| T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 2 | ready | |
+| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 2 | ready | |
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scenes/walker/, scenes/test/gait_course.tscn, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json | 3 | | |
 | T04 | Orbit camera rig (8 m, lag 0.10 s, zoom, aim, spring-arm collision) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd | 3 | | |
-| T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, assets/world/, test/integration/test_valley_geometry.gd | 3 | | |
+| T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, scripts/world/, assets/world/, test/integration/test_valley_geometry.gd, test/scenarios/valley_overview.json | 3 | ready | |
 | T06 | Pulse cannon + projectiles (top socket part) | scripts/weapons/, scenes/weapons/, test/unit/test_weapon.gd | 3 | | |
 | T07 | Drone enemy: state machine, telegraph, leash | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, test/scenarios/drone_fight.json | 3 | | |
 | T08 | Salvage economy, scrap nodes, wreck cache, repair on bank, recall | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd | 3 | | |
