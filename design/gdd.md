@@ -286,10 +286,21 @@ already allow it.
 - Terrain gets 1 px or none, depending on budget.
 - No bloom except on emissives (threat, salvage). Distance fog from 120-300 m, tinted to the horizon colour.
 
-**References (to collect in `design/refs/`):**
-- Borderlands: ink outlines and cel bands.
-- Robocraft: garage and snap-socket build readability.
-- Kenshi: spider walkers on a desolate scale.
+**References (`design/refs/`, 12 images from Klas):**
+- **Style:** `crystal.webp` (ink lines, flat colour bands, glowing crystals) mixed with `burried runied city.jfif`
+  (sepia haze, smoke column, ruins half buried in dunes). The mix ratio is open (section 18).
+- **Walkers:**
+  - `small walker.png` and `fat walker.png`: compact 4-leg bodies, the heavy end of the build range.
+  - `box like walker.jfif`: a cabin on spindly legs kicking up dust (the dust-puff read).
+  - `nimble walker.webp` and `giant walker.jpg`: long-leg spider silhouettes, the Strider end. The giant
+    walker also shows scale against humans, and orange emissive seams.
+- **Landforms:**
+  - `canyon-river.jpg` and `desert-arc.jpg`: the canyon and mesa language for M0.
+  - `fog.jpg`: a cloud-sea plateau for a later zone.
+  - `open-pit.jpg` and `valley.jpg`: actually AVIF files with a .jpg name; not reviewed yet.
+- **Muted world:** the refs' red sandstone is desaturated toward dusty beige-grey so the orange accent and the
+  threat red stay readable. Actor hues are unchanged.
+- **Earlier pitch references** (Borderlands, Robocraft, Kenshi) still stand for outlines and the garage.
 
 ## 11. Audio direction
 - M0: placeholders only (cut-first per Klas).
@@ -377,9 +388,13 @@ already allow it.
 | 2026-10-08 | Two currencies from M1: scrap buys, blueprints unlock; blueprints are in exploration pockets and kept on death | Klas: both scrap and blueprints; exploration pays separately from risk | Scrap only; blueprints dropped by enemy walkers |
 | 2026-10-08 | Input to motion <= 2 physics ticks; drone bolts 25 m/s; turret arc +/- 150 deg; hold-E recall | game-designer critique: start must not slide, speed must matter in combat, stuck recovery | Hitscan drones |
 | 2026-10-08 | Clarification: stuck recall is hold `interact` (F) for 3 s; the earlier "hold-E recall" row predates tank controls, where E became `strafe_right` | Avoid a key clash; section 6 is authoritative | Recall on E |
+| 2026-10-08 | World palette muted (dusty, desaturated sandstone); actor hues unchanged | Klas: keep orange and red; red rock in the refs would swallow them | Pale player + violet threats; rely on shape only |
+| 2026-10-08 | M0 biome: canyon mesa (muted); later zones: buried ruined city, cloud-sea plateau | Mesas give the ledge pocket and natural rings | Ruined city or open flats for M0 |
+| 2026-10-08 | design/ has a .gdignore | Keep reference images and docs out of the Godot import | Import everything |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
+- Style anchor mix between `crystal.webp` and the buried ruined city: see the look-test mockup; pick a ratio.
 - Blueprints are kept on death (current default). Should they instead be carried like scrap, for more stakes?
 - The economy is estimated, not simulated: about 90 scrap per trip. Check real income in `loop_full` and retune
   prices before M1.
