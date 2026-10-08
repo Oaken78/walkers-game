@@ -275,20 +275,35 @@ already allow it.
 | Player body | `#E6E1D6` |
 | Threat | `#E8345A` |
 | Salvage | `#3DE0E8` |
-| Rock | `#5B6770` |
-| Dust ground | `#A89A80` |
-| Moss | `#7E8F63` |
-| Sky top / horizon | `#2E4A6B` / `#D9C9A8` |
 | Outline ink | `#14161A` |
 
+World palette, from the 50 % style mix (look-test mockup):
+
+| Role | Hex |
+|---|---|
+| Sky top / horizon and fog | `#90A092` / `#DACFB6` |
+| Far rock (300 m+) | `#A58B78` |
+| Rock base / lit band / shadow band | `#9B7D69` / `#BBA189` / `#6D5548` |
+| Ground / ground streaks | `#CAB294` / `#B99F82` |
+| Ruins | `#93806E` |
+| Smoke | `#57514D` |
+| Foreground rocks | `#352D28` |
+| Shrubs | `#7E8F63` (olive, kept well away from salvage cyan) |
+
 **Shading:**
-- Toon ramp with 3 bands and a hard terminator, plus a 2 px screen-space ink outline on actors.
-- Terrain gets 1 px or none, depending on budget.
-- No bloom except on emissives (threat, salvage). Distance fog from 120-300 m, tinted to the horizon colour.
+- Flat colour bands: each rock face gets a base, one lit band and one shadow band, with no smooth gradients on
+  solids. Actors use a toon ramp with 3 bands and a hard terminator.
+- Ink outline (M1, see the Decisions log): 2.3 px at 720p, 3.5 px at 1080p, on actors and rocks; terrain gets
+  1 px or none, depending on budget.
+- Distance fog in the horizon colour: 14 % at 100 m, 30 % at 300 m. Smoke and haze are part of the look, not
+  weather.
+- Film grain at 4.5 % opacity. Faint sky mottling at 2.5 %.
+- No bloom except on emissives (threat, salvage).
 
 **References (`design/refs/`, 12 images from Klas):**
-- **Style:** `crystal.webp` (ink lines, flat colour bands, glowing crystals) mixed with `burried runied city.jfif`
-  (sepia haze, smoke column, ruins half buried in dunes). The mix ratio is open (section 18).
+- **Style:** a 50/50 mix of `crystal.webp` (ink lines, flat colour bands, glowing crystals) and
+  `burried runied city.jfif` (sepia haze, smoke column, ruins half buried in dunes). The palette and shading
+  numbers above come from the look-test mockup at 50 %.
 - **Walkers:**
   - `small walker.png` and `fat walker.png`: compact 4-leg bodies, the heavy end of the build range.
   - `box like walker.jfif`: a cabin on spindly legs kicking up dust (the dust-puff read).
@@ -395,10 +410,10 @@ already allow it.
 | 2026-10-08 | World palette muted (dusty, desaturated sandstone); actor hues unchanged | Klas: keep orange and red; red rock in the refs would swallow them | Pale player + violet threats; rely on shape only |
 | 2026-10-08 | M0 biome: canyon mesa (muted); later zones: buried ruined city, cloud-sea plateau | Mesas give the ledge pocket and natural rings | Ruined city or open flats for M0 |
 | 2026-10-08 | design/ has a .gdignore | Keep reference images and docs out of the Godot import | Import everything |
+| 2026-10-08 | Style anchor: 50/50 mix of crystal.webp and the buried ruined city; palette, fog, ink and grain numbers from the look-test mockup | Klas picked 50 % on the mockup slider | Pure comic (crystal.webp); semi-real renders |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
-- Style anchor mix between `crystal.webp` and the buried ruined city: see the look-test mockup; pick a ratio.
 - Blueprints are kept on death (current default). Should they instead be carried like scrap, for more stakes?
 - The economy is estimated, not simulated: about 90 scrap per trip. Check real income in `loop_full` and retune
   prices before M1.
