@@ -344,7 +344,7 @@ World palette, from the 50 % style mix (look-test mockup):
 **References (`design/refs/`, 12 images from Klas):**
 - **Style:** a 50/50 mix of `crystal.webp` (ink lines, flat colour bands, glowing crystals) and
   `burried runied city.jfif` (sepia haze, smoke column, ruins half buried in dunes). The palette and shading
-  numbers above come from the look-test mockup at 50 %.
+  numbers above come from the look-test mockup at 50 % (https://claude.ai/artifact/Uykcqe7akg85GnsyMJu31K).
 - **Walkers:**
   - `small walker.png` and `fat walker.png`: compact 4-leg bodies, the heavy end of the build range.
   - `box like walker.jfif`: a cabin on spindly legs kicking up dust (the dust-puff read).
