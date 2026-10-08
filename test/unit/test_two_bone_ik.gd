@@ -72,6 +72,18 @@ func test_pole_parallel_to_the_leg_gives_a_finite_knee() -> void:
 		assert_almost_eq(sol.knee.length(), 0.5, TOL)
 
 
+func test_zero_length_bones_give_finite_results() -> void:
+	var both := TwoBoneIK.solve(HIP, Vector3(1, 0, 0), 0.0, 0.0, POLE)
+	assert_true(both.knee.is_finite())
+	assert_true(both.foot.is_finite())
+	var cases: Array[Vector2] = [Vector2(0.0, 1.0), Vector2(1.0, 0.0)]
+	for bones in cases:
+		var sol := TwoBoneIK.solve(HIP, Vector3(1, 0, 0), bones.x, bones.y, POLE)
+		assert_true(sol.knee.is_finite())
+		assert_true(sol.foot.is_finite())
+		assert_lte(sol.foot.distance_to(HIP), 0.99 + TOL)
+
+
 func test_target_on_the_hip_gives_finite_results() -> void:
 	var sol := TwoBoneIK.solve(HIP, HIP, 0.5, 0.5, POLE)
 	assert_true(sol.knee.is_finite())

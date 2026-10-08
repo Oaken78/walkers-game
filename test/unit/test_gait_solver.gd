@@ -336,6 +336,84 @@ func test_hovering_leg_does_not_hold_the_turn() -> void:
 	assert_eq(w.solver.state_of(1), SWINGING)
 
 
+func test_blocked_leg_hovers_on_exactly_update_30_at_60_hz() -> void:
+	var w := _walker(6)
+	w.errors[0] = 0.6
+	w.valid[0] = false
+	for k in 29:
+		w.solver.update(DT, false, 1.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(0), PLANTED)
+	w.solver.update(DT, false, 1.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(0), HOVERING)
+
+
+func test_blocked_leg_stays_planted_while_the_airborne_limit_is_full() -> void:
+	var w := _walker(4)
+	w.solver.step_time_idle = 10.0
+	w.errors[1] = 0.6
+	w.solver.update(DT, false, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(1), SWINGING)
+	w.errors[0] = 0.6
+	w.valid[0] = false
+	for k in 45:
+		w.solver.update(DT, false, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(0), PLANTED)
+	assert_true(w.solver.is_blocked(0))
+	assert_eq(w.solver.airborne_count(), 1)
+
+
+func _steps_snapshot(w: FakeWalker) -> PackedInt32Array:
+	return w.started.duplicate()
+
+
+func _assert_every_leg_stepped_since(w: FakeWalker, before: PackedInt32Array) -> void:
+	for i in w.solver.leg_count():
+		assert_gt(w.started[i], before[i], "leg %d stepped again" % i)
+
+
+func test_hovering_leg_on_a_wave_gait_lifts_once_its_target_turns_valid() -> void:
+	var w := _walker(4)
+	for t in 90:
+		w.tick(true, 1.0)
+	w.valid[0] = false
+	for t in 60:
+		w.tick(true, 1.0)
+	assert_eq(w.solver.state_of(0), HOVERING)
+	w.valid[0] = true
+	var before := _steps_snapshot(w)
+	for t in 60:
+		w.tick(true, 1.0)
+	_assert_every_leg_stepped_since(w, before)
+	assert_lte(w.max_airborne, 1)
+
+
+func test_hovering_legs_of_the_inactive_tripod_lift_once_their_targets_turn_valid() -> void:
+	var w := _walker(6)
+	for t in 90:
+		w.tick(true, 1.0)
+	for i in [1, 3, 5]:
+		w.valid[i] = false
+	for t in 90:
+		w.tick(true, 1.0)
+	assert_eq(w.solver.airborne_count(), 3)
+	for i in [1, 3, 5]:
+		w.valid[i] = true
+	var before := _steps_snapshot(w)
+	for t in 60:
+		w.tick(true, 1.0)
+	_assert_every_leg_stepped_since(w, before)
+	assert_lte(w.max_airborne, 3)
+
+
+func test_start_kick_survives_a_blocked_first_group() -> void:
+	var w := _walker(4)
+	w.valid[1] = false
+	w.solver.update(DT, true, 1.0, w.errors, w.valid)
+	assert_eq(w.solver.airborne_count(), 0)
+	w.solver.update(DT, true, 1.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(0), SWINGING)
+
+
 func test_reset_plants_every_leg() -> void:
 	var w := _walker(6)
 	w.solver.update(DT, true, 1.0, w.errors, w.valid)

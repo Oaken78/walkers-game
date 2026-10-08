@@ -25,6 +25,7 @@ var _group_count: int = 1
 var _gait_limit: int = 0
 var _active_group: int = 0
 var _was_moving: bool = false
+var _kick_armed: bool = false
 var _reaches: PackedFloat32Array = PackedFloat32Array()
 var _groups: PackedInt32Array = PackedInt32Array()
 var _states: PackedInt32Array = PackedInt32Array()
@@ -74,6 +75,7 @@ func _init(sides: PackedInt32Array, reaches: PackedFloat32Array) -> void:
 func reset() -> void:
 	_active_group = 0
 	_was_moving = false
+	_kick_armed = false
 	for i in _count:
 		_states[i] = LegState.PLANTED
 		_progress[i] = 0.0
@@ -93,8 +95,12 @@ func update(
 	if foot_errors.size() != _count or targets_valid.size() != _count:
 		push_error("GaitSolver.update: array sizes must equal leg_count() (%d)" % _count)
 		return
-	var kick: bool = moving and not _was_moving
+	if moving and not _was_moving:
+		_kick_armed = true
+	if not moving:
+		_kick_armed = false
 	_was_moving = moving
+	var kick: bool = _kick_armed
 
 	# 1. Advance swings.
 	for i in _count:
@@ -142,10 +148,12 @@ func update(
 	while true:
 		var best: int = -1
 		for i in _count:
-			if _groups[i] != _active_group or _wants[i] == 0 or not targets_valid[i]:
+			if _wants[i] == 0 or not targets_valid[i]:
 				continue
-			if _states[i] == LegState.PLANTED and airborne_count() >= _gait_limit:
-				continue
+			# A hovering leg lifts whichever group is active and needs no free slot.
+			if _states[i] != LegState.HOVERING:
+				if _groups[i] != _active_group or airborne_count() >= _gait_limit:
+					continue
 			if best < 0 or foot_errors[i] > foot_errors[best]:
 				best = i
 		if best < 0:
@@ -155,6 +163,7 @@ func update(
 		_durations[best] = step_duration(speed_ratio)
 		_blocked_time[best] = 0.0
 		_wants[best] = 0
+		_kick_armed = false
 		step_started.emit(best)
 
 

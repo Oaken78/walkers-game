@@ -22,7 +22,12 @@ static func solve(
 	var result := Solution.new()
 	var reach: float = upper + lower
 	var max_dist: float = MAX_STRETCH * reach
-	var min_dist: float = absf(upper - lower) + MIN_FOLD_RATIO * reach
+	var min_dist: float = minf(absf(upper - lower) + MIN_FOLD_RATIO * reach, max_dist)
+	if reach <= 0.000001:
+		# Degenerate leg: nothing to solve.
+		result.knee = hip
+		result.foot = hip
+		return result
 	var to_target: Vector3 = target - hip
 	var dist: float = to_target.length()
 	var dir: Vector3 = Vector3.DOWN
