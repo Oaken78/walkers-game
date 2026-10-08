@@ -376,6 +376,7 @@ already allow it.
 | 2026-10-08 | Uneven leg builds from M1 with an imbalance penalty; M0 stays symmetric | Klas wants uneven builds; M0 tests the gait risk on the simplest case | Strict symmetry forever; uneven in M0 |
 | 2026-10-08 | Two currencies from M1: scrap buys, blueprints unlock; blueprints are in exploration pockets and kept on death | Klas: both scrap and blueprints; exploration pays separately from risk | Scrap only; blueprints dropped by enemy walkers |
 | 2026-10-08 | Input to motion <= 2 physics ticks; drone bolts 25 m/s; turret arc +/- 150 deg; hold-E recall | game-designer critique: start must not slide, speed must matter in combat, stuck recovery | Hitscan drones |
+| 2026-10-08 | Clarification: stuck recall is hold `interact` (F) for 3 s; the earlier "hold-E recall" row predates tank controls, where E became `strafe_right` | Avoid a key clash; section 6 is authoritative | Recall on E |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
