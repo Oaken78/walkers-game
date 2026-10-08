@@ -24,7 +24,7 @@ Status: ready, in-progress, review-passed, done.
 
 | Id | Title | Owned paths | Tier | Status | Branch |
 |---|---|---|---|---|---|
-| T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot | 2 | | |
+| T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot, test/unit/test_input_map.gd | 2 | done | main |
 | T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 1 | | |
 | T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 1 | | |
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scenes/walker/, scenes/test/gait_course.tscn, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json | 3 | | |

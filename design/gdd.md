@@ -322,6 +322,7 @@ already allow it.
 | Simulation caps | player walker <= 8 legs; <= 4 active drones; <= 40 live projectiles |
 | Physics tick | 60 Hz. Gait and IK run in `_physics_process`, visuals interpolated |
 | Platform | Windows PC, KB+M |
+| 3D collision layers | 1 world, 2 player, 3 enemies, 4 player_projectiles, 5 enemy_projectiles, 6 pickups, 7 triggers. Foot raycasts mask world only |
 
 ## 14. Milestones
 - **M0 Playable loop (<= 2 weeks of agent work):** walk, build and fight on one map. Acceptance criteria are in
