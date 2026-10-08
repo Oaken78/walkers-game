@@ -21,14 +21,23 @@ const VALID_LEG_COUNTS: Array[int] = [4, 6, 8]
 
 var chassis_id: StringName
 
+const LEFT_LEG_SOCKETS: Array[StringName] = [&"leg_l0", &"leg_l1", &"leg_l2", &"leg_l3"]
+const RIGHT_LEG_SOCKETS: Array[StringName] = [&"leg_r0", &"leg_r1", &"leg_r2", &"leg_r3"]
+
+static var _socket_cache: Dictionary = {}  # chassis id -> {socket id -> socket row}
+
 var _parts: Dictionary = {}  # socket id -> part id
-var _sockets: Dictionary = {}  # socket id -> socket row dictionary
+var _sockets: Dictionary = {}  # socket id -> socket row dictionary (shared, read-only)
 
 
 func _init(chassis: StringName = PartCatalog.CHASSIS_MEDIUM) -> void:
 	chassis_id = chassis
-	for socket in PartCatalog.chassis_sockets(chassis):
-		_sockets[socket["id"]] = socket
+	if not _socket_cache.has(chassis):
+		var table: Dictionary = {}
+		for socket in PartCatalog.chassis_sockets(chassis):
+			table[socket["id"]] = socket
+		_socket_cache[chassis] = table
+	_sockets = _socket_cache[chassis]
 
 
 static func scout() -> WalkerBuild:
@@ -102,13 +111,13 @@ func leg_count() -> int:
 func mounted_legs() -> Array[Dictionary]:
 	var legs: Array[Dictionary] = []
 	for side in [-1, 1]:
-		var letter := "l" if side < 0 else "r"
-		for row in PartCatalog.LEG_SOCKETS_PER_SIDE:
-			var socket_id := StringName("leg_%s%d" % [letter, row])
+		var ids: Array[StringName] = LEFT_LEG_SOCKETS if side < 0 else RIGHT_LEG_SOCKETS
+		for row in ids.size():
+			var socket_id: StringName = ids[row]
 			if not _parts.has(socket_id):
 				continue
 			var part_id: StringName = _parts[socket_id]
-			var data := PartCatalog.get_part(part_id)
+			var data: Dictionary = PartCatalog.PARTS[part_id]
 			var leg := {
 				"socket": socket_id,
 				"part": part_id,
@@ -125,12 +134,14 @@ func mounted_legs() -> Array[Dictionary]:
 
 
 func stats() -> Dictionary:
-	var chassis := PartCatalog.get_part(chassis_id)
+	var chassis: Dictionary = {}
+	if PartCatalog.socket_kind(chassis_id) == PartCatalog.KIND_CHASSIS:
+		chassis = PartCatalog.PARTS[chassis_id]
 	var mass: float = chassis.get("mass", 0.0)
 	var hp: float = chassis.get("hp", 0.0)
 	var dps := 0.0
 	for part_id: StringName in _parts.values():
-		var data := PartCatalog.get_part(part_id)
+		var data: Dictionary = PartCatalog.PARTS[part_id]
 		mass += data["mass"]
 		hp += data["hp"]
 		dps += data["fire_rate"] * data["damage"]

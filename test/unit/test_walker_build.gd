@@ -5,6 +5,7 @@ const TOL := 0.01
 const LEG_TYPES: Array[StringName] = [
 	PartCatalog.LEG_SHORT, PartCatalog.LEG_MEDIUM, PartCatalog.LEG_LONG
 ]
+const TOP_IDS: Array[StringName] = [&"top_0", &"top_1", &"top_2"]
 const TOP_CHOICES: Array[StringName] = [&"", PartCatalog.PULSE_CANNON, PartCatalog.ARMOR_PLATE]
 
 
@@ -171,6 +172,7 @@ func test_crawler_dps_times_hp_is_at_least_1_8x_strider() -> void:
 
 func test_no_armed_build_with_6_or_8_legs_hits_the_speed_clamp() -> void:
 	var checked := 0
+	var clamped: Array[Dictionary] = []
 	for total in [6, 8]:
 		for n_short in range(total + 1):
 			for n_medium in range(total + 1 - n_short):
@@ -190,17 +192,21 @@ func test_no_armed_build_with_6_or_8_legs_hits_the_speed_clamp() -> void:
 								continue
 							var b := WalkerBuild.new()
 							for i in legs.size():
-								var side_letter := "l" if i % 2 == 0 else "r"
-								b.place(StringName("leg_%s%d" % [side_letter, i / 2]), legs[i])
+								var ids := WalkerBuild.LEFT_LEG_SOCKETS if i % 2 == 0 else WalkerBuild.RIGHT_LEG_SOCKETS
+								b.place(ids[i / 2], legs[i])
 							for i in 3:
 								if tops[i] != &"":
-									b.place(StringName("top_%d" % i), tops[i])
-							if not b.is_valid():
+									b.place(TOP_IDS[i], tops[i])
+							# Legs are balanced and 6 or 8 by construction; only overload can invalidate.
+							var s := b.stats()
+							if s["mass"] > s["lift"]:
 								continue
 							checked += 1
-							var speed := b.stats()["top_speed"] as float
-							assert_true(speed > 2.5 and speed < 7.0, "%s %s" % [b.parts(), speed])
+							var speed := s["top_speed"] as float
+							if speed <= 2.5 or speed >= 7.0:
+								clamped.append(b.parts())
 	assert_gt(checked, 0)
+	assert_eq(clamped.size(), 0, "clamped builds: %s" % [clamped])
 
 
 func test_four_legs_use_gait_factor_0_85() -> void:
@@ -322,6 +328,9 @@ func test_mounted_legs_are_ordered_left_then_right_front_to_back() -> void:
 	assert_eq(first["row"], 2)
 	assert_eq(first["lift"], 110.0)
 	assert_eq(first["slope_grip"], 45.0)
+	assert_eq(first["mass"], 35.0)
+	assert_eq(first["reach"], 0.6)
+	assert_eq(first["spread_factor"], 0.5)
 
 
 func test_legless_build_stats_are_finite_and_zero() -> void:
@@ -330,7 +339,38 @@ func test_legless_build_stats_are_finite_and_zero() -> void:
 		assert_eq(s[key], 0.0, key)
 		assert_true(is_finite(s[key]), key)
 	assert_eq(s["mass"], 125.0)
+	assert_eq(s["hp"], 100.0)
 	assert_eq(s["leg_count"], 0)
+
+
+func test_stats_have_exactly_the_contract_keys() -> void:
+	var keys: Array = WalkerBuild.scout().stats().keys()
+	keys.sort()
+	var want: Array = [
+		"dps", "hp", "leg_count", "lift", "load", "mass", "max_slope", "reach", "spread",
+		"step_up", "top_speed", "turn_rate"
+	]
+	want.sort()
+	assert_eq(keys, want)
+
+
+func test_non_chassis_id_contributes_no_chassis_mass() -> void:
+	var b := WalkerBuild.new(PartCatalog.LEG_SHORT)
+	assert_eq(b.stats()["mass"], 0.0)
+	assert_eq(b.stats()["hp"], 0.0)
+
+
+func test_catalog_display_names() -> void:
+	var names := {
+		PartCatalog.CHASSIS_MEDIUM: "Medium chassis",
+		PartCatalog.LEG_SHORT: "Short leg",
+		PartCatalog.LEG_MEDIUM: "Medium leg",
+		PartCatalog.LEG_LONG: "Long leg",
+		PartCatalog.PULSE_CANNON: "Pulse cannon",
+		PartCatalog.ARMOR_PLATE: "Armor plate",
+	}
+	for id: StringName in names:
+		assert_eq(PartCatalog.get_part(id)["display_name"], names[id])
 
 
 func test_copy_is_independent() -> void:
