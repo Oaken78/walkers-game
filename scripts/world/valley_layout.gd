@@ -22,6 +22,8 @@ const DUNE_HEIGHT: float = 8.0
 const DUNE_START_Z: float = 236.0
 
 const HEAD_WALL_Z: float = -30.0
+const HEAD_WOBBLE_FULL_Z: float = -30.0
+const HEAD_WOBBLE_END_Z: float = -10.0
 const WALL_LEFT_X: float = -100.0
 const WALL_RIGHT_X: float = 96.0
 
@@ -71,11 +73,8 @@ const BUMP_PATCHES: Array = [
 ]
 
 ## Dry wash centreline waypoints (x, z). Smoothed with Catmull-Rom into a dense polyline.
-## The first waypoint is the lead-in behind the workshop camera (within 10 m of the site, on the flat pad);
-## site and boulder arc lengths are measured from the second waypoint (WASH_S_ORIGIN_INDEX).
-const WASH_S_ORIGIN_INDEX: int = 1
+## Arc length s is measured from the first waypoint everywhere (curve, sites, boulders, nearest-point).
 const WASH_WAYPOINTS: Array = [
-	[0.0, -8.0],
 	[2.0, 8.0],
 	[10.0, 34.0],
 	[30.0, 60.0],
@@ -121,7 +120,6 @@ const BOULDER_HEIGHTS: Array = [0.5, 0.62, 0.74, 0.8, 0.55, 0.68, 0.78, 0.6, 0.7
 
 static var _wash_pts: PackedVector2Array = PackedVector2Array()
 static var _wash_arc: PackedFloat32Array = PackedFloat32Array()
-static var _wash_origin: float = 0.0
 
 
 ## Floor line height at z (the 2 deg fall; the workshop pad is at y = 0).
@@ -130,8 +128,17 @@ static func tilt(z: float) -> float:
 
 
 ## Top of the cliff plateau at z (always >= 38 m above the floor line).
-static func plateau_y(z: float) -> float:
-	return tilt(z) + PLATEAU_BASE + 2.5 * sin(0.045 * z) + 1.5 * sin(0.11 * z + 1.0)
+static func plateau_y(z: float, x: float = 0.0) -> float:
+	return tilt(z) + PLATEAU_BASE + 2.5 * sin(0.045 * z) + 1.5 * sin(0.11 * z + 1.0) + head_wobble(x, z)
+
+
+## Extra rise (0..9 m, never negative so the cliff rule only gets safer) along the head wall's top, so it
+## does not read as a dead-flat dam. Full for z <= HEAD_WOBBLE_FULL_Z, gone by HEAD_WOBBLE_END_Z.
+static func head_wobble(x: float, z: float) -> float:
+	var w: float = 1.0 - smoothstep(HEAD_WOBBLE_FULL_Z, HEAD_WOBBLE_END_Z, z)
+	if w <= 0.0:
+		return 0.0
+	return w * (3.0 * (1.0 + sin(0.06 * x + 0.5)) + 1.5 * (1.0 + sin(0.17 * x + 2.0)))
 
 
 ## Dune bank rise at z (0 before DUNE_START_Z, DUNE_HEIGHT at the ruins).
@@ -257,10 +264,7 @@ static func _build_wash() -> void:
 	var w: Array = WASH_WAYPOINTS
 	var n: int = w.size()
 	var pts := PackedVector2Array()
-	var origin_idx: int = 0
 	for i in range(n - 1):
-		if i == WASH_S_ORIGIN_INDEX:
-			origin_idx = pts.size()
 		var p0: Vector2 = _wp(maxi(i - 1, 0))
 		var p1: Vector2 = _wp(i)
 		var p2: Vector2 = _wp(i + 1)
@@ -278,7 +282,6 @@ static func _build_wash() -> void:
 		arcs.append(s)
 	_wash_pts = pts
 	_wash_arc = arcs
-	_wash_origin = arcs[origin_idx]
 
 
 static func _wp(i: int) -> Vector2:
@@ -299,7 +302,7 @@ static func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: floa
 static func wash_at(s: float) -> Vector2:
 	var pts: PackedVector2Array = wash_points()
 	var arcs: PackedFloat32Array = wash_arcs()
-	s = clampf(s + _wash_origin, 0.0, arcs[arcs.size() - 1])
+	s = clampf(s, 0.0, arcs[arcs.size() - 1])
 	for i in range(1, pts.size()):
 		if arcs[i] >= s:
 			var span: float = arcs[i] - arcs[i - 1]

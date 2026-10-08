@@ -46,8 +46,9 @@ environment = SubResource("Env_1")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 rotation_degrees = Vector3(-45, 270, 0)
 light_color = Color(1, 0.98, 0.95, 1)
-light_energy = 0.95
+light_energy = 1.0
 shadow_enabled = true
+shadow_opacity = 0.7
 directional_shadow_max_distance = 150.0
 
 [node name="WorkshopSite" type="Marker3D" parent="."]

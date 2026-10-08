@@ -2,6 +2,9 @@
 
 [resource]
 resource_name = "world_ground"
-albedo_color = Color(0.79216, 0.69804, 0.58039, 1)
+diffuse_mode = 1
+vertex_color_use_as_albedo = true
+vertex_color_is_srgb = true
+albedo_color = Color(1, 1, 1, 1)
 roughness = 1.0
 metallic_specular = 0.0

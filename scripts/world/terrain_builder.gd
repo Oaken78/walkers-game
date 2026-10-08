@@ -23,10 +23,21 @@ var kinds: PackedByteArray = PackedByteArray()
 ## Floor height per vertex (index iz * (nx + 1) + ix), valid for floor kinds.
 var heights: PackedFloat32Array = PackedFloat32Array()
 var carve: PackedFloat32Array = PackedFloat32Array()
-var streak: PackedByteArray = PackedByteArray()
+## Streak weight per vertex (0 = ground colour, 1 = streak colour): wash channel and bump skirts.
+var streak: PackedFloat32Array = PackedFloat32Array()
+
+## Ground colours (GDD 10 palette, sRGB) blended per vertex on the single ground surface.
+var color_ground: Color = Color("#CAB294")
+var color_streak: Color = Color("#B99F82")
+## The visible streak starts at the workshop pad's front edge (z), not behind the workshop.
+var streak_start_z: float = 12.0
+## Wash half-width at its start and after taper_length metres of path (width 4 m -> 10 m).
+var wash_half_width_start: float = 2.0
+var wash_taper_length: float = 30.0
 
 var _verts: Array = []
 var _norms: Array = []
+var _cols: Array = []
 var _faces: PackedVector3Array = PackedVector3Array()
 
 
@@ -34,6 +45,7 @@ func build() -> void:
 	for i in range(Surf.size()):
 		_verts.append(PackedVector3Array())
 		_norms.append(PackedVector3Array())
+		_cols.append(PackedColorArray())
 	_classify()
 	_compute_heights()
 	_emit_floor_cells()
@@ -52,6 +64,9 @@ func make_mesh(materials: Array) -> ArrayMesh:
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = v
 		arrays[Mesh.ARRAY_NORMAL] = _norms[i]
+		var cols: PackedColorArray = _cols[i]
+		if cols.size() == v.size():
+			arrays[Mesh.ARRAY_COLOR] = cols
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, materials[i] as Material)
 	return mesh
@@ -149,7 +164,7 @@ func _compute_heights() -> void:
 	carve.resize(stride * (nz + 1))
 	carve.fill(0.0)
 	streak.resize(stride * (nz + 1))
-	streak.fill(0)
+	streak.fill(0.0)
 	for iz in range(nz + 1):
 		var z: float = z0 + float(iz) * ValleyLayout.CELL
 		var base: float = ValleyLayout.tilt(z) + ValleyLayout.dune(z)
@@ -182,19 +197,24 @@ func _add_mound(cx: float, cz: float, radius: float, amp: float) -> void:
 			var dz: float = z0 + float(iz) * ValleyLayout.CELL - cz
 			var r: float = sqrt(dx * dx + dz * dz)
 			if r < radius:
-				heights[iz * stride + ix] += amp * 0.5 * (1.0 + cos(PI * r / radius))
-				streak[iz * stride + ix] = 1
+				var t: float = 0.5 * (1.0 + cos(PI * r / radius))
+				heights[iz * stride + ix] += amp * t
+				streak[iz * stride + ix] = maxf(streak[iz * stride + ix], 0.8 * t)
 
 
 func _carve_wash() -> void:
 	var stride: int = nx + 1
 	var pts: PackedVector2Array = ValleyLayout.wash_points()
 	var arcs: PackedFloat32Array = ValleyLayout.wash_arcs()
-	var hw: float = ValleyLayout.WASH_HALF_WIDTH
+	var hw_full: float = ValleyLayout.WASH_HALF_WIDTH
 	for i in range(1, pts.size()):
 		var a: Vector2 = pts[i - 1]
 		var b: Vector2 = pts[i]
 		var fade: float = smoothstep(0.0, 8.0, arcs[i])
+		# The channel widens from the bench: half-width (and depth, so the bank slope stays put) taper in.
+		var grow: float = clampf(arcs[i] / wash_taper_length, 0.0, 1.0)
+		var hw: float = lerpf(wash_half_width_start, hw_full, grow)
+		var depth_scale: float = hw / hw_full
 		var mid: Vector2 = (a + b) * 0.5
 		var rx: Vector2i = _vertex_range(mid.x, hw + 3.0, x0, nx)
 		var rz: Vector2i = _vertex_range(mid.y, hw + 3.0, z0, nz)
@@ -204,11 +224,12 @@ func _carve_wash() -> void:
 				var c: Vector2 = Geometry2D.get_closest_point_to_segment(p, a, b)
 				var r: float = p.distance_to(c)
 				if r < hw:
-					var d: float = ValleyLayout.WASH_DEPTH * 0.5 * (1.0 + cos(PI * r / hw)) * fade
+					var profile: float = 0.5 * (1.0 + cos(PI * r / hw))
+					var d: float = ValleyLayout.WASH_DEPTH * depth_scale * profile * fade
 					var vi: int = iz * stride + ix
 					carve[vi] = maxf(carve[vi], d)
-					if r < hw * 0.9 and d > 0.05:
-						streak[vi] = 1
+					var w: float = profile * smoothstep(streak_start_z - 1.0, streak_start_z + 1.0, p.y)
+					streak[vi] = maxf(streak[vi], w)
 
 
 func _apply_pad(pad: Dictionary) -> void:
@@ -235,7 +256,7 @@ func _corner_h(kind: int, x: float, z: float, v: int) -> float:
 	if kind == KIND_FLOOR:
 		return heights[v]
 	if kind == KIND_ROCK:
-		return ValleyLayout.plateau_y(z)
+		return ValleyLayout.plateau_y(z, x)
 	if kind == KIND_LEDGE:
 		return ValleyLayout.ledge_floor_y()
 	if kind == KIND_TALUS:
@@ -292,25 +313,38 @@ func _emit_floor_cells() -> void:
 			var nb: Vector3 = Vector3.UP
 			var nc: Vector3 = Vector3.UP
 			var nd: Vector3 = Vector3.UP
-			var surf: int = Surf.GROUND
+			var cla: Color = color_ground
+			var clb: Color = color_ground
+			var clc: Color = color_ground
+			var cld: Color = color_ground
 			if k == KIND_FLOOR:
 				na = _grid_normal(ix, iz)
 				nb = _grid_normal(ix + 1, iz)
 				nc = _grid_normal(ix + 1, iz + 1)
 				nd = _grid_normal(ix, iz + 1)
-				if streak[v] + streak[v + 1] + streak[v + stride] + streak[v + stride + 1] >= 2:
-					surf = Surf.STREAK
+				cla = color_ground.lerp(color_streak, streak[v])
+				clb = color_ground.lerp(color_streak, streak[v + 1])
+				clc = color_ground.lerp(color_streak, streak[v + stride + 1])
+				cld = color_ground.lerp(color_streak, streak[v + stride])
 			var pa := Vector3(xa, ha, za)
 			var pb := Vector3(xb, hb, za)
 			var pc := Vector3(xb, hc, zb)
 			var pd := Vector3(xa, hd, zb)
-			_add_tri(surf, pa, pb, pc, na, nb, nc)
-			_add_tri(surf, pa, pc, pd, na, nc, nd)
+			_add_tri(Surf.GROUND, pa, pb, pc, na, nb, nc, cla, clb, clc)
+			_add_tri(Surf.GROUND, pa, pc, pd, na, nc, nd, cla, clc, cld)
 
 
-func _add_tri(surf: int, a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3) -> void:
+func _add_tri(
+	surf: int, a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3,
+	ca: Color = Color.TRANSPARENT, cb: Color = Color.TRANSPARENT, cc: Color = Color.TRANSPARENT
+) -> void:
 	var vs: PackedVector3Array = _verts[surf]
 	var ns: PackedVector3Array = _norms[surf]
+	if surf == Surf.GROUND:
+		var cs: PackedColorArray = _cols[surf]
+		cs.push_back(color_ground if ca.a == 0.0 else ca)
+		cs.push_back(color_ground if cb.a == 0.0 else cb)
+		cs.push_back(color_ground if cc.a == 0.0 else cc)
 	vs.push_back(a)
 	vs.push_back(b)
 	vs.push_back(c)
@@ -348,6 +382,19 @@ func _emit_tops() -> void:
 			var jx: int = ix
 			while jx < nx and kinds[iz * nx + jx] == k:
 				jx += 1
+			if k == KIND_ROCK and za < ValleyLayout.HEAD_WOBBLE_END_Z:
+				# Head-wall zone: the top varies with x, so emit one quad per cell (corner heights differ).
+				for cx in range(ix, jx):
+					var qa: float = x0 + float(cx) * cell
+					var qb: float = qa + cell
+					var p0 := Vector3(qa, _corner_h(k, qa, za, 0), za)
+					var p1 := Vector3(qb, _corner_h(k, qb, za, 0), za)
+					var p2 := Vector3(qb, _corner_h(k, qb, zb, 0), zb)
+					var p3 := Vector3(qa, _corner_h(k, qa, zb, 0), zb)
+					_add_tri(Surf.PLATEAU, p0, p1, p2, Vector3.UP, Vector3.UP, Vector3.UP)
+					_add_tri(Surf.PLATEAU, p0, p2, p3, Vector3.UP, Vector3.UP, Vector3.UP)
+				ix = jx
+				continue
 			var xa: float = x0 + float(ix) * cell
 			var xb: float = x0 + float(jx) * cell
 			var ha: float = _corner_h(k, xa, za, 0)

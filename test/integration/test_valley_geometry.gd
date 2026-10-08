@@ -265,6 +265,20 @@ func test_workshop_pad_is_flat_and_20_to_40_m_from_the_head_wall() -> void:
 	assert_almost_eq(site.global_position, Vector3.ZERO, Vector3(0.05, 0.05, 0.05))
 
 
+func test_wash_arc_length_is_the_same_in_layout_and_in_the_path_curve() -> void:
+	var path: Path3D = _valley.get_node("%WashPath") as Path3D
+	assert_almost_eq(path.curve.get_closest_offset(Vector3(2.0, 0.0, 8.0)), 0.0, 1.0, "curve starts at (2, 8)")
+	for s: float in [10.0, 60.0, 120.0, 200.0, 280.0]:
+		var p: Vector2 = ValleyLayout.wash_at(s)
+		assert_almost_eq(float(ValleyLayout.wash_nearest(p)["s"]), s, 0.5, "layout round trip at s=%.0f" % s)
+		var on_curve := Vector3(p.x, terrain_height(p), p.y)
+		assert_almost_eq(path.curve.get_closest_offset(on_curve), s, 1.5, "curve offset at s=%.0f" % s)
+
+
+func terrain_height(p: Vector2) -> float:
+	return _terrain_y(p.x, p.y)
+
+
 func test_workshop_site_faces_down_valley() -> void:
 	var site: Marker3D = _valley.get_node("%WorkshopSite") as Marker3D
 	var forward: Vector3 = -site.global_transform.basis.z
