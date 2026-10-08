@@ -52,7 +52,7 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Top walk speed | 4.5 m/s | 2.5 (heavy) - 7.0 (light) m/s |
 | Accel 0 to top speed | 0.25 s | 0.15 - 0.45 s |
 | Decel to stop | 0.20 s | 0.12 - 0.35 s |
-| Body turn rate (toward camera yaw) | 120 deg/s | 60 - 180 deg/s |
+| Body turn rate (A/D, tank controls) | 120 deg/s, reached in 0.1 s | 60 - 180 deg/s |
 | Strafe speed | 0.75 x top speed | fixed ratio |
 | Step trigger: foot error from rest target | > 0.5 x leg reach | fixed ratio |
 | Step duration | 0.18 s @ top speed, 0.30 s near idle | scales with speed |
@@ -84,19 +84,27 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
 |---|---|---|
 | `move_forward` | W | walking |
 | `move_back` | S | walking |
-| `move_left` | A (strafe) | walking |
-| `move_right` | D (strafe) | walking |
+| `turn_left` | A | walking |
+| `turn_right` | D | walking |
+| `strafe_left` | Q | walking |
+| `strafe_right` | E | walking |
 | `fire` | LMB | walking |
 | `aim` | RMB (zoom to FOV 50, -40 % turn rate) | walking |
-| `interact` | E: enter the workshop when within 4 m. Hold 3 s anywhere: recall to the workshop (stuck recovery; carried scrap drops as a cache, like death) | walking |
+| `interact` | F: enter the workshop when within 4 m. Hold 3 s anywhere: recall to the workshop (stuck recovery; carried scrap drops as a cache, like death) | walking |
 | `zoom_in` / `zoom_out` | mouse wheel | walking |
 | `build_place` | LMB on socket | workshop |
 | `build_remove` | RMB on part | workshop |
 | `build_exit` | Tab | workshop |
 | `pause` | Esc | both |
 
-The mouse moves the camera (yaw and pitch, pitch clamped -10 to 60 deg). The walker body turns toward camera yaw
-at the turn rate, so the legs visibly re-plant during turns. Gamepad is out of scope until M2, but the action names
+**Tank controls:**
+- W/S drive along the body's facing, A/D turn the body at its turn rate, and Q/E crab-strafe.
+- The mouse orbits the camera independently (yaw free, pitch clamped -10 to 60 deg) and aims the turret.
+- The turret can only fire within +/- 150 deg of the body's facing (8.3), so heavy threats behind you mean
+  turning the body. This makes the turn rate a build stat you feel in every fight (Pillar 1).
+- Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
+- The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
+  idle; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
 already allow it.
 
 ## 7. Failure, success, difficulty curve
@@ -126,11 +134,20 @@ already allow it.
 - **Rules:**
   - The chassis defines sockets. M0 medium chassis: 8 leg sockets and 3 top sockets.
   - A part fits only its socket kind (leg or top).
-  - The build is valid when it has 4, 6 or 8 legs placed symmetrically (equal count per side; odd counts are
-    therefore impossible), and total mass <= total leg lift. Leg types may be mixed.
+  - M0: the build is valid when it has 4, 6 or 8 legs placed symmetrically (equal count per side), and total
+    mass <= total leg lift. Leg types may be mixed.
+  - M1: uneven builds are allowed. Rules:
+    - Legs are sold singly at half the pair price.
+    - A build needs at least 2 legs per side and 4-8 legs in total.
+    - imbalance = |lift_left - lift_right| / lift.
+    - top_speed x (1 - 0.5 x imbalance).
+    - spread + 2.0 deg x imbalance.
+    - Idle body roll toward the weak side is 10 deg x imbalance (visible sway).
+    - Gait groups alternate by socket order, and each group keeps the centre of mass inside the support polygon.
+  - M0 code keeps per-leg data with no pair assumption, so the M1 change is rules only.
   - Derived stats are computed only from the part list.
 
-**M0 part catalog.** Legs are sold and placed in mirrored pairs.
+**M0 part catalog.** Legs are sold and placed in mirrored pairs (singly from M1).
 
 | Part | Socket | Mass (kg) | Lift (kg) | Reach (m) | Slope grip | Spread (deg) | Other | Price (scrap) |
 |---|---|---|---|---|---|---|---|---|
@@ -215,6 +232,12 @@ already allow it.
   - Death moves carried scrap into the cache and replaces any older cache.
 - **Prices:** see the 8.1 catalog (40-80 scrap). Starting with 0 banked scrap, the first purchase (a short leg pair
   at 40) lands after 1-2 expeditions. `loop_full` logs the expedition on which it happens.
+- **Blueprints (M1):**
+  - Each zone hides 2-3 blueprints in exploration pockets behind terrain gates.
+  - A blueprint unlocks a part for purchase with scrap; scrap still buys every copy.
+  - A blueprint is banked the moment it is picked up and is never lost on death: exploration is rewarded, while
+    carried scrap stays the stake.
+  - M0 has scrap only, and all M0 parts are unlocked.
 - **Tests:** bank, death and reclaim sequences; a second death destroys the old cache; no scrap duplication.
 
 ### 8.6 Workshop
@@ -322,8 +345,8 @@ already allow it.
    course, with drift metrics.
 2. **Builds feel different enough** (section 4). Spike: the `build_contrast` scenario with A/B metrics, checked
    before any content work.
-3. **Camera-yaw body turning on rough terrain feels mushy.** Fallback: when it does, tank-turn on A/D and strafe
-   on Q/E.
+3. **Tank controls feel clunky with a free camera** (driving one way while looking another). Fallback: the body
+   turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate.
 4. **Toon outline cost** on a 400 m terrain. The outline is built in M1; measure its draw calls there.
    M0 ships the toon ramp without it.
 5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T01.
@@ -339,6 +362,7 @@ already allow it.
 | 2026-10-08 | Failure = shot by drones (M0) / enemy walkers (M1); weapons are socket parts | Klas | Tip-over only, resource timer |
 | 2026-10-08 | Death drops carried scrap as a one-time wreck cache; build kept | Stakes without punishing experiments | Losing a part; no loss |
 | 2026-10-08 | 3rd-person orbit camera, body turns to camera yaw | Legs read; standard shooter control | Top-down, tank controls |
+| 2026-10-08 | Superseded: tank controls (W/S drive, A/D turn, Q/E strafe, free mouse camera and turret aim, turret +/- 150 deg) | Klas: try tank; turn rate becomes a felt build stat in fights | Body turns to camera yaw (kept as fallback at the gate); 360 deg turret; fixed forward guns |
 | 2026-10-08 | Clean sci-fi toon look; refs Borderlands, Robocraft, Kenshi | Klas | Low-poly flat, dieselpunk |
 | 2026-10-08 | Speed range by build 2.5-7 m/s, Scout 4.5 m/s | The build is the feel (Pillar 1) | Fixed heavy, fixed nimble |
 | 2026-10-08 | M0 = walk + build + 1 drone enemy; cut first: enemy walkers, audio/VFX polish | Tests the risk hypothesis and failure state | Walk+build only; combat only |
@@ -348,12 +372,13 @@ already allow it.
 | 2026-10-08 | M0 map gets one 0.8 m ledge pocket (60 scrap) as the session goal | Gives step-up a use and tests "a build opens a place" before M1 | Gates only in M1 |
 | 2026-10-08 | Keep orange player accent; threats must also read in grayscale (luminance wind-up, ring silhouette) | Klas prefers the warm look | Yellow #F5C542 |
 | 2026-10-08 | Ink outline moved from M0 to M1; M0 ships toon ramp, palette, dust puff and contact decal | Keep M0 within two weeks; outline cost is its own spike | Outline in M0 |
+| 2026-10-08 | Uneven leg builds from M1 with an imbalance penalty; M0 stays symmetric | Klas wants uneven builds; M0 tests the gait risk on the simplest case | Strict symmetry forever; uneven in M0 |
+| 2026-10-08 | Two currencies from M1: scrap buys, blueprints unlock; blueprints are in exploration pockets and kept on death | Klas: both scrap and blueprints; exploration pays separately from risk | Scrap only; blueprints dropped by enemy walkers |
 | 2026-10-08 | Input to motion <= 2 physics ticks; drone bolts 25 m/s; turret arc +/- 150 deg; hold-E recall | game-designer critique: start must not slide, speed must matter in combat, stuck recovery | Hitscan drones |
 
 ## 18. Open questions
-- Is the camera-yaw body turn right, or does Klas prefer tank-turn? Decide after the T03/T04 greybox feel gate.
-- Leg symmetry rule: strict equal per side (now) or allow asymmetric builds with a sway penalty in M1?
-- Does scrap stay one currency, or do M1 parts also need blueprints found in the world?
+- Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
+- Blueprints are kept on death (current default). Should they instead be carried like scrap, for more stakes?
 - The economy is estimated, not simulated: about 90 scrap per trip. Check real income in `loop_full` and retune
   prices before M1.
 - Does keeping orange hold up in a colourblind check (playtest-critic with a deuteranopia filter at the M0 review)?

@@ -7,7 +7,7 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 | Id | Name | Acceptance criteria (measurable) | Proof (scenarios / screenshots) | Status |
 |---|---|---|---|---|
 | M0 | Playable loop | 1. Scout walks at 4.5 m/s +/- 0.1, reaching it in 0.25 s +/- 0.05 [5]. 2. Planted foot drift <= 2 cm per step and airborne legs never above the gait limit over 20 s on the 30 deg bumpy course [5, 8.2]. 3. Strider A vs Crawler B: (A - B) / A >= 40 % in top speed and step-up with neither stat clamped, and B's DPS x HP >= 1.8x A's [4, 8.1]. 4. Workshop: place and remove a part, see the stat delta, exit is blocked with a reason while the build is invalid [8.6]. 5. Drone telegraphs >= 0.6 s before every shot and dies in 3 hits; a strafing Scout takes <= 40 % of the damage an idle Scout takes [5, 8.4]. 6. Full loop: collect scrap, bank (full repair), buy a part, socket it, die, wreck cache dropped, reclaim it, with no scrap duplicated. The first purchase happens on expedition 1-2, and the Strider reaches the 0.8 m ledge pocket while the Scout cannot [7, 8.5, 9]. 7. Tier 3 green: 0 log errors, frame p95 <= 16.7 ms, draw calls <= 1000 with 4 drones on screen [13]. 8. At 8 m and pitch -10 to 60 deg, every foot is in frame and >= 12 px tall at 1080p; the drone wind-up reads in grayscale [10]. | Scenarios: `walk_flat`, `gait_course`, `build_contrast`, `workshop_edit`, `drone_fight`, `loop_full`, `perf_4_drones`. Screenshots: `gait_course__midstride`, `gait_course__pitch_low`, `gait_course__pitch_high`, `build_contrast__a_vs_b`, `workshop_edit__stats`, `drone_fight__windup`, `drone_fight__windup_gray`, `loop_full__hud` | planned |
-| M1 | Vertical slice | Defined after the M0 review: 2nd zone and terrain gate, enemy walker sentinel, 5 legs and 5 top parts, footstep audio, final toon shading [9, 14] | tbd | planned |
+| M1 | Vertical slice | Defined after the M0 review: uneven leg builds, blueprints (2-3 per zone), 2nd zone and terrain gate, enemy walker sentinel, 5 legs and 5 top parts, footstep audio, final toon shading [9, 14] | tbd | planned |
 | M2 | Content | 3 zones, all parts, gamepad, menu, save/load [14] | tbd | planned |
 
 ## M0 order
@@ -15,7 +15,7 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 - Then T01, T02 and T05 in parallel. T03 (which owns its own test course) and T04 start after T01 and T02
   merge.
 - **Gate:** after T03 and T04, run `gait_course` and `build_contrast` plus a playtest-critic pass, and Klas
-  feels the body turn. If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
+  plays the tank controls (fallback: body turns to camera yaw). If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
 - After the gate: T06, T07, T08 and T09 (max 3 devs at once). Then T11. T12 integrates last, including the HUD.
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
@@ -24,7 +24,7 @@ Status: ready, in-progress, review-passed, done.
 
 | Id | Title | Owned paths | Tier | Status | Branch |
 |---|---|---|---|---|---|
-| T00 | Input map + collision layers in project.godot (lead) | project.godot | 2 | | |
+| T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot | 2 | | |
 | T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 1 | | |
 | T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 1 | | |
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scenes/walker/, scenes/test/gait_course.tscn, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json | 3 | | |
