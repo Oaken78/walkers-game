@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "world_rock_far"
+albedo_color = Color(0.64706, 0.54510, 0.47059, 1)
+roughness = 1.0

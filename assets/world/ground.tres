@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "world_ground"
+albedo_color = Color(0.79216, 0.69804, 0.58039, 1)
+roughness = 1.0

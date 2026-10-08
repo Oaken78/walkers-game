@@ -1,0 +1,25 @@
+{
+  "scene": "res://scenes/world/valley_preview.tscn",
+  "seed": 1234,
+  "timeout_frames": 3600,
+  "steps": [
+    {"wait_frames": 5},
+    {"assert_node": "Valley", "exists": true},
+    {"assert_node": "Valley/WorkshopSite", "exists": true},
+    {"call": {"node": ".", "method": "show_view", "args": ["from_workshop"]}},
+    {"wait_frames": 10},
+    {"screenshot": "from_workshop"},
+    {"metrics": {"name": "valley_from_workshop", "frames": 300}},
+    {"call": {"node": ".", "method": "show_view", "args": ["top_down"]}},
+    {"wait_frames": 10},
+    {"screenshot": "top_down"},
+    {"call": {"node": ".", "method": "show_view", "args": ["ledge_pocket"]}},
+    {"wait_frames": 10},
+    {"screenshot": "ledge_pocket"},
+    {"call": {"node": ".", "method": "show_view", "args": ["talus_pocket"]}},
+    {"wait_frames": 10},
+    {"screenshot": "talus_pocket"},
+    {"call": {"node": ".", "method": "show_view", "args": ["from_workshop"]}},
+    {"assert_no_errors": true}
+  ]
+}
