@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/drone.gd" id="1_drone"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="2_hurtbox"]
+
+[sub_resource type="TorusMesh" id="ring_mesh"]
+inner_radius = 0.4
+outer_radius = 0.6
+rings = 24
+ring_segments = 8
+
+[sub_resource type="SphereShape3D" id="hurt_shape"]
+radius = 0.6
+
+[node name="Drone" type="Node3D"]
+script = ExtResource("1_drone")
+
+[node name="Body" type="Node3D" parent="."]
+
+[node name="Ring" type="MeshInstance3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+mesh = SubResource("ring_mesh")
+
+[node name="Hurtbox" type="Area3D" parent="Body"]
+script = ExtResource("2_hurtbox")
+
+[node name="Shape" type="CollisionShape3D" parent="Body/Hurtbox"]
+shape = SubResource("hurt_shape")

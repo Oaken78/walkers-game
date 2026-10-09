@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/test/drone_fight.gd" id="1_fight"]
+[ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="2_walker"]
+[ext_resource type="PackedScene" path="res://scenes/camera/orbit_camera.tscn" id="3_orbit"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/weapon_rig.tscn" id="4_rig"]
+[ext_resource type="Script" path="res://scripts/combat/player_hurtbox.gd" id="5_hurtbox"]
+[ext_resource type="Script" path="res://ui/aim/aim_marks.gd" id="6_marks"]
+[ext_resource type="Script" path="res://scripts/economy/collector.gd" id="7_collector"]
+[ext_resource type="Script" path="res://scripts/enemies/drone_field.gd" id="8_field"]
+
+[node name="DroneFight" type="Node3D"]
+script = ExtResource("1_fight")
+
+[node name="Walker" parent="." instance=ExtResource("2_walker")]
+unique_name_in_owner = true
+
+[node name="OrbitCamera" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_orbit")]
+unique_name_in_owner = true
+target = NodePath("../Walker")
+capture_mouse = false
+
+[node name="WeaponRig" parent="." node_paths=PackedStringArray("walker", "orbit") instance=ExtResource("4_rig")]
+unique_name_in_owner = true
+walker = NodePath("../Walker")
+orbit = NodePath("../OrbitCamera")
+
+[node name="PlayerHurtbox" type="Area3D" parent="." node_paths=PackedStringArray("walker")]
+unique_name_in_owner = true
+script = ExtResource("5_hurtbox")
+walker = NodePath("../Walker")
+
+[node name="Collector" type="Area3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("7_collector")
+
+[node name="DroneField" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("8_field")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="AimMarks" type="Control" parent="Hud" node_paths=PackedStringArray("rig", "orbit")]
+unique_name_in_owner = true
+mouse_filter = 2
+script = ExtResource("6_marks")
+rig = NodePath("../../WeaponRig")
+orbit = NodePath("../../OrbitCamera")
