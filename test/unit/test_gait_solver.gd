@@ -17,6 +17,8 @@ class FakeWalker:
 	var started: PackedInt32Array = PackedInt32Array()
 	var planted: PackedInt32Array = PackedInt32Array()
 	var max_airborne: int = 0
+	var pending_lifts: Array[int] = []
+	var pending_group: int = 0
 
 	func _init(leg_count: int) -> void:
 		solver = GaitSolver.new(sides_for(leg_count), _reaches(leg_count))
@@ -49,6 +51,8 @@ class FakeWalker:
 
 	func _on_started(leg: int) -> void:
 		started[leg] += 1
+		pending_lifts.append(leg)
+		pending_group = solver.active_group()
 
 	func _on_planted(leg: int) -> void:
 		planted[leg] += 1
@@ -412,6 +416,74 @@ func test_start_kick_survives_a_blocked_first_group() -> void:
 	assert_eq(w.solver.airborne_count(), 0)
 	w.solver.update(DT, true, 1.0, w.errors, w.valid)
 	assert_eq(w.solver.state_of(0), SWINGING)
+
+
+func _assert_blocked_leg_does_not_starve(leg_count: int) -> void:
+	var w := _walker(leg_count)
+	w.speed = 4.5
+	for t in 100:
+		w.tick(true, 1.0)
+	w.valid[0] = false
+	for t in 40:
+		w.tick(true, 1.0)
+	w.valid[0] = true
+	var before := _steps_snapshot(w)
+	for t in 600:
+		w.tick(true, 1.0)
+	for i in leg_count:
+		assert_gte(w.started[i] - before[i], 10, "leg %d of %d" % [i, leg_count])
+	assert_lte(w.max_airborne, w.solver.gait_limit())
+
+
+func test_one_blocked_leg_does_not_starve_the_other_tripod() -> void:
+	_assert_blocked_leg_does_not_starve(6)
+	_assert_blocked_leg_does_not_starve(8)
+
+
+func test_each_leg_steps_at_most_once_per_turn() -> void:
+	for n in [6, 8]:
+		var w := _walker(n)
+		w.speed = 4.5
+		var lifts: Dictionary = {}
+		var turn_id: int = 0
+		for t in 600:
+			var before_group: int = w.solver.active_group()
+			w.valid[0] = t < 100 or t >= 140
+			w.pending_lifts.clear()
+			w.tick(true, 1.0)
+			if w.solver.active_group() != before_group:
+				turn_id += 1
+			for leg in w.pending_lifts:
+				if w.solver.group_of(leg) != w.pending_group:
+					continue
+				var key: int = turn_id * 100 + leg
+				lifts[key] = lifts.get(key, 0) + 1
+		for key in lifts:
+			assert_eq(lifts[key], 1, "leg %d lifted twice in turn %d" % [key % 100, key / 100])
+
+
+func test_out_of_turn_hover_lift_does_not_disarm_the_start_kick() -> void:
+	var w := _walker(4)
+	w.solver.step_time_idle = 0.3
+	w.solver.step_time_top = 0.3
+	w.errors[3] = 0.6
+	w.valid[3] = false
+	for t in 40:
+		w.solver.update(DT, false, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(3), HOVERING)
+	for t in 8:
+		if w.solver.active_group() == 0:
+			break
+		w.solver.update(DT, false, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.active_group(), 0)
+	w.valid[3] = true
+	w.errors[3] = 0.0
+	w.solver.update(DT, true, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(3), SWINGING)
+	assert_eq(w.solver.state_of(1), PLANTED)
+	for t in 25:
+		w.solver.update(DT, true, 0.0, w.errors, w.valid)
+	assert_eq(w.solver.state_of(1), SWINGING)
 
 
 func test_reset_plants_every_leg() -> void:

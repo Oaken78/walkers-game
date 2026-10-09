@@ -48,6 +48,10 @@ static func solve(
 	var height: float = sqrt(maxf(upper * upper - along * along, 0.0))
 	var bend: Vector3 = _bend_direction(dir, pole)
 	result.knee = hip + dir * along + bend * height
+	if upper <= 0.000001:
+		result.knee = hip
+	elif lower <= 0.000001:
+		result.knee = result.foot
 	return result
 
 

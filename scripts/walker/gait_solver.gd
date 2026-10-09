@@ -34,6 +34,8 @@ var _durations: PackedFloat32Array = PackedFloat32Array()
 var _blocked_time: PackedFloat32Array = PackedFloat32Array()
 var _blocked: PackedByteArray = PackedByteArray()
 var _wants: PackedByteArray = PackedByteArray()
+## 1 once a leg has lifted during its own group's current turn.
+var _done: PackedByteArray = PackedByteArray()
 
 
 func _init(sides: PackedInt32Array, reaches: PackedFloat32Array) -> void:
@@ -69,6 +71,7 @@ func _init(sides: PackedInt32Array, reaches: PackedFloat32Array) -> void:
 	_blocked_time.resize(_count)
 	_blocked.resize(_count)
 	_wants.resize(_count)
+	_done.resize(_count)
 	reset()
 
 
@@ -83,6 +86,7 @@ func reset() -> void:
 		_blocked_time[i] = 0.0
 		_blocked[i] = 0
 		_wants[i] = 0
+		_done[i] = 0
 
 
 func update(
@@ -143,6 +147,9 @@ func update(
 	# 4. Turn.
 	if not _group_holds_turn(targets_valid):
 		_active_group = (_active_group + 1) % _group_count
+		for i in _count:
+			if _groups[i] == _active_group:
+				_done[i] = 0
 
 	# 6. Lift, largest error first, only into free airborne slots (hovering legs need none).
 	while true:
@@ -152,7 +159,11 @@ func update(
 				continue
 			# A hovering leg lifts whichever group is active and needs no free slot.
 			if _states[i] != LegState.HOVERING:
-				if _groups[i] != _active_group or airborne_count() >= _gait_limit:
+				if (
+					_groups[i] != _active_group
+					or _done[i] != 0
+					or airborne_count() >= _gait_limit
+				):
 					continue
 			if best < 0 or foot_errors[i] > foot_errors[best]:
 				best = i
@@ -163,7 +174,10 @@ func update(
 		_durations[best] = step_duration(speed_ratio)
 		_blocked_time[best] = 0.0
 		_wants[best] = 0
-		_kick_armed = false
+		if _groups[best] == _active_group:
+			# Once per turn; a hovering leg lifting out of turn neither finishes a turn nor ends the kick.
+			_done[best] = 1
+			_kick_armed = false
 		step_started.emit(best)
 
 
@@ -244,7 +258,12 @@ func _group_holds_turn(targets_valid: Array[bool]) -> bool:
 		if _states[i] == LegState.SWINGING:
 			if _progress[i] < handover_progress:
 				return true
-		elif _states[i] == LegState.PLANTED and _wants[i] != 0 and targets_valid[i]:
+		elif (
+			_states[i] == LegState.PLANTED
+			and _done[i] == 0
+			and _wants[i] != 0
+			and targets_valid[i]
+		):
 			# Wants to lift: either lifts this tick or is held by the airborne limit.
 			# HOVERING and blocked legs never hold the turn.
 			return true
