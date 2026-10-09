@@ -89,8 +89,8 @@ Status: ready, in-progress, review-passed, done.
   scripts/camera/ that T06 owns; the risk 9 spike is a shot at pitch -20 at a target 12 m out and 6 m up.
 - T07: drones orbit at <= 6 m/s and hold still to shoot (brake within 0.1 s, hold 0.9 s, resume over 0.3 s; wind-ups
   in one encounter >= 0.4 s apart; bolt aimed at the chassis with no lead; GDD 8.4). `drone_fight` carries the risk 8
-  spike as GDD 16 states it (no-lead tracker, >= 80 % of hold shots, kill within two holds; criterion 5). T06 runs
-  the same spike first against a stand-in target with the same cycle.
+  spike as GDD 16 states it (no-lead tracker, >= 80 % of hold shots, kill within two holds; criterion 5). Keep T07
+  lean (Klas, 2026-10-09: not much effort on the drone design now): build GDD 8.4 as written, no new design rounds.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
