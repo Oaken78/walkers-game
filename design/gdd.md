@@ -55,16 +55,19 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Body turn rate (A/D, tank controls) | 120 deg/s, reached in 0.1 s | 60 - 180 deg/s |
 | Strafe speed | 0.75 x top speed | fixed ratio |
 | Step trigger: foot error from rest target | > 0.5 x leg reach | fixed ratio |
-| Step duration | 0.18 s @ top speed, 0.30 s near idle | scales with speed |
+| Step duration | 0.18 s @ top speed, 0.30 s near idle, x sqrt(shortest mounted leg reach / 1.0 m) (Strider about 0.23 s; Crawler and any build with a short pair about 0.14 s); 4-leg wave steps shorter, tuned at T03 | scales with speed and the shortest leg |
+| Felt change per leg purchase | >= 15 % in top speed, turn rate or step rate (telemetry `steps_per_s`); armor and top parts are judged in the first fight instead | Pillar 1 check |
 | Foot lift height | 0.25 x leg reach | fixed ratio |
 | Planted foot drift (sliding) | <= 2 cm per step | hard limit (Pillar 2) |
 | Legs airborne at once | <= half (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
-| Body height above foot plane | 0.6 x leg reach, spring settle 0.15 s | |
-| Body tilt follows terrain | <= 25 deg, smoothing 0.12 s | |
+| Body height above foot plane | 0.6 x mean leg reach (chassis underside), spring settle 0.15 s | |
+| Leg stance (arched legs) | Each hip 0.5 x its own leg reach above the foot plane, on a strut under the chassis side; rest foot 0.5 x own reach out from the hip; bones 0.46 + 0.69 x reach (1.15 x reach, so the leg never straightens); bend plane vertical (pole up); planted feet stay within 0.99 x reach | same ratios for every leg, in any mix |
+| Knee height | Above the hip by >= 0.15 x reach at rest (geometry 0.19), >= 0.10 x reach within 0.5 x reach fore-aft of rest (0.14), never below the hip inside 0.99 x reach (0.06); upper bone >= 15 deg above horizontal; shin 0-15 deg outward of vertical; fore-aft room before the 0.99 x reach limit >= 0.65 x reach | Crawler knee 0.41 m, Scout 0.69 m, Strider 1.10 m |
+| Body tilt follows terrain | <= the build's slope grip (`max_slope`: Strider 30, Scout 35, Crawler 45 deg), smoothing 0.12 s | |
 | Body bob amplitude while walking | 3-5 cm | |
 | Max walkable slope | 35 deg | 25 - 45 deg |
-| Max step-up height | 0.6 x leg reach (Scout: 0.6 m) | 0.35 - 1.0 m |
-| Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m | |
+| Max step-up height | 0.6 x leg reach (Scout: 0.6 m); step-down at least as far: feet reach about 0.35 x reach below the foot plane unaided, and the body lowers up to 0.25 x reach toward a lower foothold first | 0.35 - 1.0 m |
+| Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
 | Pulse cannon | 4 shots/s, 15 dmg, projectile 60 m/s, spread 1.0 deg x leg spread factor | 0.5 - 1.5 deg |
@@ -104,7 +107,7 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
   turning the body. This makes the turn rate a build stat you feel in every fight (Pillar 1).
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
-  idle; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
+  idle and pauses while `aim` is held; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
 already allow it.
 
 ## 7. Failure, success, difficulty curve
@@ -201,11 +204,15 @@ already allow it.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
   foot of the active group is planted, or 85 % into the step, but a leg never lifts while that would put more legs
   in the air than the section 5 limit.
-- **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5. When the target is
-  higher than step_up or steeper than the max slope, it is invalid, the leg blocks, and the body stops on that
-  side.
-- **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing outward-up, and stretch clamped
-  at 99 % of reach. There is no engine IK node, so the solve is unit-testable.
+- **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5 (while rule 5 holds the
+  body, its actual velocity, so a held body does not lengthen its steps). A target more than step_up above the
+  leg's current foot, or steeper than the max slope, is invalid. The leg then takes the farthest valid foothold
+  between its current foot and the target, a shorter step. Only when none is valid does the leg block, and the
+  body stops on that side. On a steep slope inside its grip a walker takes short steps and slows; a vertical face
+  taller than step_up still blocks.
+- **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing up (bend plane vertical), and stretch
+  clamped at 99 % of the bone length. The bones total 1.15 x leg reach, so at the 0.99 x reach planted-foot limit
+  (section 5) the knee is still bent. There is no engine IK node, so the solve is unit-testable.
 - **Edge cases:** a foot target that is unreachable for more than 0.5 s makes the leg hover at its rest pose.
   Moving the walker by an external push (M1) replants every foot within 0.3 s.
 - **Tests:** IK end effector within 1 mm of the target for reachable targets; airborne count never above the
@@ -401,7 +408,7 @@ World palette, from the 50 % style mix (look-test mockup):
 - **M0 Playable loop (<= 2 weeks of agent work):** walk, build and fight on one map. Acceptance criteria are in
   `design/plan.md`.
 - **M1 Vertical slice:** second zone behind a terrain gate, enemy walker sentinel, 5 legs and 5 top parts, real
-  footstep audio, toon and outline shading at final quality.
+  footstep audio, toon and outline shading at final quality, and a flatter chassis so the arched knees peak above it.
 - **M2 Content:** 3 zones, all parts, gamepad, main menu, save/load.
 
 ## 15. Out of scope
@@ -461,6 +468,18 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-08 | Clarification: the 4-5 leg wave gait lifts one leg at a time (one leg per group); only 6+ legs use two tripod groups | 8.2 said "two alternating groups" for every gait, but section 5 caps 4 legs at 1 airborne; two groups of 2 would break it | Two diagonal pairs (trot) for 4 legs |
 | 2026-10-08 | Clarification: the airborne limit beats the 85 % handover; the next group gets the turn at 85 % but its legs lift only within the limit | A literal 85 % overlap puts all 6 legs of a tripod in the air, against Pillar 2 and M0 criterion 2 | Overlapping swings at 85 % |
 | 2026-10-08 | Clarification: medium legs (catalog price "start") are not for sale in M0; the player has only the starting 6 | Klas confirmed; the shop sells only short and long legs, so every leg purchase changes the feel | Medium legs buyable to reach 8 |
+| 2026-10-09 | Camera: rock beats the 2 m arm minimum; with rock closer than 2 m the arm goes shorter | Klas, from the T04 reviews: a camera inside rock reads as a bug, a close-up of your own walker reads as intentional | Keep 2 m always and accept seeing inside rock |
+| 2026-10-09 | Recentring pauses while `aim` is held; its 1.5 s timer restarts on release | Klas, from the T04 playtest review: strafing while waiting out a drone wind-up would swing the view off the drone | Also pause after firing (needs T06); no pause |
+| 2026-10-09 | Accepted for M0: one near foot may leave the frame at aim FOV 50; revisit at the T03/T04 gate | Klas: aiming is about the target, and every foot reads at FOV 70 | Raise or pull back the camera while aiming |
+| 2026-10-09 | Walkers descend what they climb: step-down >= step-up; the body lowers toward a lower foothold before the feet reach for it | Klas, from the T03 code review: with a step-down of about 0.3 x reach a Strider is trapped in the 0.8 m ledge pocket and a Crawler on any 0.3 m boulder | Walk off the edge and drop; keep the limit and give ledges ramps |
+| 2026-10-09 | Step duration scales with the build's mean leg reach: x sqrt(reach / 1.0 m) | Klas, from the T03 playtest review: every build stepped on the same beat; long legs should lope and short legs scuttle (Pillar 1) | One 0.18 s step for every build |
+| 2026-10-09 | The 4-leg wave steps faster, and the 4-leg gait_factor is then set from the measured sustained speed, so the stat panel tells the truth | Klas, from the T03 playtest review: the quad covered about 55 % of its 3.1 m/s stat and lurched at nearly every step | Keep the lurch and only fix the stat; trot (two diagonal pairs) |
+| 2026-10-09 | Arched legs: each hip 0.5 x its own reach above the foot plane on a strut (the chassis underside stays at 0.6 x mean reach), rest foot 0.5 x reach out, bones 1.15 x reach split 0.46/0.69, pole up. Knee +0.19 x reach above the hip at rest, +0.14 at stride end | Klas, from the game-designer's proposal: the playtest-critic saw the legs read as a table or a crab, and a 0.55 x reach shin can never lift the knee above a 0.6 x reach hip (Pillar 2). Keeps body height, step-up, camera and all 8.1 stats. Per-leg hip height also lets short legs on a medium body reach the ground (today about 0.92 x their reach at rest, so rule 5 holds the body) | Body down to 0.4 x reach with bones = reach (knee below the hip at the reach limit; the Strider loses height; step-up breaks); body 0.6 with bones 1.3 x reach (stride room -6 %, shin leans in; a short pair on a medium body cannot stand); pole change alone (<= 0.005 x reach) |
+| 2026-10-09 | Amends the cadence row: step duration scales with the shortest mounted leg, x sqrt(shortest reach / 1.0 m); builds with one leg type are unchanged | Klas, from the game-designer's first-purchase check: a short pair on the Scout moved every felt stat by < 10 % (speed -2/+7 %, cadence -7/-5 %); now it steps 29 % more often. The gait must cycle as fast as its shortest leg's stride room allows, or rule 5 holds the body | Mean reach (a pair is diluted to 1/3); per-leg swing time (only a 2-3 tick flam); short-leg lift 110 -> 90 (still < 11 %, Crawler 2.95 m/s) |
+| 2026-10-09 | Pillar 1 bar: a leg purchase moves top speed, turn rate or step rate by >= 15 %; armor and top parts are judged in the first fight (45-75 s out) | Klas: the pillar says "moves and fights"; armor (+40 % HP) and a 2nd cannon (DPS x2) change walking by only about 10 % | Every part passes the 15 % walk bar (needs heavier mass costs); no numeric bar |
+| 2026-10-09 | A flatter chassis, so the knees peak above it as in the nimble-walker reference, waits for the M1 art pass; M0 keeps the greybox box | Klas: with arched legs the knees already read in greybox (Scout knee 0.69 m beside a 0.65-0.97 m chassis) | Flatten the greybox chassis in T03 now |
+| 2026-10-09 | An invalid foot target (too high or too steep) makes the leg take the farthest valid foothold toward it, a shorter step; the leg blocks only when none is valid. Step-up is measured from the leg's current foot | Lead, from the T03 round-2 code review: full-length steps (about 0.55 m) rise about 0.43 m on 38 deg ground, past the Crawler's 0.36 m step-up, so it stalled at the foot of the slope its 45 deg grip is meant to climb (9.1 talus pocket). Vertical faces still block, and the slope check still stops the Scout and Strider | Measure step-up from the planted-foot plane (all feet are still on flat ground at the slope's foot, so the entry stays blocked, and a raised plane lets a foot accept a deck above step_up) |
+| 2026-10-09 | Body tilt follows the terrain up to the build's slope grip (`max_slope`, the lowest among its legs), not a fixed 25 deg | Klas, from the T03 round-2 code review: at 25 deg on the 40 deg talus the Crawler's nose sits about 5 cm off the slope with its collider in it, so its only map niche fails. Tilting as far as it grips keeps the chassis parallel to any slope it can walk, and shows grip on the body. The camera does not pitch with the body | One 45 deg cap for every build (a Scout or Strider on uneven footholds could tilt past its own grip); keep 25 deg and give the Crawler a different niche |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
