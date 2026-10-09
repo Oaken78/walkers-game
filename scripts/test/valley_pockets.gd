@@ -18,6 +18,8 @@ var pocket: String = "ledge"
 ## Running maxima since the last spawn: planted foot rise above the apron, body root rise over its nominal height.
 var foot_rise_max: float = -INF
 var root_rise_max: float = -INF
+## The lowest visible-sight-line count at the last log_foot_vis (chassis and terrain only).
+var min_foot_vis: int = 5
 
 var _nominal_root_y: float = 0.0
 var _tick: int = 0
@@ -26,6 +28,7 @@ var _mark: Vector3 = Vector3.ZERO
 @onready var _walker: WalkerBody = %Walker
 @onready var _telemetry: WalkerTelemetry = %Telemetry
 @onready var _valley: Valley = $Valley
+@onready var _orbit: OrbitCamera = $OrbitCamera
 
 ## True when the whole body stands on the ledge pocket floor (inside the alcove, at the ledge height).
 var on_ledge_floor: bool:
@@ -54,6 +57,7 @@ var moved_since_mark: float:
 
 func _ready() -> void:
 	process_physics_priority = 50
+	_orbit.capture_mouse = false
 	_telemetry.observe(_walker)
 
 
@@ -99,6 +103,51 @@ func spawn_at(which: String) -> void:
 	root_rise_max = -INF
 	_walker.teleport(Transform3D(Basis(Vector3.UP, yaw), Vector3(x, y, entrance.y)))
 	mark()
+
+
+## Orbit camera behind the walker at a pitch (degrees) and distance (m), as the T14 gate rig shots use.
+func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0) -> void:
+	_orbit.camera().make_current()
+	_orbit.distance = distance
+	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), pitch_deg)
+	_walker.reset_physics_interpolation()
+	_orbit.snap()
+
+
+## Per pad: how many of 5 sight lines (top centre + 4 top corners) from the orbit camera reach it, against the world
+## (layer 1) and the chassis box ONLY (same method and caveat as GaitCourse.log_foot_vis: legs, hip balls and pad side
+## faces are not tested). `FOOTVIS(chassis+terrain) <tag> leg=i visible=k/5`.
+func log_foot_vis(tag: String) -> void:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var eye: Vector3 = _orbit.camera().global_position
+	var basis := Basis(Vector3.UP, _walker.yaw_radians())
+	var half := WalkerLeg.PAD_SIZE * 0.5
+	var top: float = WalkerLeg.PAD_SIZE.y
+	var offsets: Array[Vector3] = [
+		Vector3(0.0, top, 0.0),
+		Vector3(-half.x, top, -half.z),
+		Vector3(half.x, top, -half.z),
+		Vector3(-half.x, top, half.z),
+		Vector3(half.x, top, half.z)
+	]
+	var chassis: MeshInstance3D = _walker.get_node("Chassis")
+	var box: BoxMesh = chassis.mesh as BoxMesh
+	var to_local: Transform3D = chassis.global_transform.affine_inverse()
+	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
+	min_foot_vis = 5
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		var seen: int = 0
+		for offset in offsets:
+			var point: Vector3 = foot + basis * offset
+			var end: Vector3 = point - (point - eye).normalized() * 0.02
+			var blocked: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, end, 1)).is_empty()
+			if not blocked and box != null:
+				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
+			if not blocked:
+				seen += 1
+		min_foot_vis = mini(min_foot_vis, seen)
+		print("FOOTVIS(chassis+terrain) %s leg=%d visible=%d/5" % [tag, i, seen])
 
 
 func mark() -> void:

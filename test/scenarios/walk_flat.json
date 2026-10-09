@@ -171,6 +171,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.49
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -325,6 +333,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 1.34
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -374,6 +390,14 @@
     "args": [
      "walk_flat stop"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.252
    }
   },
   {
@@ -515,6 +539,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.49
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -594,6 +626,14 @@
     "args": [
      "walk_flat aim turn"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.017
    }
   },
   {
@@ -722,6 +762,14 @@
     "args": [
      "walk_flat strafe"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.49
    }
   },
   {
@@ -878,6 +926,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.49
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -958,6 +1014,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.428
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -1008,6 +1072,14 @@
     "args": [
      "walk_flat camera_yaw 0.5 deg nudge"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.428
    }
   },
   {
@@ -1104,6 +1176,14 @@
     "args": [
      "walk_flat scout_short_pair flat 10s sustained (stat top 4.423)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.086
    }
   },
   {
@@ -1302,6 +1382,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.114
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -1458,6 +1546,14 @@
     "args": [
      "walk_flat scout crosses the 29 deg patch (offset 0.00, input 100 %)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.0
    }
   },
   {
@@ -1632,6 +1728,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.343
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -1796,6 +1900,14 @@
     "args": [
      "walk_flat crawler crosses the 29 deg patch (offset 0.00, input 100 %)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.2
    }
   },
   {
@@ -1970,6 +2082,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.332
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -2139,6 +2259,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.268
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -2293,6 +2421,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.332
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -2399,6 +2535,14 @@
     "args": [
      "walk_flat quad recovered from the 0.8 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.208
    }
   },
   {
@@ -2514,6 +2658,14 @@
     "args": [
      "walk_flat strider through the boulder field"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.319
    }
   },
   {
@@ -2678,6 +2830,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.159
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -2816,6 +2976,14 @@
     "args": [
      "walk_flat strider over the 0.8 m vertical block"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.125
    }
   },
   {

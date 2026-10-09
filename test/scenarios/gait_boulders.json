@@ -108,6 +108,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.319
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "log_frames",
@@ -138,6 +146,38 @@
     "prop": "tick_max_ms",
     "op": "<=",
     "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_shape_queries_per_tick",
+    "op": "<=",
+    "value": 120
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_rays_cast_per_tick",
+    "op": "<=",
+    "value": 275
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_tilt_step_deg",
+    "op": "<=",
+    "value": 3.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
    }
   },
   {
@@ -250,6 +290,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.356
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "log_frames",
@@ -280,6 +328,38 @@
     "prop": "tick_max_ms",
     "op": "<=",
     "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_shape_queries_per_tick",
+    "op": "<=",
+    "value": 120
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_rays_cast_per_tick",
+    "op": "<=",
+    "value": 285
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_tilt_step_deg",
+    "op": "<=",
+    "value": 3.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
    }
   },
   {
@@ -392,6 +472,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.202
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "log_frames",
@@ -426,11 +514,155 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_shape_queries_per_tick",
+    "op": "<=",
+    "value": 150
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_rays_cast_per_tick",
+    "op": "<=",
+    "value": 325
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_tilt_step_deg",
+    "op": "<=",
+    "value": 3.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "frame_max_ms",
     "op": "<=",
     "value": 16.7
    }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "boulders"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     true,
+     7.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_stall_freeze",
+    "args": [
+     0.15
+    ]
+   }
+  },
+  {
+   "wait_frames": 400
+  },
+  {
+   "screenshot": "crawler_boulder_stall"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_boulders crawler_boulder_stall"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
   },
   {
    "assert_no_errors": true

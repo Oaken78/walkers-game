@@ -65,6 +65,8 @@ var max_resolve_pitch_deg: float = 0.0
 var stall_exempt: bool = false
 ## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
 var min_pad_gap_m: float = INF
+## `min_pad_gap_m` as it stood at the last report() (an assert one frame later would see another tick).
+var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
 var max_test_motions_per_tick: int = 0
 var max_shape_queries_per_tick: int = 0
@@ -215,6 +217,7 @@ var tick_max_ms: float:
 
 
 func report(label: String = "") -> void:
+	pad_gap_at_report_m = minf(min_pad_gap_m, 9.0)
 	var data: Dictionary = {
 		"label": label,
 		"legs": walker.leg_count() if walker != null else 0,

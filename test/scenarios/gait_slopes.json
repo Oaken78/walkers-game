@@ -83,6 +83,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.335
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -234,6 +242,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.335
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -359,6 +375,14 @@
     "args": [
      "gait_slopes strider blocked at the talus"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.374
    }
   },
   {
@@ -510,6 +534,14 @@
     "args": [
      "gait_slopes strider recovered from the talus (back off, turn, walk)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.363
    }
   },
   {
@@ -668,6 +700,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.306
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -753,6 +793,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.097
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 2.0
@@ -830,6 +878,14 @@
     "args": [
      "gait_slopes scout along the swell crest into the 1.05 m block face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.226
    }
   },
   {

@@ -40,6 +40,16 @@
   {
    "call": {
     "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_forward",
@@ -76,6 +86,14 @@
     "args": [
      "gait_slide scout at the talus toe, 30 deg to the face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.335
    }
   },
   {
@@ -156,6 +174,44 @@
     "prop": "tick_max_ms",
     "op": "<=",
     "value": 8.0
+   }
+  },
+  {
+   "screenshot": "scout_slide_30_behind"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_slide scout_slide_30_behind"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "screenshot": "scout_slide_30_abeam"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_slide scout_slide_30_abeam"
+    ]
    }
   },
   {
@@ -241,6 +297,14 @@
     "args": [
      "gait_slide scout at the talus toe, 60 deg to the face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.279
    }
   },
   {
@@ -410,6 +474,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.7
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "moved_since_mark",
     "op": ">=",
@@ -571,6 +643,14 @@
     "args": [
      "gait_slide strider at the talus toe, 60 deg to the face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.7
    }
   },
   {

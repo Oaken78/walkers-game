@@ -85,6 +85,7 @@ const SLIDE_STANDOFF: float = 1.0
 const RESOLVE_PASSES: int = 3
 ## A spawn resolves against the ground up to this many times before it gives up (and warns).
 const PLANT_ATTEMPTS: int = 6
+const PLANT_LIFT_STEPS: Array[int] = [0, 1, 2, 3, 4, 5]
 const PITCH_PASSES: int = 3
 const RAISE_PASSES: int = 3
 const RAISE_MARGIN: float = 0.001
@@ -320,6 +321,11 @@ func foot_position(leg: int) -> Vector3:
 
 func gait() -> GaitSolver:
 	return _solver
+
+
+## Rest foot of leg i in the body frame (the stance the legs return to).
+func rest_local_position(leg: int) -> Vector3:
+	return _legs[leg].rest_local
 
 
 ## Distance from leg i's hip to its rest foot, over that leg's reach (GDD 5: at most 0.75).
@@ -910,6 +916,17 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 		_tilt_n = _r_tilt
 		if placed == 0:
 			break
+	if placed == 2:
+		# A rock under the body that also touches it steeply: lift the body clear of whatever lies under it first
+		# (a wall beside it is left to _depenetrate).
+		for lift in PLANT_LIFT_STEPS:
+			if _overlap_state(Transform3D(pose_transform(Vector3(_origin.x, _base_y, _origin.z), _yaw, _tilt_n))) == 0:
+				break
+			if _contact_rise_need() <= 0.0:
+				break
+			var need: float = _contact_rise_need() + RAISE_MARGIN
+			_origin.y += need
+			_base_y += need
 
 	_height_above_plane = plane.distance_to(_origin)
 	_bob_gain = 0.0

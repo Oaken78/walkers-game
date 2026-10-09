@@ -270,6 +270,8 @@ var _yaw_source: Node3D
 var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
+var _tallest_boulder_radius: float = 0.0
+var _tallest_boulder_top: Vector3 = Vector3.ZERO
 var _track_frames: bool = false
 var _frame_last_usec: int = 0
 var _frame_ms: PackedFloat32Array = PackedFloat32Array()
@@ -516,6 +518,24 @@ func log_moved(label: String) -> void:
 ## Prints whether the walker overlaps the world and how far its tilt is from the ground under it (spawn checks).
 func log_spawn_state(label: String) -> void:
 	print("SPAWNSTATE %s overlapping=%s tilt_vs_ground_deg=%.2f" % [label, str(walker_overlapping), tilt_vs_ground_deg])
+
+
+## Teleports the walker facing the talus toe with its most forward rest foot `depth` m up the face (the face is
+## 40 degrees: the foot stands on over-grip ground, a start the walker must be able to leave).
+func spawn_front_feet_on_toe(depth: float) -> void:
+	var front: float = INF
+	for i in _walker.leg_count():
+		front = minf(front, _walker.rest_local_position(i).z)
+	var foot_z: float = -TALUS_CORNER_ALONG - depth / tan(deg_to_rad(ValleyLayout.TALUS_DEG))
+	spawn_at(LANE_TALUS, foot_z - front - SPAWN_Z)
+
+
+## Teleports the walker onto the crest of the tallest boulder (its feet and body start on the rock).
+func spawn_on_boulder_crest() -> void:
+	_lane = "boulders"
+	_tick = 0
+	_walker.teleport(Transform3D(Basis.IDENTITY, _tallest_boulder_top + Vector3(0.0, 1.0, 0.0)))
+	mark()
 
 
 func mark() -> void:
@@ -1365,6 +1385,9 @@ func _build_boulders() -> void:
 			continue
 		placed += 1
 		var base: float = _terrain_height(lx, along)
+		if radius > _tallest_boulder_radius:
+			_tallest_boulder_radius = radius
+			_tallest_boulder_top = Vector3(LANE_X[LANE_BUMPS] + lx, base + radius * 1.5, -along)
 		var body := StaticBody3D.new()
 		body.collision_layer = 1
 		body.collision_mask = 0
