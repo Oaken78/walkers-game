@@ -139,6 +139,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "edge_margin_m",
     "op": ">=",
@@ -393,6 +401,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "edge_margin_m",
     "op": ">=",
@@ -497,6 +513,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -570,6 +594,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -710,6 +742,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -885,6 +925,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "edge_margin_m",
     "op": ">=",
@@ -1054,6 +1102,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -1366,6 +1422,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {

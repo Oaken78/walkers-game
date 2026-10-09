@@ -33,7 +33,7 @@ const PATCH_A_DEG: float = 29.0
 ## The talus lane copies ValleyLayout.talus_y: flat apron, sharp corner, 40 degrees for 4.9 m, sharp edge, flat shelf.
 const TALUS_CORNER_ALONG: float = 14.0
 const TALUS_LENGTH: float = 32.0
-const TALUS_HALF_WIDTH: float = 6.0
+const TALUS_HALF_WIDTH: float = (ValleyLayout.TALUS_Z1 - ValleyLayout.TALUS_Z0) * 0.5
 const PATCH_FLANK: float = 2.4
 ## Radius of the rounded crest of the steep patches (m).
 const PATCH_CREST_ROUNDING: float = 0.6
@@ -225,7 +225,10 @@ func _physics_process(delta: float) -> void:
 		_run_autopilot(delta)
 	_track_step_up()
 	_track_yaw_overshoot()
+	_track_hover_inside()
 	_tick += 1
+	if _tick == 5:
+		_nominal_root_y = _walker.global_position.y
 	if _track_clearance and _walker.gait() != null and _on_patch():
 		# The clearance sits on its floor (the push-up holds it there) for a stretch of the crest: take the middle.
 		var clearance: float = _walker.min_hip_clearance()
@@ -331,6 +334,7 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 		return
 	_lane = lane
 	_tick = 0
+	hover_inside_ticks = 0
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
@@ -567,6 +571,43 @@ func _spawn_yaw(lane: String) -> float:
 
 
 ## True while the walker is over the steep patch (its flank and crest) along the lane.
+## Hovering feet found inside solid geometry (summed over ticks since the last spawn).
+var hover_inside_ticks: int = 0
+var _nominal_root_y: float = 0.0
+
+
+func _track_hover_inside() -> void:
+	if _walker == null or _walker.gait() == null:
+		return
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var query := PhysicsPointQueryParameters3D.new()
+	query.collision_mask = 1
+	for i in _walker.leg_count():
+		if _walker.gait().state_of(i) != GaitSolver.LegState.HOVERING:
+			continue
+		query.position = _walker.foot_position(i)
+		if not space.intersect_point(query, 1).is_empty():
+			hover_inside_ticks += 1
+
+
+## Planted-foot rise above the lane's apron, and the body root's rise over (apron + nominal body height): the
+## blocked-at-the-talus numbers (a blocked walker stays level on the apron).
+var foot_rise_above_apron: float:
+	get:
+		if _walker == null or _walker.gait() == null:
+			return 0.0
+		var rise: float = -INF
+		for i in _walker.leg_count():
+			if _walker.gait().state_of(i) == GaitSolver.LegState.PLANTED:
+				rise = maxf(rise, _walker.foot_position(i).y)
+		return rise
+var root_rise_over_nominal: float:
+	get:
+		if _walker == null:
+			return 0.0
+		return _walker.global_position.y - _nominal_root_y
+
+
 func _on_patch() -> bool:
 	var z: float = _walker.global_position.z
 	if _lane == LANE_TALUS:

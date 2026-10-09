@@ -152,6 +152,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -216,6 +224,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -432,6 +448,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -604,6 +628,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -728,6 +760,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -973,6 +1013,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "bob_amplitude_m",
     "op": ">=",
     "value": 0.026001000000000003
@@ -1142,6 +1190,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "bob_amplitude_m",
     "op": ">=",
     "value": 0.03
@@ -1293,6 +1349,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -1419,6 +1483,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -1551,6 +1623,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -1677,6 +1757,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -1809,6 +1897,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -1856,6 +1952,14 @@
     "args": [
      "walk_flat quad blocked at the 0.8 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hover_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -2011,7 +2115,7 @@
    }
   },
   {
-   "wait_frames": 300
+   "wait_frames": 360
   },
   {
    "call": {
@@ -2042,6 +2146,14 @@
     "args": [
      "walk_flat strider through the boulder field"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "distance_m",
+    "op": ">=",
+    "value": 29.0
    }
   },
   {
@@ -2090,6 +2202,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
@@ -2228,6 +2348,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -2352,6 +2480,14 @@
     "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_push_rise_m",
+    "op": "<=",
+    "value": 0.026000000000000002
    }
   },
   {
