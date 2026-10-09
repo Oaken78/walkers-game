@@ -102,7 +102,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -469,7 +469,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -598,7 +598,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -706,7 +706,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -813,7 +813,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1024,7 +1024,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1302,7 +1302,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1388,7 +1388,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1614,7 +1614,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {

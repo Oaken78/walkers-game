@@ -13,6 +13,8 @@ const BOB_WINDOW_TICKS: int = 120
 const STALL_FRACTION: float = 0.1
 ## A stall longer than this is logged as a STALL line.
 const STALL_LOG_S: float = 0.4
+## A pad box is checked this far above its foot point, so the ground it stands on is not an overlap.
+const PAD_CHECK_LIFT: float = 0.03
 ## `ahead_rise` scans heights from AHEAD_STEP to AHEAD_MAX in these steps (m).
 const AHEAD_STEP: float = 0.1
 const AHEAD_MAX: float = 3.0
@@ -38,6 +40,8 @@ var max_tilt_deg: float = 0.0
 var body_height_m: float = 0.0
 var bob_amplitude_m: float = 0.0
 var max_step_up_m: float = 0.0
+## Highest block every foot stood on the top of (a climb: reach up and haul), set by the test course.
+var max_climb_m: float = 0.0
 var current_speed_mps: float = 0.0
 ## Horizontal distance travelled since reset.
 var distance_m: float = 0.0
@@ -74,6 +78,21 @@ var min_pad_sep_m: float = INF
 ## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
 ## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
 var longest_input_stall_s: float = 0.0
+## Since reset: reach-up swings, step-up swings, and ticks with a leg hanging for a rise or drop beyond a stride.
+## Largest nose-up or nose-down pitch of the body (degrees), and the largest rise of the body root in one tick (m).
+var max_pitch_deg: float = 0.0
+var max_root_rise_tick_m: float = 0.0
+## Smallest centre-of-mass margin inside the planted feet's polygon over the mean reach, over ticks with a leg hanging.
+var min_support_margin_ratio: float = INF
+## Ticks on which a pad (a box 3 cm above its foot point) overlapped the world: a reaching or hanging pad must never.
+var pad_inside_ticks: int = 0
+## Prints the first PADIN lines (debugging).
+var pad_log: bool = false
+## Highest a hanging foot got above the ground below it, over its reach (hanging legs only).
+var max_hang_rise_ratio: float = 0.0
+var reach_ups: int = 0
+var step_ups: int = 0
+var hang_ticks: int = 0
 ## `min_pad_gap_m` as it stood at the last report() (an assert one frame later would see another tick).
 var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
@@ -115,6 +134,12 @@ var _bob_index: int = 0
 var _bob_count: int = 0
 var _teleports_seen: int = 0
 var _resets_base: int = 0
+var _last_root_y: float = 0.0
+var _pad_shape: BoxShape3D
+var _pad_query: PhysicsShapeQueryParameters3D
+var _reach_base: int = 0
+var _step_base: int = 0
+var _hang_base: int = 0
 var _gap_ray: PhysicsRayQueryParameters3D
 
 
@@ -158,6 +183,7 @@ func reset() -> void:
 	body_height_m = 0.0
 	bob_amplitude_m = 0.0
 	max_step_up_m = 0.0
+	max_climb_m = 0.0
 	current_speed_mps = 0.0
 	distance_m = 0.0
 	max_plant_gap_m = 0.0
@@ -203,6 +229,17 @@ func reset() -> void:
 		_teleports_seen = walker.teleport_count
 		walker.max_rays_per_tick = 0
 		_resets_base = walker.velocity_resets
+		_reach_base = walker.reach_ups
+		_step_base = walker.step_ups
+		_hang_base = walker.hang_ticks
+	reach_ups = 0
+	step_ups = 0
+	hang_ticks = 0
+	max_pitch_deg = 0.0
+	max_root_rise_tick_m = 0.0
+	min_support_margin_ratio = INF
+	pad_inside_ticks = 0
+	max_hang_rise_ratio = 0.0
 
 
 ## Fraction of ticks the body was held by rule 5 (0..1).
@@ -256,6 +293,7 @@ func report(label: String = "") -> void:
 		"body_height_m": snappedf(body_height_m, 0.001),
 		"bob_amplitude_m": snappedf(bob_amplitude_m, 0.0001),
 		"max_step_up_m": snappedf(max_step_up_m, 0.001),
+		"max_climb_m": snappedf(max_climb_m, 0.001),
 		"distance_m": snappedf(distance_m, 0.01),
 		"max_plant_gap_m": snappedf(max_plant_gap_m, 0.0001),
 		"max_rays_per_tick": max_rays_per_tick,
@@ -272,6 +310,14 @@ func report(label: String = "") -> void:
 		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
 		"min_pad_sep_m": snappedf(minf(min_pad_sep_m, 9.0), 0.001),
 		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
+		"max_pitch_deg": snappedf(max_pitch_deg, 0.01),
+		"max_root_rise_tick_m": snappedf(max_root_rise_tick_m, 0.0001),
+		"min_support_margin_ratio": snappedf(minf(min_support_margin_ratio, 9.0), 0.001),
+		"pad_inside_ticks": pad_inside_ticks,
+		"max_hang_rise_ratio": snappedf(max_hang_rise_ratio, 0.001),
+		"reach_ups": reach_ups,
+		"step_ups": step_ups,
+		"hang_ticks": hang_ticks,
 		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
 		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
 		"tick_max_ms": snappedf(tick_max_ms, 0.001),
@@ -325,16 +371,61 @@ func _physics_process(delta: float) -> void:
 	min_knee_rise_ratio = minf(min_knee_rise_ratio, walker.min_knee_rise_ratio())
 	min_knee_bend_ratio = minf(min_knee_bend_ratio, walker.min_knee_bend_ratio())
 	velocity_resets = walker.velocity_resets - _resets_base
+	reach_ups = walker.reach_ups - _reach_base
+	step_ups = walker.step_ups - _step_base
+	hang_ticks = walker.hang_ticks - _hang_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
 	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, walker.max_resolve_pitch_deg)
 	_track_stall(delta)
+	_track_climb(delta)
 	_track_pad_gap()
 	_track_cost()
 	max_physics_ms = maxf(max_physics_ms, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
 	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
 	_track_height(walker.height_above_plane())
+
+
+## Pitch, root rise per tick, support margin, pads inside geometry and the height of hanging feet (T16).
+func _track_climb(_delta: float) -> void:
+	max_pitch_deg = maxf(max_pitch_deg, absf(walker.pitch_degrees()))
+	var root_y: float = walker.global_position.y
+	if walker.teleport_count == _teleports_seen and ticks > 1:
+		max_root_rise_tick_m = maxf(max_root_rise_tick_m, root_y - _last_root_y)
+		if pad_log and root_y - _last_root_y > 0.026:
+			print("RISE tick=%d d=%.4f %s" % [ticks, root_y - _last_root_y, walker.debug_state().substr(0, 200)])
+	_last_root_y = root_y
+	var margin: float = walker.support_margin_ratio()
+	if margin < INF:
+		if pad_log and margin < 0.05:
+			print("MARGIN tick=%d m=%.3f %s" % [ticks, margin, walker.debug_state().substr(0, 140)])
+		min_support_margin_ratio = minf(min_support_margin_ratio, margin)
+	if _pad_shape == null:
+		_pad_shape = BoxShape3D.new()
+		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x * 0.95, 0.12, WalkerLeg.PAD_SIZE.z * 0.95)
+		_pad_query = PhysicsShapeQueryParameters3D.new()
+		_pad_query.shape = _pad_shape
+		_pad_query.collision_mask = 1
+	var space: PhysicsDirectSpaceState3D = walker.get_world_3d().direct_space_state
+	var basis := Basis(Vector3.UP, walker.yaw_radians())
+	var gait: GaitSolver = walker.gait()
+	var inside: bool = false
+	for i in walker.leg_count():
+		var foot: Vector3 = walker.foot_position(i)
+		_pad_query.transform = Transform3D(basis, foot + Vector3.UP * (PAD_CHECK_LIFT + 0.06))
+		if not space.intersect_shape(_pad_query, 1).is_empty():
+			inside = true
+			if pad_log and pad_inside_ticks < 6:
+				print("PADIN leg=%d state=%d foot=%s" % [i, gait.state_of(i), str(foot.snapped(Vector3.ONE * 0.01))])
+		if walker.is_leg_hanging(i):
+			_gap_ray.from = foot + Vector3.UP * 0.5
+			_gap_ray.to = foot + Vector3.DOWN * 3.0
+			var hit: Dictionary = space.intersect_ray(_gap_ray)
+			if not hit.is_empty():
+				max_hang_rise_ratio = maxf(max_hang_rise_ratio, (foot.y - hit["position"].y) / walker.leg_reach(i))
+	if inside:
+		pad_inside_ticks += 1
 
 
 ## Progress counts vertical rise too (a slow haul up a ledge is not a stall): the speed of the body root in 3D.

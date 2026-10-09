@@ -14,13 +14,14 @@ const LANE_LEDGES: String = "ledges"
 const LANE_WALL: String = "wall"
 const LANE_POCKET: String = "pocket"
 const LANE_PATCH_A: String = "patch_a"
+const LANE_CLIMB: String = "climb"
 const LANE_TALUS: String = "talus"
 const LANE_X: Dictionary = {
-	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0, "talus": 300.0
+	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0, "talus": 300.0, "climb": -60.0
 }
 ## Half-width of the area each lane is meant to be driven in (edge margins are measured against it).
 const LANE_HALF_WIDTH: Dictionary = {
-	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0, "talus": 6.0
+	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0, "talus": 6.0, "climb": 5.0
 }
 const FLAT_LENGTH: float = 150.0
 const FLAT_STRIPE: float = 2.0
@@ -62,7 +63,10 @@ const LEDGE_FLAT_RUN: float = 6.0
 const LEDGE_DECK_DEPTH: float = 6.0
 const LEDGE_FIRST_HEIGHT: float = 0.30
 const LEDGE_HEIGHT_STEP: float = 0.05
-const LEDGE_COUNT: int = 16
+const LEDGE_COUNT: int = 27
+## The climb lane: one block of a height the scenario sets (set_climb_height), a flat run in front and a deck behind it.
+const CLIMB_FLAT_RUN: float = 8.0
+const CLIMB_DECK_DEPTH: float = 10.0
 const POCKET_HEIGHT: float = 0.8
 const WALL_Z: float = -14.0
 const WALL_HEIGHT: float = 1.5
@@ -291,7 +295,13 @@ var _pocket_back_z: float = 0.0
 var _tallest_boulder_radius: float = 0.0
 var _tallest_boulder_top: Vector3 = Vector3.ZERO
 var _track_frames: bool = false
+## Tick of the first reach-up swing of the climb in progress (-1 none), and the reach-ups seen so far.
+var _reach_start_tick: int = -1
+var _last_reach_ups: int = 0
+## Seconds from the first reach-up swing to every foot standing on the top, of the last block climbed (see CLIMBTIME).
+var climb_time_s: float = 0.0
 var _notch: Node3D
+var _climb_block: StaticBody3D
 var _lateral_track: bool = false
 var _lateral_right: Vector3 = Vector3.RIGHT
 var _lateral_sign: float = 0.0
@@ -522,6 +532,9 @@ func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, off
 	_lane = lane
 	_spawn_offset = offset_z
 	_tick = 0
+	_reach_start_tick = -1
+	_last_reach_ups = _walker.reach_ups
+	climb_time_s = 0.0
 	hover_inside_ticks = 0
 	foot_rise_max = -INF
 	root_rise_max = -INF
@@ -1118,9 +1131,9 @@ func _edge_margin() -> float:
 
 
 func _first_blocked_block() -> Dictionary:
-	var step_up: float = _walker.stats()["step_up"]
+	var climb: float = float(_walker.stats()["climb"]) + 0.03
 	for block in _blocks.get(LANE_LEDGES, []):
-		if float(block["h"]) > step_up + 0.001:
+		if float(block["h"]) > climb + 0.001:
 			return block
 	return {}
 
@@ -1162,7 +1175,13 @@ func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
 ## "Every foot planted on the block's top": each leg's most recent plant point lies on the deck. (A walking
 ## tripod gait never has all feet on the ground in the same tick.)
 func _track_step_up() -> void:
-	if _walker == null or _walker.gait() == null or not _blocks.has(_lane):
+	if _walker == null or _walker.gait() == null:
+		return
+	if _walker.reach_ups != _last_reach_ups:
+		if _reach_start_tick < 0:
+			_reach_start_tick = _tick
+		_last_reach_ups = _walker.reach_ups
+	if not _blocks.has(_lane):
 		return
 	if _last_plant.size() != _walker.leg_count():
 		return
@@ -1177,7 +1196,13 @@ func _track_step_up() -> void:
 				all_on_top = false
 				break
 		if all_on_top:
-			_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
+			_telemetry.max_climb_m = maxf(_telemetry.max_climb_m, height)
+			if height <= float(_walker.stats()["step_up"]) + 0.001:
+				_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
+			elif _reach_start_tick >= 0:
+				climb_time_s = float(_tick - _reach_start_tick) / float(Engine.physics_ticks_per_second)
+				print("CLIMBTIME height=%.2f s=%.2f" % [height, climb_time_s])
+				_reach_start_tick = -1
 
 
 ## The node the walker steers to in CAMERA_YAW (the orbit rig after toggle_steer_mode, else the scripted YawSource).
@@ -1541,8 +1566,9 @@ func _talus_height(along: float) -> float:
 ## flat shelf, 12 m wide.
 func _build_talus() -> void:
 	var x: float = LANE_X[LANE_TALUS]
+	# The apron in front of the corner is the big ground slab's own top (y = 0): a second surface there would fight it
+	# for depth (a ramp patch that flipped shade with sub-pixel camera moves), so the talus mesh starts at the corner.
 	var stops: Array[float] = [
-		0.0,
 		TALUS_CORNER_ALONG,
 		TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN,
 		TALUS_LENGTH
@@ -1607,6 +1633,26 @@ func set_wedge(half_angle_deg: float) -> void:
 		instance.material_override = _block_material
 		body.add_child(instance)
 		_notch.add_child(body)
+
+
+## Rebuilds the climb lane's single block with this height (m): a flat run, the block, then flat ground.
+func set_climb_height(height: float) -> void:
+	if _climb_block != null:
+		_climb_block.queue_free()
+		_climb_block = null
+	var z_front: float = SPAWN_Z - CLIMB_FLAT_RUN
+	var z_back: float = z_front - CLIMB_DECK_DEPTH
+	_climb_block = _add_box(
+		Vector3(LANE_X[LANE_CLIMB], height * 0.5, (z_front + z_back) * 0.5),
+		Vector3(LEDGE_WIDTH, height, CLIMB_DECK_DEPTH),
+		_block_material
+	)
+	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+
+
+## Prints the walker's climb state (position, pitch, hauling, every leg: state, foothold kind and foot height).
+func log_climb(label: String) -> void:
+	print("CLIMB %s %s" % [label, _walker.debug_state()])
 
 
 ## Moves the two notch rocks apart or together (the clear gap between them, m) and rebuilds them.

@@ -15,6 +15,8 @@ const TURN_PER_LEG := 10.0
 const TURN_MIN := 60.0
 const TURN_MAX := 180.0
 const STEP_UP_PER_REACH := 0.6
+## The highest ledge a front foot reaches up onto and the body hauls up (and the deepest drop it steps down): 0.9 x mean reach.
+const CLIMB_PER_REACH := 0.9
 const SPREAD_DEG_PER_FACTOR := 1.0
 const FOUR_LEGS := 4
 const VALID_LEG_COUNTS: Array[int] = [4, 6, 8]
@@ -164,6 +166,7 @@ func stats() -> Dictionary:
 		"top_speed": 0.0,
 		"turn_rate": 0.0,
 		"step_up": 0.0,
+		"climb": 0.0,
 		"max_slope": 0.0,
 		"spread": 0.0,
 		"hp": hp,
@@ -184,6 +187,7 @@ func stats() -> Dictionary:
 		TURN_BASE - TURN_LOAD_FACTOR * load_ratio - TURN_PER_LEG * count, TURN_MIN, TURN_MAX
 	)
 	result["step_up"] = STEP_UP_PER_REACH * reach
+	result["climb"] = CLIMB_PER_REACH * reach
 	result["max_slope"] = slope
 	result["spread"] = SPREAD_DEG_PER_FACTOR * spread_sum / count
 	return result
