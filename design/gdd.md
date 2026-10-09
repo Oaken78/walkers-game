@@ -200,7 +200,9 @@ already allow it.
 - **Body:** CharacterBody3D, moved kinematically from input and build stats, with the accel and decel from
   section 5. Height and tilt are fitted to the plane of the planted feet (least-squares, then smoothed). The
   chassis and the hips never sink into the ground: where that plane runs below the terrain (over a crest or a
-  ledge edge) the body rises until they clear it, and waits if the legs cannot reach that far.
+  ledge edge) the body rises until they clear it, and waits if the legs cannot reach that far. Where the ground
+  ahead rises or falls (a slope's foot, a ledge or shelf edge), the body pitches toward the next footholds before
+  its feet get there, as a climber leans into a slope; tilt still follows the planted feet on even ground.
 - **Gait (`GaitSolver`, pure):** legs split into alternating groups: two tripods for 6+ legs; for 4-5 legs a wave
   gait with one leg per group.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
@@ -486,6 +488,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | The chassis and hips never sink into the ground: where the planted-feet plane runs below the terrain (crests, ledge edges) the body rises to clear it; collider contacts are never ignored | Lead, from the T03 round-3 code review: over the 40 deg crest the Crawler's hips sat 0.33 m inside the slope (collider about 0.25 m), and the Scout sank 0.1 m on the plain bumps. Climbing the talus is the Crawler's niche, so it must read | Keep the plane fit and hide the overlap with art |
 | 2026-10-09 | Body bob scales with leg length: 4 cm x mean leg reach (Crawler 2.4 cm, Scout 4, Strider 6.4), replacing 3-5 cm for every build | Klas, from the T03 round-3 reviews: a full bob stretches short legs toward their reach limit, and round 3 had faded it to zero on short legs. Scaling keeps a step rhythm on every build: long legs lope, short legs patter | 3-5 cm for every build; no bob on short legs (the Crawler reads planted, but the short pair, the usual first purchase, only reads as smoother) |
 | 2026-10-09 | Knee rule: the above-the-hip bars hold on level ground walking straight, in the body frame. On any ground and when turning or strafing a knee may sit below its hip, but never straightens or flips (bend >= 0.05 x reach) | Klas, from the T03 round-3 playtest-critic: the downhill leg reaching down a slope with its knee below the hip reads as reaching (gait_slopes__steep), and 'never below the hip' cannot hold on a body tilted to its grip | Never below the hip anywhere (needs longer bones or higher hips, changing the approved arched legs) |
+| 2026-10-09 | The body pitches toward the next footholds ahead of a slope's foot or a shelf edge, instead of only following the planted feet | Lead, from the T03 round-4 code review: with hips held clear, a Crawler whose tilt lags its feet stalls at the foot of the 40 deg talus (its front rim meets the slope at 6.7 deg tilt). A side-view pose search shows the real talus profile (9.1) is climbable with 0.15 m of reach to spare, but only if the body leans 7-12 deg into the slope 0.6-0.9 m before the corner and levels before the shelf edge | Round the talus edges in the valley; let hips sink into the slope |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
