@@ -1,0 +1,6395 @@
+{
+ "scene": "res://scenes/test/gait_course.tscn",
+ "seed": 1234,
+ "timeout_frames": 7200,
+ "steps": [
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 50
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "screenshot": "camera_edge"
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "screenshot": "camera_midface"
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "slope_behind_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "pitch_deg",
+    "op": "==",
+    "value": 20.0
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "screenshot": "camera_foot"
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "slope_behind_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "pitch_deg",
+    "op": "==",
+    "value": 20.0
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +10"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +30"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +40"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +50"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +60"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +60"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "release +60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +70"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +70"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "release +70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +80"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +80"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "release +80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +90"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +100"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +110"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +120"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +120"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": "<=",
+    "value": 21.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 19.0
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +130"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +140"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "release +150"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "release +150"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "arm_min_m",
+    "op": ">=",
+    "value": 7.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "floor_step_max_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "screenshot": "camera_flat"
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -10.57
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     17.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 1.5m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 1.5m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 1.5m p17"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -10.57
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 1.5m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 1.5m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 1.5m p20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -10.07
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     17.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 2.0m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 2.0m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 2.0m p17"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -10.07
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 2.0m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 2.0m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 2.0m p20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -9.47
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     17.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 2.6m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 2.6m p17"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 2.6m p17"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -9.47
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "sight 2.6m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "sight 2.6m p20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "sight 2.6m p20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 33.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "before teleport"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "after teleport"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": "<=",
+    "value": 21.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "boulders"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     true,
+     7.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 250"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 260"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 270"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 280"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 290"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 300"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 310"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 320"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 330"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 340"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 350"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider boulders 360"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider boulders end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges50 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider ledges50 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -86.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges86 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider ledges86 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -134.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges134 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider ledges134 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -182.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider ledges182 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider ledges182 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "pocket"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 250"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 260"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 270"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 280"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 290"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "strider pocket 300"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "strider pocket end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "boulders"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     true,
+     7.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 250"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 260"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 270"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 280"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 290"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 300"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 310"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 320"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 330"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 340"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 350"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout boulders 360"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout boulders end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges50 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout ledges50 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -86.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges86 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout ledges86 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -134.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges134 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout ledges134 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -182.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout ledges182 250"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout ledges182 end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "pocket"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 10"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 20"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 30"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 40"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 50"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 60"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 70"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 80"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 90"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 100"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 110"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 120"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 130"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 140"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 150"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 160"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 170"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 180"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 190"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 200"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 210"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 220"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 230"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 240"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 250"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 260"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 270"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 280"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 290"
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "scout pocket 300"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout pocket end"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "lift_max_deg",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     45,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 140
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "midface p45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "midface p45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "midface p45"
+    ]
+   }
+  },
+  {
+   "screenshot": "camera_midface_p45"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     50,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "reset_trackers",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 140
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "midface p50"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "midface p50"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "midface p50"
+    ]
+   }
+  },
+  {
+   "screenshot": "camera_midface_p50"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "assert_no_errors": true
+  }
+ ]
+}
