@@ -247,6 +247,7 @@ var _first_tick: bool = true
 var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
+var _freeze_stall: float = -1.0
 var _freeze_tick: int = -1
 var _tick: int = 0
 var _track_clearance: bool = false
@@ -377,6 +378,9 @@ func _physics_process(delta: float) -> void:
 	if _freeze_tick >= 0 and _tick >= _freeze_tick:
 		get_tree().paused = true
 		_freeze_tick = -1
+	if _freeze_stall >= 0.0 and _telemetry.current_stall_s >= _freeze_stall:
+		get_tree().paused = true
+		_freeze_stall = -1.0
 	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
 		get_tree().paused = true
 		_freeze_tilt = -1.0
@@ -551,6 +555,11 @@ func arm_swing_freeze(progress: float) -> void:
 ## Pauses the game the first tick the body's tilt reaches `degrees` (a still at the steepest part of a climb).
 func arm_tilt_freeze(degrees: float) -> void:
 	_freeze_tilt = degrees
+
+
+## Pauses the game the first tick the walker's current stall reaches `seconds` (a still at a stall); resume() continues.
+func arm_stall_freeze(seconds: float) -> void:
+	_freeze_stall = seconds
 
 
 ## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.

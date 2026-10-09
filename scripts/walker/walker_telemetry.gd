@@ -11,6 +11,8 @@ const TOP_FRACTION: float = 0.98
 const HEIGHT_WINDOW_TICKS: int = 60
 const BOB_WINDOW_TICKS: int = 120
 const STALL_FRACTION: float = 0.1
+## A stall longer than this is logged as a STALL line.
+const STALL_LOG_S: float = 0.4
 
 var top_speed_mps: float = 0.0
 var time_to_top_s: float = UNSET
@@ -25,6 +27,8 @@ var max_airborne: int = 0
 var min_steps_per_leg: int = 0
 var total_steps: int = 0
 var held_ticks: int = 0
+## Ticks per cause of not moving as commanded (WalkerBody.block_cause) since reset.
+var hold_causes: Dictionary = {}
 ## Longest run of consecutive held ticks, in seconds.
 var longest_hold_s: float = 0.0
 var max_tilt_deg: float = 0.0
@@ -80,6 +84,9 @@ var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
 var _hold_run: int = 0
 var _stall_run: int = 0
+var _stall_delta: float = 1.0 / 60.0
+var _stall_start: Vector3 = Vector3.ZERO
+var _stall_causes: Dictionary = {}
 var _stall_last: Vector3 = Vector3.ZERO
 var _stall_known: bool = false
 var _stall_teleports: int = 0
@@ -132,6 +139,7 @@ func reset() -> void:
 	min_steps_per_leg = 0
 	total_steps = 0
 	held_ticks = 0
+	hold_causes = {}
 	longest_hold_s = 0.0
 	max_tilt_deg = 0.0
 	body_height_m = 0.0
@@ -160,7 +168,7 @@ func reset() -> void:
 	max_shape_queries_per_tick = 0
 	max_rays_cast_per_tick = 0
 	_tick_ms.resize(0)
-	_stall_run = 0
+	_end_stall()
 	_stall_known = false
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
@@ -225,6 +233,7 @@ func report(label: String = "") -> void:
 		"total_steps": total_steps,
 		"held_ticks": held_ticks,
 		"held_fraction": snappedf(held_fraction(), 0.001),
+		"hold_causes": hold_causes,
 		"longest_hold_s": snappedf(longest_hold_s, 0.01),
 		"max_tilt_deg": snappedf(max_tilt_deg, 0.01),
 		"body_height_m": snappedf(body_height_m, 0.001),
@@ -283,6 +292,8 @@ func _physics_process(delta: float) -> void:
 	var input_now: bool = walker.move_input_active
 	_track_timings(delta, speed, input_now)
 	_track_gait()
+	if walker.block_cause != "":
+		hold_causes[walker.block_cause] = int(hold_causes.get(walker.block_cause, 0)) + 1
 	if walker.held_this_tick:
 		held_ticks += 1
 		_hold_run += 1
@@ -323,10 +334,56 @@ func _track_stall(delta: float) -> void:
 		and wanted > MOTION_EPSILON_MPS
 		and progress < STALL_FRACTION * wanted
 	):
+		if _stall_run == 0:
+			_stall_causes.clear()
+			_stall_start = here
 		_stall_run += 1
+		_stall_delta = delta
+		_stall_causes[walker.block_cause] = int(_stall_causes.get(walker.block_cause, 0)) + 1
 		longest_stall_s = maxf(longest_stall_s, float(_stall_run) * delta)
 	else:
-		_stall_run = 0
+		_end_stall()
+
+
+## Logs a finished stall over STALL_LOG_S: `STALL dur=.. pos=.. ahead_rise=.. causes=..` (ahead_rise: the tallest
+## ground 0.5-1.5 m ahead of the body over the ground under it).
+func _end_stall() -> void:
+	if float(_stall_run) * _stall_delta > STALL_LOG_S:
+		print(
+			(
+				"STALL dur=%.2f pos=%s ahead_rise=%.2f causes=%s"
+				% [
+					float(_stall_run) * _stall_delta,
+					str(_stall_start.snapped(Vector3.ONE * 0.01)),
+					_ahead_rise(_stall_start),
+					str(_stall_causes)
+				]
+			)
+		)
+	_stall_run = 0
+
+
+func _ahead_rise(from: Vector3) -> float:
+	var space: PhysicsDirectSpaceState3D = walker.get_world_3d().direct_space_state
+	var forward := Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
+	var under: float = _ground_y(space, from)
+	var tallest: float = 0.0
+	for distance in [0.5, 1.0, 1.5]:
+		tallest = maxf(tallest, _ground_y(space, from + forward * distance) - under)
+	return tallest
+
+
+func _ground_y(space: PhysicsDirectSpaceState3D, at: Vector3) -> float:
+	_gap_ray.from = at + Vector3.UP * 3.0
+	_gap_ray.to = at + Vector3.DOWN * 3.0
+	var hit: Dictionary = space.intersect_ray(_gap_ray)
+	return hit["position"].y if not hit.is_empty() else at.y
+
+
+## Seconds of the stall in progress (0 when none).
+var current_stall_s: float:
+	get:
+		return float(_stall_run) * _stall_delta
 
 
 ## Fore-aft distance between planted pads on one side, less a pad length (their drawn pads merge below 0.05).
