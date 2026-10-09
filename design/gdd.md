@@ -64,7 +64,7 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Body bob amplitude while walking | 3-5 cm | |
 | Max walkable slope | 35 deg | 25 - 45 deg |
 | Max step-up height | 0.6 x leg reach (Scout: 0.6 m) | 0.35 - 1.0 m |
-| Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m | |
+| Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
 | Pulse cannon | 4 shots/s, 15 dmg, projectile 60 m/s, spread 1.0 deg x leg spread factor | 0.5 - 1.5 deg |
@@ -104,7 +104,7 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
   turning the body. This makes the turn rate a build stat you feel in every fight (Pillar 1).
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
-  idle; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
+  idle and pauses while `aim` is held; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
 already allow it.
 
 ## 7. Failure, success, difficulty curve
@@ -461,6 +461,9 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-08 | Clarification: the 4-5 leg wave gait lifts one leg at a time (one leg per group); only 6+ legs use two tripod groups | 8.2 said "two alternating groups" for every gait, but section 5 caps 4 legs at 1 airborne; two groups of 2 would break it | Two diagonal pairs (trot) for 4 legs |
 | 2026-10-08 | Clarification: the airborne limit beats the 85 % handover; the next group gets the turn at 85 % but its legs lift only within the limit | A literal 85 % overlap puts all 6 legs of a tripod in the air, against Pillar 2 and M0 criterion 2 | Overlapping swings at 85 % |
 | 2026-10-08 | Clarification: medium legs (catalog price "start") are not for sale in M0; the player has only the starting 6 | Klas confirmed; the shop sells only short and long legs, so every leg purchase changes the feel | Medium legs buyable to reach 8 |
+| 2026-10-09 | Camera: rock beats the 2 m arm minimum; with rock closer than 2 m the arm goes shorter | Klas, from the T04 reviews: a camera inside rock reads as a bug, a close-up of your own walker reads as intentional | Keep 2 m always and accept seeing inside rock |
+| 2026-10-09 | Recentring pauses while `aim` is held; its 1.5 s timer restarts on release | Klas, from the T04 playtest review: strafing while waiting out a drone wind-up would swing the view off the drone | Also pause after firing (needs T06); no pause |
+| 2026-10-09 | Accepted for M0: one near foot may leave the frame at aim FOV 50; revisit at the T03/T04 gate | Klas: aiming is about the target, and every foot reads at FOV 70 | Raise or pull back the camera while aiming |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).

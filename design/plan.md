@@ -39,15 +39,20 @@ Status: ready, in-progress, review-passed, done.
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 
-## Notes for packets not yet written (from the T01, T02 and T05 reviews, 2026-10-09)
+## Notes for packets not yet written (from the T01, T02, T04 and T05 reviews, 2026-10-09)
+- Gate (lead): give the camera an un-bobbed anchor (its 0.1 s lag only half-filters the 2.8 Hz body bob). Judge
+  `start_pitch` facing down-valley (the critic suggests 12-15 deg). With a fixed 1.5 m `target_offset` the Crawler's
+  camera sits 0.47 m off the ground at pitch -10; consider a per-build offset.
 - T03: a 4-5 leg wave with one stuck leg stands still until the player steers off (the hovering leg holds the
   only airborne slot; accepted, judge it at the gate). Turning tripods can make a leg wait about 2.5 step
   durations. Check stop/start at top speed on a tripod with real 0.25 s acceleration: the fake walker dragged a
   planted foot to 1.28 x reach. `gait_course` should also run a 4-leg build into a blocked foot.
+- T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
 - T11: harden the wash (threshold the vertex-colour weight into a flat band), soft smoke with fog back on, sage
   sky top; `assets/world/ground_streak.tres` is unused and can go.
+  In grayscale the orange foot tops sit only 0.08 luma below the floor (0.61 vs 0.69); give the contact decal a dark value.
 - T12: `%WashPath` starts at (2, 8) in front of the workshop; `perf_4_drones` should also measure a ring-2 view
   looking up-valley.
