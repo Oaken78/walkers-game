@@ -9,7 +9,7 @@ const CRAWLER_FEET_Z: Array[float] = [-1.2, -0.4, 0.4, 1.2]
 
 
 func _angles(yaw: float, pitch: float, dx: float, dy: float, invert: bool = false) -> Vector2:
-	return OrbitMath.mouse_to_angles(yaw, pitch, dx, dy, SENS, invert, -10.0, 60.0)
+	return OrbitMath.mouse_to_angles(yaw, pitch, dx, dy, SENS, invert, -20.0, 60.0)
 
 
 func test_mouse_turns_0_15_deg_per_pixel() -> void:
@@ -21,14 +21,21 @@ func test_mouse_turns_0_15_deg_per_pixel() -> void:
 
 func test_mouse_up_tilts_the_view_up_with_invert_y_off() -> void:
 	var a: Vector2 = _angles(0.0, 20.0, 0.0, -40.0)
-	assert_lt(a.y, 20.0, "mouse up lowers pitch toward -10, which looks up")
+	assert_lt(a.y, 20.0, "mouse up lowers pitch toward -20, which looks up")
 	var inverted: Vector2 = _angles(0.0, 20.0, 0.0, -40.0, true)
 	assert_gt(inverted.y, 20.0, "invert-Y flips it")
 
 
-func test_pitch_is_clamped_to_minus_10_and_60() -> void:
-	assert_eq(_angles(0.0, 20.0, 0.0, -100000.0).y, -10.0)
+func test_pitch_is_clamped_to_minus_20_and_60() -> void:
+	assert_eq(_angles(0.0, 20.0, 0.0, -100000.0).y, -20.0)
 	assert_eq(_angles(0.0, 20.0, 0.0, 100000.0).y, 60.0)
+
+
+func test_the_camera_pitch_range_is_minus_20_to_60_with_minus_20_to_minus_10_as_aim_up() -> void:
+	var camera := OrbitCamera.new()
+	assert_eq(camera.pitch_min_deg, -20.0, "GDD 6: the aim-up range reaches -20")
+	assert_eq(camera.pitch_max_deg, 60.0)
+	camera.free()
 
 
 func test_yaw_is_free_and_wraps() -> void:
@@ -151,7 +158,7 @@ func test_mouse_event_turns_by_physical_pixels_not_content_scaled_ones() -> void
 	var event := InputEventMouseMotion.new()
 	event.screen_relative = Vector2(100.0, 0.0)
 	event.relative = Vector2(67.0, 0.0)
-	var a: Vector2 = OrbitMath.motion_to_angles(event, 0.0, 20.0, SENS, false, -10.0, 60.0)
+	var a: Vector2 = OrbitMath.motion_to_angles(event, 0.0, 20.0, SENS, false, -20.0, 60.0)
 	assert_almost_eq(a.x, -15.0, 0.0001, "100 physical px = 15 deg of yaw (right turns the view right)")
 
 
