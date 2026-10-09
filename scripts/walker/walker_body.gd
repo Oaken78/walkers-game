@@ -2056,7 +2056,7 @@ func _climb_foothold(
 	if not face.is_empty() and rad_to_deg(face["normal"].angle_to(Vector3.UP)) <= _max_slope + CONTACT_SLOPE_MARGIN_DEG:
 		# A slope, not a ledge: the ordinary shorter steps take it.
 		return Kind.STRIDE
-	if not face.is_empty() and face["normal"].y < FACE_NORMAL_Y and not _approach_ok(face["normal"], false):
+	if not face.is_empty() and face["normal"].y < FACE_NORMAL_Y and not _approach_ok(face["normal"]):
 		if _ledge_face_at(face["position"], _horizontal(face["normal"], Vector3.ZERO)):
 			# A ledge met at a shallow angle (GDD 8.2): the foot neither reaches up it nor hangs at it; it takes an ordinary shorter
 			# step on its own level (`_shallow_face` keeps it off the top), and the walker slides along the face.
@@ -2165,7 +2165,7 @@ func _step_down_foothold(
 		return Kind.STRIDE
 	if not allow:
 		return Kind.STRIDE
-	if face["normal"].y < FACE_NORMAL_Y and not _approach_ok(face["normal"], true):
+	if face["normal"].y < FACE_NORMAL_Y and not _approach_ok(face["normal"]):
 		if _ledge_face_at(face["position"], _horizontal(face["normal"], Vector3.ZERO)):
 			# A ledge's edge met at a shallow angle (GDD 8.2): not stepped down; like a drop too deep to descend, the feet over it
 			# hang and the body stops at it. The player turns into the edge to go down.
@@ -2216,7 +2216,7 @@ func _ledge_top_ahead(i: int, stand_y: float, space: PhysicsDirectSpaceState3D) 
 		return Vector3.INF
 	# A ledge's face goes on to both sides (a rock's curves away): rays 0.6 m to either side must hit it too.
 	var flat: Vector3 = _horizontal(face["normal"], Vector3.ZERO)
-	if not _approach_ok(flat, false):
+	if not _approach_ok(flat):
 		# Met at a shallow angle: not a ledge to reach for (nor a face to paw at); the walker slides along it.
 		return Vector3.INF
 	var along := Vector3(flat.z, 0.0, -flat.x)
@@ -2470,18 +2470,19 @@ func _steep_ground_at(spot: Vector3, ray_up: float) -> bool:
 	return not hit.is_empty() and _is_wall(hit["normal"])
 
 
-## True when a ledge face may be climbed (`down` false) or stepped down (`down` true) at the walker's heading: within
-## CLIMB_APPROACH_MAX_DEG of the face's horizontal normal `out` (pointing out of the higher ground). A climb or descent already
-## under way (a foot has reached up or stepped down, or a climb swing is in the air) always finishes, whatever the heading.
-func _approach_ok(out: Vector3, down: bool) -> bool:
+## True when a ledge face may be climbed or stepped down at the walker's heading: its body axis within CLIMB_APPROACH_MAX_DEG of
+## the face's horizontal normal `out`, whichever way it faces (a walker that backs head-on into a ledge, or off an edge, climbs or
+## steps down as one that walks into it; one that strafes into it meets it side-on). Whether it is a climb or a step-down is the
+## face's side, not the heading's. A climb or descent already under way (a foot has reached up or stepped down, or a climb swing
+## is in the air) always finishes, whatever the heading.
+func _approach_ok(out: Vector3) -> bool:
 	if _climb_session or _hauling or _climb_swing_in_air():
 		return true
 	var flat := Vector3(out.x, 0.0, out.z)
 	if flat.length_squared() < 0.000001:
 		return true
 	var facing := Vector3(-sin(_yaw), 0.0, -cos(_yaw))
-	var toward: float = facing.dot(flat.normalized())
-	return (toward if down else -toward) >= cos(deg_to_rad(CLIMB_APPROACH_MAX_DEG))
+	return absf(facing.dot(flat.normalized())) >= cos(deg_to_rad(CLIMB_APPROACH_MAX_DEG))
 
 
 ## True while any leg swings a reach-up, step-up or step-down.
@@ -2567,7 +2568,7 @@ func _contact_is_wall(normal: Vector3, point: Vector3, probe_length: float = WAL
 	)
 	var taller: bool = not get_world_3d().direct_space_state.intersect_ray(_sight).is_empty()
 	rays_this_tick += 1
-	if not taller and normal.y < FACE_NORMAL_Y and not _approach_ok(flat, false):
+	if not taller and normal.y < FACE_NORMAL_Y and not _approach_ok(flat):
 		# A ledge the walker meets at a shallow angle (GDD 8.2 approach angle): taller than the chassis clears in a stride, it is a
 		# face it cannot climb, so a wall; the body slides along it. A rock's flank is not a ledge.
 		var low: float = plane_height(_ref_plane, point.x, point.z) + _face_min + WALL_PROBE_LIFT

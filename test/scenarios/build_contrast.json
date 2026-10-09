@@ -244,6 +244,22 @@
   },
   {
    "assert_prop": {
+    "node": "Walker",
+    "prop": "global_position:y",
+    "op": ">=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.6
+   }
+  },
+  {
+   "assert_prop": {
     "node": "%Telemetry",
     "prop": "max_drift_m",
     "op": "<=",

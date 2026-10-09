@@ -486,18 +486,33 @@ func test_a_ledge_is_climbed_within_45_deg_of_head_on_and_slid_along_beyond() ->
 	# Heading -Z (yaw 0); a face ahead points its normal out toward the walker (+Z).
 	for case in [[0.0, true], [30.0, true], [44.0, true], [46.0, false], [60.0, false], [90.0, false]]:
 		var out := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
-		assert_eq(body._approach_ok(out, false), case[1], "up a face %s deg off head-on" % case[0])
+		assert_eq(body._approach_ok(out), case[1], "up a face %s deg off head-on" % case[0])
 	# Stepping down: the edge's face points out of the higher ground, along the heading.
 	for case in [[0.0, true], [40.0, true], [50.0, false]]:
 		var out_down := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
-		assert_eq(body._approach_ok(out_down, true), case[1], "down an edge %s deg off head-on" % case[0])
+		assert_eq(body._approach_ok(out_down), case[1], "down an edge %s deg off head-on" % case[0])
 	body.free()
 
 
 func test_a_climb_under_way_finishes_whatever_the_heading() -> void:
 	var body := WalkerBody.new()
 	var shallow := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(70.0))
-	assert_false(body._approach_ok(shallow, false))
+	assert_false(body._approach_ok(shallow))
 	body._climb_session = true
-	assert_true(body._approach_ok(shallow, false), "a foot is up: the climb finishes")
+	assert_true(body._approach_ok(shallow), "a foot is up: the climb finishes")
+	body.free()
+
+
+func test_a_walker_backing_head_on_into_a_ledge_or_off_an_edge_climbs_or_steps_down() -> void:
+	var body := WalkerBody.new()
+	# Heading -Z (yaw 0), reversing (+Z). A ledge behind it: its face points out of the higher ground toward the walker (-Z).
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var behind_up := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(behind_up), case[1], "backing up a face %s deg off head-on" % case[0])
+	# An edge behind it to step down: its face points out of the higher ground, away from the walker (+Z).
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var behind_down := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(behind_down), case[1], "backing down an edge %s deg off head-on" % case[0])
+	# Strafing into a ledge meets it side-on: shallow.
+	assert_false(body._approach_ok(Vector3(1.0, 0.0, 0.0)), "a face beside the walker")
 	body.free()
