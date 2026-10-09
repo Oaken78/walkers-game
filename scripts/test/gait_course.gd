@@ -68,6 +68,8 @@ const LEDGE_COUNT: int = 27
 const CLIMB_FLAT_RUN: float = 8.0
 const CLIMB_DECK_DEPTH: float = 10.0
 const POCKET_HEIGHT: float = 0.8
+## A foot planted this high (m) above the floor is on a top (the reach-freeze).
+const REACH_FREEZE_MIN_Y: float = 0.3
 const WALL_Z: float = -14.0
 const WALL_HEIGHT: float = 1.5
 const WALL_WIDTH: float = 20.0
@@ -273,6 +275,8 @@ var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
 var _freeze_stall: float = -1.0
+var _freeze_reach: bool = false
+var _freeze_paw: float = -1.0
 var _freeze_tick: int = -1
 var _tick: int = 0
 var _track_clearance: bool = false
@@ -425,6 +429,12 @@ func _physics_process(delta: float) -> void:
 	if _freeze_stall >= 0.0 and _telemetry.current_stall_s >= _freeze_stall:
 		get_tree().paused = true
 		_freeze_stall = -1.0
+	if _freeze_paw >= 0.0:
+		for i in _walker.leg_count():
+			if _walker.is_leg_hanging(i) and _walker.foot_position(i).y >= _freeze_paw * _walker.leg_reach(i):
+				get_tree().paused = true
+				_freeze_paw = -1.0
+				break
 	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
 		get_tree().paused = true
 		_freeze_tilt = -1.0
@@ -657,6 +667,16 @@ func arm_tilt_freeze(degrees: float) -> void:
 ## Pauses the game the first tick the walker's current stall reaches `seconds` (a still at a stall); resume() continues.
 func arm_stall_freeze(seconds: float) -> void:
 	_freeze_stall = seconds
+
+
+## Pauses the game the first tick a foot that a reach-up lifted plants on a top (a still of the reach); resume() continues.
+func arm_reach_freeze() -> void:
+	_freeze_reach = true
+
+
+## Pauses the game the first tick a hanging pad is `ratio` x its reach above the floor (the top of a paw); resume() continues.
+func arm_paw_freeze(ratio: float) -> void:
+	_freeze_paw = ratio
 
 
 ## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.
@@ -1188,6 +1208,10 @@ func _track_lateral_flips() -> void:
 func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
 	if leg < _last_plant.size():
 		_last_plant[leg] = position
+	if _freeze_reach and position.y > REACH_FREEZE_MIN_Y and _walker.reach_ups > 0:
+		# The first foot a reach-up puts down on a top: the still of "front foot on the lip, knee above the hip".
+		get_tree().paused = true
+		_freeze_reach = false
 
 
 ## "Every foot planted on the block's top": each leg's most recent plant point lies on the deck. (A walking
@@ -1685,11 +1709,6 @@ func record_climb(build_name: String) -> void:
 func log_stat(label: String) -> void:
 	var stats: Dictionary = _walker.stats()
 	print("STAT %s reach=%.3f step_up=%.3f climb=%.3f" % [label, stats["reach"], stats["step_up"], stats["climb"]])
-
-
-## Prints the walker's climb state (position, pitch, hauling, every leg: state, foothold kind and foot height).
-func log_climb(label: String) -> void:
-	print("CLIMB %s %s" % [label, _walker.debug_state()])
 
 
 ## Moves the two notch rocks apart or together (the clear gap between them, m) and rebuilds them.

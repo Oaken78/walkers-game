@@ -418,3 +418,13 @@ func test_climb_plane_of_flat_ground_is_flat() -> void:
 	)
 	var plane: Plane = WalkerBody.climb_plane(feet, feet.size(), Vector3(0, 0, -1))
 	assert_almost_eq(plane.normal.y, 1.0, 0.0001)
+
+
+func test_convex_hull_scratch_reuse_does_not_leak_points_between_calls() -> void:
+	var big := PackedVector2Array([Vector2(0, 0), Vector2(4, 0), Vector2(4, 4), Vector2(0, 4), Vector2(2, 2), Vector2(1, 3)])
+	assert_eq(WalkerBody.convex_hull(big).size(), 4)
+	var small := PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(0, 1)])
+	var hull: PackedVector2Array = WalkerBody.convex_hull(small)
+	assert_eq(hull.size(), 3, "the second call sees only its own points")
+	assert_almost_eq(WalkerBody.polygon_margin(hull, Vector2(0.25, 0.25)), 0.25, 0.0001)
+

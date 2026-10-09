@@ -39,8 +39,9 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     20.0,
-     8.0
+     12.0,
+     6.5,
+     -50.0
     ]
    }
   },
@@ -51,6 +52,15 @@
     "args": [
      "move_forward",
      true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_paw_freeze",
+    "args": [
+     0.65
     ]
    }
   },
@@ -67,6 +77,13 @@
     "args": [
      "valley_pockets scout_blocked_at_ledge"
     ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
    }
   },
   {
@@ -593,15 +610,41 @@
   {
    "call": {
     "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     14.0,
-     7.0
+     35.0,
+     8.0
     ]
    }
   },
   {
-   "wait_frames": 40
+   "call": {
+    "node": ".",
+    "method": "arm_lip_freeze",
+    "args": [
+     1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 300
   },
   {
    "screenshot": "strider_looking_out_over_ledge_lip"
@@ -618,22 +661,12 @@
   {
    "call": {
     "node": ".",
-    "method": "mark",
+    "method": "resume",
     "args": []
    }
   },
   {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 420
+   "wait_frames": 120
   },
   {
    "call": {
@@ -1914,13 +1947,32 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     14.0,
-     7.0
+     35.0,
+     8.0
     ]
    }
   },
   {
-   "wait_frames": 40
+   "call": {
+    "node": ".",
+    "method": "arm_lip_freeze",
+    "args": [
+     1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 500
   },
   {
    "screenshot": "crawler_looking_out_over_talus_edge"
@@ -1933,6 +1985,26 @@
      "valley_pockets crawler_looking_out_over_talus_edge"
     ]
    }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
   },
   {
    "call": {

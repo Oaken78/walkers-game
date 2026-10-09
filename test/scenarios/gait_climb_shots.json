@@ -51,10 +51,17 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     8.0,
+     15.0,
      7.0,
-     90.0
+     55.0
     ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_reach_freeze",
+    "args": []
    }
   },
   {
@@ -68,7 +75,7 @@
    }
   },
   {
-   "wait_frames": 102
+   "wait_frames": 300
   },
   {
    "screenshot": "reach"
@@ -78,114 +85,33 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "gait_climb strider shot reach"
+     "gait_climb_shots strider reach"
     ]
    }
   },
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "max_pitch_deg",
+    "prop": "reach_ups",
     "op": ">=",
-    "value": 10.0
+    "value": 1
    }
   },
   {
    "call": {
     "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 5
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "strider"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "set_climb_height",
-    "args": [
-     1.08
-    ]
-   }
-  },
-  {
-   "wait_frames": 2
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "climb"
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
+    "method": "resume",
     "args": []
    }
   },
   {
-   "call": {
-    "node": ".",
-    "method": "use_orbit_camera",
-    "args": [
-     8.0,
-     7.0,
-     90.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 135
+   "wait_frames": 22
   },
   {
    "screenshot": "haul"
   },
   {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "gait_climb strider shot haul"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_pitch_deg",
-    "op": ">=",
-    "value": 10.0
-   }
+   "wait_frames": 60
   },
   {
    "call": {
@@ -245,9 +171,18 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     8.0,
-     6.0,
-     90.0
+     12.0,
+     5.5,
+     -50.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_paw_freeze",
+    "args": [
+     0.65
     ]
    }
   },
@@ -262,7 +197,7 @@
    }
   },
   {
-   "wait_frames": 220
+   "wait_frames": 400
   },
   {
    "screenshot": "paw"
@@ -272,16 +207,23 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "gait_climb scout shot paw"
+     "gait_climb_shots scout paw"
     ]
    }
   },
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "hang_ticks",
+    "prop": "max_hang_rise_ratio",
     "op": ">=",
-    "value": 30
+    "value": 0.6
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
    }
   },
   {

@@ -368,11 +368,6 @@ var _swing_edge: PackedVector3Array = PackedVector3Array()
 var _climb_face: bool = false
 ## Set by `_ledge_top_ahead`: the ledge ahead is taller than the climb.
 var _tall_hint: bool = false
-var _dbg_hip: float = 0.0
-var _dbg_contacts: String = ""
-var _dbg_state: int = 0
-var _dbg_rise: float = 0.0
-var _dbg_need: float = 0.0
 var reach_ups: int = 0
 var step_ups: int = 0
 var hang_ticks: int = 0
@@ -535,60 +530,6 @@ func is_hauling() -> bool:
 ## Kind of leg i's current foothold (`Kind`).
 func foothold_kind(leg: int) -> int:
 	return _kind[leg]
-
-
-## One line of the walker's state for scenario logs: position, pitch, hauling, tick and every leg's state (P planted,
-## S swinging, H hanging), foothold kind (s stride, R reach, U step up, D step down) and foot height.
-func debug_state() -> String:
-	var legs: PackedStringArray = PackedStringArray()
-	for i in _legs.size():
-		legs.append(
-			(
-				"%d%s%s%.2f>%.2f%se%.2f"
-				% [
-					i,
-					"PSH"[_solver.state_of(i)],
-					"sRUD"[_kind[i]],
-					_foot[i].y,
-					_target[i].y,
-					"v" if _valid[i] else "x",
-					_errors[i]
-				]
-			)
-		)
-	return (
-		"(%.2f,%.2f,%.2f) p%.1f h%s v%.2f %s st%d r%.3f n%.3f cw%s m%.2f L%.2f %s %s legs=%s"
-		% [
-			global_position.x,
-			global_position.y,
-			global_position.z,
-			_pitch_degrees(),
-			"1" if _hauling else "0",
-			velocity.length(),
-			block_cause,
-			_dbg_state,
-			_dbg_rise,
-			_dbg_need,
-			"1" if _clear_wall else "0",
-			minf(support_margin_ratio(), 9.0),
-			_climb_linger,
-			_dbg_contacts,
-			_worst_reach_text(),
-			" ".join(legs)
-		]
-	)
-
-
-func _worst_reach_text() -> String:
-	var worst: float = 0.0
-	var at: int = -1
-	for i in _legs.size():
-		if _solver.state_of(i) == GaitSolver.LegState.PLANTED:
-			var ratio: float = (_pose * _legs[i].hip_local).distance_to(_foot[i]) / _limits[i]
-			if ratio > worst:
-				worst = ratio
-				at = i
-	return "rr%.2f@%d" % [worst, at]
 
 
 ## Nose-up pitch of the drawn body (degrees, negative nose down).
@@ -2647,9 +2588,6 @@ func _apply_move(delta: float) -> void:
 			_g_base -= excess
 			_g_origin.y -= excess
 			state = _try_fraction(1.0, rise_cap)
-	_dbg_state = state
-	_dbg_rise = _r_rise
-	_dbg_need = _r_need
 	if state == 2:
 		# A wall at the new pose: try the new position with the old tilt and height before sliding.
 		_g_origin = Vector3(origin.x, cur_pos.y, origin.z)
@@ -2886,8 +2824,6 @@ func _resolve(
 	var last_changed: bool = false
 	for pass_index in RESOLVE_PASSES:
 		var rise: float = _clearance_rise(pose_transform(origin, yaw, tilt))
-		if pass_index == 0:
-			_dbg_hip = rise
 		if block_on_faces and not _clear_wall and pass_index == 0:
 			_stance_on_wall(pose_transform(origin, yaw, tilt))
 		if block_on_faces and _clear_wall:
@@ -2900,10 +2836,6 @@ func _resolve(
 			base_y += rise
 			applied += rise
 		state = _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt))
-		if pass_index == 0:
-			_dbg_contacts = ""
-			for k in mini(_contact_count, 1):
-				_dbg_contacts += "[n%d d%.3f n(%.1f,%.1f,%.1f) y%.2f]" % [_contact_count, _contact_depth[k], _contact_normal[k].x, _contact_normal[k].y, _contact_normal[k].z, _contact_point[k].y]
 		var changed: bool = false
 		if state == 1 and not pitched:
 			pitched = true

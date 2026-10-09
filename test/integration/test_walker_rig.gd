@@ -201,3 +201,42 @@ func test_applying_two_builds_to_a_walker_and_freeing_it_leaves_no_orphans() -> 
 	walker.apply_build(WalkerBuild.scout())
 	root.free()
 	assert_eq(int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), before, "no orphan nodes after free")
+
+
+func test_a_strider_reaches_up_and_hauls_onto_a_block_within_its_step_up_that_its_chassis_cannot_clear() -> void:
+	# 0.95 m is below the Strider's stride step-up (0.96) but above what its chassis steps over (0.6 x 1.6 - 3 cm = 0.93).
+	var walker: WalkerBody = _wall_walker(WalkerBuild.strider())
+	_add_block(walker, 0.95)
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 1.5, -1.0)))
+	assert_lt(0.95, float(walker.stats()["step_up"]), "the block is within the step-up")
+	var highest: float = 0.0
+	Input.action_press("move_forward")
+	for chunk in 20:
+		simulate(walker, 25, 1.0 / 60.0)
+		highest = maxf(highest, walker.global_position.y)
+	Input.action_release("move_forward")
+	assert_gt(walker.reach_ups, 0, "a front foot reached up onto it")
+	assert_gt(highest, 1.8, "the body stood on top (0.95 m block + 0.96 m standing height)")
+
+
+func test_the_climb_limit_is_the_climb_plus_a_small_share_of_the_reach() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.crawler())
+	var climb: float = float(walker.stats()["climb"])
+	assert_gt(walker.climb_limit(), climb)
+	assert_lt(walker.climb_limit(), climb + 0.01, "under 1 cm: the Crawler's 0.55 m ledge is beyond it")
+
+
+func test_a_teleport_clears_the_climb_state_of_the_walker() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.strider())
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 1.5, 0.0)))
+	simulate(walker, 3, 1.0 / 60.0)
+	walker._climb_linger = 1.0
+	walker._hauling = true
+	walker._climbing = true
+	walker._hang_ok.fill(1)
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(5.0, 1.5, 5.0)))
+	simulate(walker, 2, 1.0 / 60.0)
+	assert_false(walker.is_hanging(), "no leg hangs after the teleport")
+	assert_false(walker._hauling, "the haul is over")
+	assert_lt(walker._climb_linger, 0.5, "no climb lingers")
+
