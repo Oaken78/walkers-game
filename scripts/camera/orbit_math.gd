@@ -5,6 +5,12 @@ extends RefCounted
 ## Pitch > 0 puts the camera above the pivot looking down; -10 is low, looking up.
 
 
+## Mouse motion event in physical pixels (screen_relative): `relative` is scaled by the canvas_items content
+## scale, which would make the turn rate depend on the window size.
+static func motion_px(event: InputEventMouseMotion) -> Vector2:
+	return event.screen_relative
+
+
 ## Mouse motion event to new (yaw, pitch). Uses screen_relative (physical pixels): `relative` is scaled by the
 ## canvas_items content scale, which would make the turn rate depend on the window size.
 static func motion_to_angles(
@@ -19,8 +25,8 @@ static func motion_to_angles(
 	return mouse_to_angles(
 		yaw,
 		pitch,
-		event.screen_relative.x,
-		event.screen_relative.y,
+		motion_px(event).x,
+		motion_px(event).y,
 		deg_per_px,
 		invert_y,
 		pitch_min,

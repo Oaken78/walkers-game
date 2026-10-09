@@ -74,6 +74,7 @@
     {"assert_prop": {"node": "OrbitCamera", "prop": "arm_length", "op": "<", "value": 1}},
     {"wait_frames": 20},
     {"assert_prop": {"node": ".", "prop": "camera_clear", "op": "==", "value": true}},
+    {"screenshot": "cliff_close"},
     {"call": {"node": ".", "method": "place_standin", "args": ["workshop"]}},
     {"call": {"node": "OrbitCamera", "method": "set_angles", "args": [90, 20]}},
     {"wait_frames": 10},
@@ -97,6 +98,17 @@
     {"wait_frames": 60},
     {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": ">=", "value": 35}},
     {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": "<=", "value": 55}},
+    {"call": {"node": ".", "method": "place_standin", "args": ["workshop"]}},
+    {"call": {"node": "OrbitCamera", "method": "set_angles", "args": [90, 20]}},
+    {"call": {"node": ".", "method": "hold_action", "args": ["aim", true]}},
+    {"call": {"node": ".", "method": "walk_standin", "args": [4.5, 5.0]}},
+    {"wait_frames": 150},
+    {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": ">=", "value": 85.0}},
+    {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": "<=", "value": 95.0}},
+    {"call": {"node": ".", "method": "hold_action", "args": ["aim", false]}},
+    {"wait_frames": 60},
+    {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": ">=", "value": 85.0}},
+    {"assert_prop": {"node": ".", "prop": "yaw_error_deg", "op": "<=", "value": 95.0}},
     {"assert_no_errors": true}
   ]
 }

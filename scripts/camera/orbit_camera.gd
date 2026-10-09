@@ -124,15 +124,10 @@ func _process(delta: float) -> void:
 	_apply_arm_and_shake(delta)
 
 
-## A mouse motion event, in physical pixels (screen_relative).
+## A mouse motion event, in physical pixels (screen_relative). Goes through orbit(), so the idle reset is shared.
 func orbit_event(event: InputEventMouseMotion) -> void:
-	var angles: Vector2 = OrbitMath.motion_to_angles(
-		event, yaw_deg, pitch_deg, sensitivity_deg_per_px, invert_y, pitch_min_deg, pitch_max_deg
-	)
-	yaw_deg = angles.x
-	pitch_deg = angles.y
-	_idle_s = 0.0
-	_apply_rotation()
+	var px: Vector2 = OrbitMath.motion_px(event)
+	orbit(px.x, px.y)
 
 
 ## Mouse motion in pixels. Rotation shows on this same frame (no smoothing).

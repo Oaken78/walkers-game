@@ -16,11 +16,15 @@ const LINE_COLOR := Color(0.25, 0.25, 0.25)
 @export var workshop_spot: Vector2 = Vector2(-10.0, 25.0)
 @export var cliff_z: float = 100.0
 @export var cliff_wall_gap: float = 4.0
-@export var cliff_close_gap: float = 1.0
+## cliff_close: the body sits this far from the wall (clear of it: feet reach 2.4 m out), and the camera
+## pivot is shifted toward the wall so it ends up cliff_close_pivot_gap from the rock, like a walker hugging it.
+@export var cliff_close_gap: float = 3.0
+@export var cliff_close_pivot_gap: float = 1.0
 
 var _feet: Array[MeshInstance3D] = []
 var _lines := ImmediateMesh.new()
 var _line_material: StandardMaterial3D
+var _default_offset: Vector3 = Vector3.ZERO
 var _walk_speed: float = 0.0
 var _walk_ticks: int = 0
 
@@ -55,6 +59,7 @@ func _ready() -> void:
 		await _valley.built
 	_build_standin()
 	_orbit.target = _standin
+	_default_offset = _orbit.target_offset
 	place_standin("workshop")
 
 
@@ -72,10 +77,12 @@ func _physics_process(delta: float) -> void:
 ## spot: "workshop" or "cliff". The stand-in faces -Z (up-valley); the camera is snapped to it.
 func place_standin(spot: String) -> void:
 	var xz := workshop_spot
+	_orbit.target_offset = _default_offset
 	if spot == "cliff":
 		xz = Vector2(ValleyLayout.WALL_LEFT_X + cliff_wall_gap, cliff_z)
 	elif spot == "cliff_close":
 		xz = Vector2(ValleyLayout.WALL_LEFT_X + cliff_close_gap, cliff_z)
+		_orbit.target_offset = Vector3(cliff_close_pivot_gap - cliff_close_gap, _default_offset.y, 0.0)
 	_standin.global_transform = Transform3D(
 		Basis.IDENTITY, Vector3(xz.x, _valley.floor_height(xz.x, xz.y) + ORIGIN_HEIGHT, xz.y)
 	)
