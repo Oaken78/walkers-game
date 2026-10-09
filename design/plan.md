@@ -144,6 +144,7 @@ Status: ready, in-progress, review-passed, done.
     - Juice pass: a bolt-in-flight shot with bolt readability (>= 8 px, >= 0.3 luma against sky and ground).
   - **T11 look pass:** the workshop's camera-mounted chassis light in motion, and the field walker's hull and leg
     tones; the Load "!" may need a row tint.
+- Same-side pad overlap (T13 item 10 / T16 item 6, open): pads still stack on one spot during some climbs and turns (the metric reads its -0.34 floor). The proposals measured cost 13-26 % of flat speed, so none was adopted; revisit with the walker API task or at the M1 climber leg.
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
