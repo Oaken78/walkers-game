@@ -70,12 +70,12 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Max climb height (`climb`) | 0.9 x mean leg reach (Scout 0.90 m). A front foot reaches up onto a top at most 0.4 x reach above its own hip, then the body hauls (8.2). Step-down mirrors it to the same depth | Crawler 0.54 - Strider 1.44 m |
 | Reach-up swing | 1.5 x the build's step time (Strider 0.35 s, Scout 0.27 s, Crawler 0.21 s at top speed). The foot rises to the edge + 0.15 x reach before it moves over the lip; a reaching or hanging pad is inside geometry on 0 ticks | scales with the step time |
 | Haul | Advance <= 0.4 x top speed from the first front foot on top to the last foot up; rise or lower <= 1.5 m/s (2.5 cm per tick). Body pitch peaks at 10-25 deg, never above min(grip - 5, 25) deg. Climb time from the first reach to the last foot on top: 1.0-2.0 s on a ledge 0.75 x climb tall (Strider 1.08 m, Crawler 0.40 m), Klas tunes it at the next playtest. No stretch longer than 0.4 s without horizontal or vertical progress while input is held. A rise within stride step-up costs <= 0.3 s extra | |
-| Hanging legs | A leg with no valid foothold lifts within 1 tick and hangs at its lift height (0.25 x reach), >= 0.05 m clear of geometry, pawing toward the face or edge on a 0.6 s cycle. It counts as airborne. While any leg hangs, the centre of mass stays inside the planted feet's polygon by >= 0.1 x mean reach (Strider 0.16, Scout 0.10, Crawler 0.06 m). On ground with no rise or drop beyond stride step-up, no leg hangs | |
+| Hanging legs | A leg with no valid foothold lifts within 1 tick and hangs at its lift height (0.25 x reach), >= 0.05 m clear of geometry, pawing toward the face or edge on a 0.6 s cycle. At a face it cannot climb, each paw swings a front pad up the face to the highest foothold it tested, >= 0.6 x reach above the floor and at most its hip + 0.4 x reach, >= 0.05 m off the face, then drops back to the lift height. It counts as airborne. While any leg hangs, the centre of mass stays inside the planted feet's polygon by >= 0.1 x mean reach (Strider 0.16, Scout 0.10, Crawler 0.06 m). On ground with no rise or drop beyond stride step-up, no leg hangs | |
 | Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
 | Pulse cannon | 4 shots/s, 15 dmg, projectile 60 m/s, spread 1.0 deg x leg spread factor | 0.5 - 1.5 deg |
-| Drone | 45 HP (3 hits), hitbox r 0.6 m, hover 3-6 m, 10 dmg/shot, 1 shot / 1.5 s, 0.6 s wind-up glow, bolt 25 m/s (0.6 s flight at 15 m: dodgeable by strafing) | |
+| Drone | 45 HP (3 hits), hitbox r 0.6 m, hover 3-6 m, 10 dmg/shot, 1 shot / 1.5 s, 0.6 s wind-up glow, bolt 25 m/s aimed at the walker's position with no lead (0.6 s flight at 15 m: dodgeable by strafing). Orbits at <= 6 m/s and holds still for its wind-up: stop within 0.1 s, hold 0.9 s (wind-up 0.6 s + 0.3 s after the shot), resume orbit speed over 0.3 s, so it is a still target for 0.9 s of every 1.5 s | |
 | Player chassis HP | 100 (Scout) | 70 - 180 |
 | Feedback on taking hit | 0.12 s red rim flash + 0.15 s camera shake, 0.15 m amplitude | |
 | Feedback on landing a hit | 0.06 s white flash on target, no hit-stop | |
@@ -289,6 +289,8 @@ already allow it.
   - *Crosshair far off the heading:* the weapons always fire along the heading. There is no arc lockout and nothing
     greys out. When the camera's yaw is more than 90 deg off the heading, d and h hold their last values, so the
     guns do not nod while you look behind you; they pick P up again within 90 deg.
+  - *Projectiles* fly along the weapon's aim line at their own speed and do not inherit the walker's velocity, so a
+    strafing or turning walker hits where the reticle shows, with no lead of its own.
   - *Several weapons:* LMB fires every mounted weapon. Each keeps its own rate (pulse cannon 4 shots/s), and their
     phases are spread evenly: weapon k of n fires k / (n x rate) s after the first, so two cannons fire every
     0.125 s, a steady rhythm rather than a double bang.
@@ -300,12 +302,31 @@ already allow it.
 
 ### 8.4 Enemies - drones (M0); enemy walkers (M1)
 - **Drone states:** idle-hover, patrol, alert (sees the player within 35 m, line of sight), strafe (orbits at
-  12-18 m, at <= 6 m/s, risk 8), wind-up (0.6 s, glows), fire, dead (falls, drops 3-8 scrap).
+  12-18 m, at <= 6 m/s, risk 8), wind-up (0.6 s, glows, holds still), fire, recover (0.3 s, holds still), dead
+  (falls, drops 3-8 scrap).
 - **Rules:** max 4 active drones. Drones leash back to their spawn when the player is more than 60 m away, and
   respawn on bank.
+- **The telegraph is the opening.** A drone stops to shoot: at wind-up start it brakes from orbit speed to 0
+  within 0.1 s and holds its position (hover bob <= 0.1 m) through the 0.6 s wind-up, the shot and a 0.3 s
+  recovery, then regains orbit speed over 0.3 s. That makes 0.9 s still in every 1.5 s cycle. Pulses
+  (60 m/s, 0.25 s to 15 m) fired at a holding drone on the heading hit with no lead. A drone that is orbiting
+  moves 1.5 m during that flight, more than its 0.6 m radius, so straight shots at it miss: the player fires on the
+  glow. Each player choice has a cost:
+  - *Stand and trade:* face the drone, fire from the start of its wind-up, and the third pulse lands about 0.75 s
+    in, after the drone's own bolt has left, so a standing walker takes the hit.
+  - *Strafe and shoot:* dodge with Q/E while holding the heading on the drone with A/D (a 3.4 m/s strafe drifts
+    the bearing about 13 deg/s at 15 m, against a drone 2.3 deg wide).
+  - *Strafe only:* take no hit and deal no damage.
+- **Encounters stagger the wind-ups:** drones in one encounter start their wind-ups >= 0.4 s apart, so their holds
+  rarely overlap and the walker swings between them. That is where turn rate decides a fight (Pillar 1).
+- **Bolt:** fired at the walker's chassis position at the moment of the shot, with no lead.
 - **Combat check:** a strafing Scout takes <= 40 % of the damage that an idle Scout takes in `drone_fight`, so
-  speed matters in combat (Pillar 1).
-- **Tests:** state transitions as pure functions; telegraph is >= 0.6 s before every shot; leash.
+  speed matters in combat (Pillar 1). A strafing Scout clears its 0.53 m chassis half-width in about 0.25 s
+  (accel included), well inside the bolt's 0.6 s flight at 15 m. The hold does not change this, because the bolt
+  is aimed at the walker, not the other way round. The 3-hit kill (45 HP, 15 dmg) is unchanged.
+- **Tests:** state transitions as pure functions; telegraph is >= 0.6 s before every shot; the drone's speed is 0
+  (<= 0.05 m/s) from 0.1 s after wind-up start until the end of recovery; holds in one encounter start >= 0.4 s
+  apart; the bolt aims at the chassis position at fire time; leash.
 
 ### 8.5 Salvage and economy
 - **State:** `carried_scrap`, `banked_scrap`, wreck cache (position, amount) or none, depleted node ids.
@@ -534,10 +555,19 @@ World palette, from the 50 % style mix (look-test mockup):
    tracked, and the fight turns into waiting. Bound: drone orbit speed <= 6 m/s (<= 29 deg/s at 12 m), so even the
    slowest reference build while aiming (Crawler 109 x 0.6 = 65 deg/s) turns >= 2.2x faster than a drone moves
    across its view. Builds near the 60 deg/s turn floor (aiming 36 deg/s, 1.2x) are the M1 heavy end and need a
-   check there. Spike (T07 `drone_fight`): every M0 reference build brings its heading onto a drone 90 deg off in
-   <= 1.0 s (Crawler 90 / 109 + 0.1 s ramp = 0.93 s), and a scripted tracker holding A/D toward an orbiting drone at
-   15 m lands >= 50 % of its shots with the Scout and with the Crawler. Fallback: slow the drone orbit, or drop the
-   x 0.6 aim turn penalty.
+   check there. A drone's 0.9 s hold per 1.5 s cycle (8.4) is the opening, so hits need turn rate, not leading
+   skill. Spike (T07 `drone_fight`), all checks against a drone orbiting at 15 m, 6 m/s, 4 m up, cycling as in 8.4:
+   - Every M0 reference build brings its heading onto a drone 90 deg off in <= 1.0 s (Crawler 90 / 109 + 0.1 s
+     ramp = 0.93 s).
+   - A scripted tracker aims at the drone's current position, never ahead of it. It holds A/D toward the drone's
+     bearing, releases when the bearing error is within its own stopping distance (yaw rate x 0.1 s ramp / 2) +
+     0.5 deg, and fires continuously.
+   - With the Scout and with the Crawler, the tracker hits >= 80 % of shots fired between hold start + 0.15 s and
+     hold end - 0.25 s (so they land while the drone holds), and kills a drone within its first two holds
+     (<= 3.0 s from the first hold start).
+   - The hit rate on shots fired while the drone orbits is reported, not asserted. It shows that the opening, not
+     luck, carries the fight.
+   Fallback: a longer hold (1.1 s), or drop the x 0.6 aim turn penalty.
 9. **Aiming up at close, high drones.** At camera pitch -10 the centre ray rises only 10 deg from a camera 8 m back,
    so a drone 12 m out and higher than about 4.2 m (drones hover 3-6 m) cannot be put under the dot. Mitigation:
    the aim-up range down to -20 deg (section 6). The spring arm shortens to about 5-6 m against flat ground, and
@@ -614,6 +644,9 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | After play: the descent camera floor stays as built, sliding along an unclimbable face keeps full along-face speed, the start pitch stays 20 deg | Klas at the gate, from the playtest build | Softer or no descent floor; slide damped to 70 %; start pitch 15 deg |
 | 2026-10-09 | Aim model details, building on Klas's gate row: the weapons aim at a convergence point Q on the body's heading, at the horizontal range (4-120 m) and height of the camera centre ray's hit P. Elevation is -10..+45 deg world-relative, slewing at 360 deg/s; yaw is locked to the heading. The weapons always fire (no arc lockout), and range and height hold when the camera looks more than 90 deg off the heading. Several weapons fire in even phases (two cannons every 0.125 s). HUD: a 6 px camera dot plus a 28 px world-space weapon reticle that merges into an on-target pip within 12 px, is dashed at an elevation limit, and becomes an edge chevron when off screen. RMB keeps FOV 50, the x 0.6 turn and the paused recentring, and does not swing the camera. Camera pitch -10 -> -20 (aim-up range, feet may leave the frame below -10). Risk 3 closed; new risks 8 (turn-rate tracking, drone orbit <= 6 m/s) and 9 (aiming up at close drones) | Game-designer, from Klas's gate decision ("Keep tank steering. Any weapon is pointed where the walker is directed horizontally and follows the camera vertically. Keep strafing"). Aiming at the camera ray's range and height means a target on the heading is hit exactly where the player looks. The free camera keeps the legs in view from any side (Pillar 2) and keeps Klas's T04 rule that aiming never swings the view off a drone. The dot-to-reticle gap shows the turn the build still has to make, so the turn rate is seen as well as felt (Pillar 1). World-relative limits let a Crawler tilted 39 deg on the talus still shoot level (T06 note). Pitch -20 lets the dot reach drones at 12 m and 6 m hover | Weapon elevation = the camera's own look angle (at the default 20 deg pitch the guns would fire into the ground 10 m ahead); RMB swings the camera behind the heading so the screen centre is the weapon line (breaks the T04 aim rule and hides the legs side-on in fights); one centre crosshair only (lies whenever the camera is off the heading); body-relative limits; firing all weapons at once; keep pitch -10 and cap drone hover at 4 m |
 | 2026-10-09 | Klas confirmed the aim model details: the camera dot plus world-space weapon reticle, the aim-up range down to -20 deg, the x 0.6 turn rate while `aim` is held, and the guns holding their last range and height when the camera looks more than 90 deg off the heading | Klas, choosing the game-designer's recommendation on each: the camera stays free in fights so the legs read from any side (Pillar 2), close high drones can be aimed at, fine tracking when zoomed, no guns nodding at nothing | RMB swings the camera behind the body with one centre crosshair; keep -10 deg and cap drone hover at 4 m; full turn rate while aiming; guns keep following the camera when looking behind |
+| 2026-10-09 | Drones hold still to shoot: they brake to 0 within 0.1 s at wind-up start and hold for the 0.6 s wind-up, the shot and a 0.3 s recovery, so they are still for 0.9 s of every 1.5 s, and the telegraph is the opening. Wind-ups in one encounter start >= 0.4 s apart. The drone bolt aims at the walker's position with no lead, and player projectiles do not inherit the walker's velocity. Risk 8's tracker aims at the drone's current position and must land >= 80 % of shots during holds and kill within two holds | Game-designer, from the lead's T07 check: at 60 m/s a pulse takes 0.25 s to reach 15 m, while a drone orbiting at 6 m/s moves 1.5 m, more than its 0.6 m radius, so straight aim always missed and the risk 8 spike tested leading skill, not turn rate. Holding on the glow makes the telegraph both the threat and the opening: stand and trade a hit, strafe and shoot (A/D and Q/E together), or only dodge. Staggered holds make the walker swing between drones, so turn rate decides fights (Pillar 1). The strafing-Scout bar and the 3-hit kill hold unchanged | Lead marker on the reticle (a moving pip is hard to track with digital A/D at a fixed turn rate, and it adds HUD); projectile magnetism or a 1.5 m hitbox (hits stop depending on aim, hiding turn rate); faster pulses at 150 m/s (still 0.6 m of drift, so half miss, and the pulse no longer reads in flight); a slower orbit of 2.4 m/s or less (drones read as parked and the fight goes flat) |
+| 2026-10-09 | A hit during a drone's wind-up does not cancel its shot: a drone always fires | Klas, on the game-designer's recommendation: standing and trading still costs a hit, so dodging with Q/E stays the skill and the strafing bar (<= 40 % of the idle damage) keeps its meaning; revisit if fights feel like trading | A hit during the wind-up interrupts the shot |
+| 2026-10-09 | A front leg pawing at a face it cannot climb swings its pad up the face each 0.6 s cycle (>= 0.6 x reach above the floor, at most hip + 0.4 x reach, >= 0.05 m off the face); between paws it idles at the 0.25 x reach lift height | Lead, from the T16 playtest critique: at 0.25 x reach the pad sits 15-30 px up a 1.2 m face and reads as one foot twitching, not as trying to get up, which is the moment Klas asked for and the one that shows the Scout why the ledge pocket is shut (Pillar 1). Refines Klas's paw-and-hang decision; Klas tunes it at the next playtest | Paw at the lift height only; a full reach-up attempt every cycle |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
