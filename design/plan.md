@@ -18,7 +18,8 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
   fallback) and adds the `gait_course__pitch_low` / `__pitch_high` shots. Then run `gait_course` and
   `build_contrast` plus a playtest-critic pass, and Klas
   plays the tank controls (fallback: body turns to camera yaw). If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
-- T13 (walker hardening from the T03 review) starts after T14 merges and runs while Klas plays the gate.
+- T13 (walker hardening from the T03 review, boulder lag first) and T15 (descent camera, Klas's gate decision)
+  run in parallel after T14 merges, while Klas plays the gate.
 - After the gate: T06, T07, T08 and T09 (max 3 devs at once). Then T11. T12 integrates last, including the HUD.
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
@@ -39,6 +40,7 @@ Status: ready, in-progress, review-passed, done.
 | T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
+| T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | ready | |
 | T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, test/scenarios/gait_rig.json, new test/scenarios/gait_*.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | ready | |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 

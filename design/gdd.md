@@ -107,7 +107,10 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
   turning the body. This makes the turn rate a build stat you feel in every fight (Pillar 1).
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
-  idle and pauses while `aim` is held; this is a tuning knob for the gate. Gamepad is out of scope until M2, but the action names
+  idle and pauses while `aim` is held; this is a tuning knob for the gate.
+- On a descent, where the ground behind the walker rises steeper than about 25 deg, the camera holds a pitch floor
+  of that slope minus 5 deg (about 35 deg on the 40 deg talus), so the edge behind never hides the walker. It eases
+  in and out; on flatter ground the camera returns to the player's own pitch. Gamepad is out of scope until M2, but the action names
 already allow it.
 
 ## 7. Failure, success, difficulty curve
@@ -314,7 +317,8 @@ can see, with no minimap.
 ## 10. Visual direction
 **Readability rules (in priority order):**
 1. At 8 m camera distance and any pitch from -10 to 60 deg, every foot of the player walker stays in frame and
-   is >= 12 px tall at 1080p. Its plant moment is readable: a dust puff of 0.2 s and a contact decal that fades
+   is >= 12 px tall at 1080p. Seen from behind, every foot is also clear of the chassis and the ground; side-on,
+   the near row is clear and the far row may hide behind the chassis. Its plant moment is readable: a dust puff of 0.2 s and a contact decal that fades
    in 2 s. These two are readability, not polish, and cannot be cut (Pillar 2).
 2. Threats glow magenta-red. Nothing else in the world uses that hue. The drone wind-up ramps its emissive from
    0 to 3 over 0.6 s. Because the orange accent is only 39 deg from the threat hue, threats must also read in
@@ -497,6 +501,8 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | End legs fan 0.05 x reach fore-aft (from 0.06, set earlier today) | T03 round-6 tuning: at 0.06 the short pair's planted knee rise fell to 0.099 against the 0.10 bar; 0.05 keeps fore-aft room at 0.69 and the shin about 1 deg outward | Loosen the knee bar |
 | 2026-10-09 | Over-grip ground blocks only where it stands taller than the build's step-up; a lower steep obstacle (a boulder, a small ledge) is stepped onto | Lead, from T03 round 6: blocking every over-grip contact turned 0.9 m boulders into walls for the Strider (step-up about 1.0 m), though a ledge of that height is not one; step-up already says what a leg can climb onto. Strider boulder run 22.2 -> 31.5 m | Hysteresis on the contact slope alone |
 | 2026-10-09 | The 4-leg gait_factor stays 0.85 | Lead, measured on main after the T03 merge: with the faster 4-leg wave the quad sustains 31.58 m in 10.2 s on flat ground (0.99 of its 3.124 m/s stat) with no leg holds, so the stat panel already tells the truth | Raise the factor (untested above 0.85) |
+| 2026-10-09 | Readability rule 1: side-on, the far row of feet may hide behind the chassis; seen from behind, every foot stays clear of the chassis and the ground | Klas at the gate ("it is acceptable"), from the T14 playtest review: at pitch 20 abeam the chassis hides the whole far row (Crawler 4 pads, Scout 3), as in the approved midstride view, while the near row carries the whole gait. Showing it would need pitch >= 42-47 deg or a lower chassis (M1) | Raise the camera side-on; lower the chassis now |
+| 2026-10-09 | On descents steeper than about 25 deg the camera holds a pitch floor of the slope minus 5 deg (about 35 on the talus), easing in and out | Klas at the gate ("yes"), from the T14 playtest review: walking down the talus at pitch 20 the shelf edge cuts the line of sight, and recentring puts the camera there on every trip back from the talus pocket (Pillar 3). At pitch 35 every foot is clear. Numbers to confirm with mid-face and foot shots | Global minimum pitch of 35 (loses the look-out range); leave it to the player |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
