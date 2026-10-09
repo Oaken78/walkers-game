@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/scrap_pickup.gd" id="1_script"]
+[ext_resource type="Shader" path="res://scenes/pickups/scrap_glow.gdshader" id="2_glow"]
+[ext_resource type="Shader" path="res://scenes/pickups/scrap_beam.gdshader" id="3_beam"]
+
+[sub_resource type="ShaderMaterial" id="mat_glow"]
+shader = ExtResource("2_glow")
+
+[sub_resource type="ShaderMaterial" id="mat_beam"]
+render_priority = 1
+shader = ExtResource("3_beam")
+
+[sub_resource type="BoxMesh" id="shard_big"]
+size = Vector3(0.45, 0.9, 0.45)
+
+[sub_resource type="BoxMesh" id="shard_small"]
+size = Vector3(0.3, 0.55, 0.3)
+
+[sub_resource type="CylinderMesh" id="beam_mesh"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 1.0
+radial_segments = 8
+rings = 1
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="SphereShape3D" id="pickup_shape"]
+radius = 0.6
+
+[node name="ScrapPickup" type="Area3D"]
+collision_layer = 32
+collision_mask = 0
+monitoring = false
+script = ExtResource("1_script")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("pickup_shape")
+
+[node name="ShardBig" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, 0.7071, 0, 0.45, 0)
+material_override = SubResource("mat_glow")
+mesh = SubResource("shard_big")
+
+[node name="ShardSmall" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.9, 0.3, 0, -0.3, 0.9, 0, 0, 0, 1, 0.38, 0.28, 0.1)
+material_override = SubResource("mat_glow")
+mesh = SubResource("shard_small")
+
+[node name="Beam" type="MeshInstance3D" parent="."]
+material_override = SubResource("mat_beam")
+cast_shadow = 0
+mesh = SubResource("beam_mesh")

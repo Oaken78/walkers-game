@@ -38,10 +38,10 @@ Status: ready, in-progress, review-passed, done.
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/walker/, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/gait_slopes.json, test/scenarios/build_contrast.json | 3 | done | worktree-agent-ad532fa106554226e, merged adc1aa8 |
 | T04 | Orbit camera rig (8 m, lag 0.10 s, zoom, aim, spring-arm collision) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd, test/integration/test_orbit_camera_rig.gd, test/scenarios/camera_orbit.json | 3 | done | worktree-agent-a71d1078987d3e4d0, merged a3954ea |
 | T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, scripts/world/, assets/world/, test/integration/test_valley_geometry.gd, test/scenarios/valley_overview.json | 3 | done | worktree-agent-a919dedea3b3d2cd4, merged 3207acb |
-| T06 | Pulse cannon, projectiles and the aim model (dot + world reticle, aim-up pitch -20), damage contract, risk 8 and 9 spikes | scripts/weapons/, scenes/weapons/, scripts/combat/, ui/aim/, scripts/test/aim_range.gd, scenes/test/aim_range.tscn, test/scenarios/aim_range.json, test/unit/test_weapon.gd, test/unit/test_aim_math.gd, test/unit/test_combat.gd, scripts/camera/orbit_camera.gd (pitch_min only), test/unit/test_orbit_camera.gd | 3 | in-progress | feat/walkers-pulse-cannon |
-| T07 | Drone enemy: state machine, telegraph, leash | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, test/scenarios/drone_fight.json | 3 | | |
-| T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | in-progress | feat/walkers-economy |
-| T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | ready | |
+| T06 | Pulse cannon, projectiles and the aim model (dot + world reticle, aim-up pitch -20), damage contract, risk 8 and 9 spikes | scripts/weapons/, scenes/weapons/, scripts/combat/, ui/aim/, scripts/test/aim_range.gd, scenes/test/aim_range.tscn, test/scenarios/aim_range.json, test/unit/test_weapon.gd, test/unit/test_aim_math.gd, test/unit/test_combat.gd, scripts/camera/orbit_camera.gd (pitch_min only), test/unit/test_orbit_camera.gd, test/scenarios/camera_orbit.json | 3 | done | feat/walkers-pulse-cannon, merged 0d76145 |
+| T07 | Drone enemy: brain, hold-to-shoot telegraph, bolts, leash, encounters (lean; starts after T06 merges) | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/drone_fight.json | 3 | in-progress | feat/walkers-drone |
+| T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | done | feat/walkers-economy, merged d094bc9 |
+| T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | in-progress | art/walkers-workshop |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
 | T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
@@ -93,8 +93,15 @@ Status: ready, in-progress, review-passed, done.
   lean (Klas, 2026-10-09: not much effort on the drone design now): build GDD 8.4 as written, no new design rounds.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
-- Walker API (after T16 merges, one small task owning walker_body.gd): the read-only hooks T06 and T09 ask for (top-socket and
-  leg-socket transforms, a flag to skip drawing cannons, a switch that stops field input on the workshop stand).
+- Walker API (after T16 merges, one small task owning walker_body.gd), from the T06 and T09 hand-backs:
+  - `socket_transform(socket_id)` for all 8 leg and 3 top sockets, at fixed slots;
+    - today the hips re-space by how many legs are mounted, so a free socket has no position;
+    - T09's socket_anchors.gd and T06's Tops reading go away;
+  - `top_mounts()` plus a `draw_cannons` flag, so WeaponRig stops hiding the Tops children;
+  - `chassis_size()` and its offset, so PlayerHurtbox stops reading the Chassis mesh;
+  - a way to draw an invalid build in the workshop (`apply_build(build, allow_invalid)`), so T09's DisplayBuild
+    subclass goes away;
+  - `stats()["climb"]`, if T16 does not add it.
 - T08 follow-ups (playtest-critic, optional, after the merge):
   - node value reads by ring: the crystal cluster grows with `amount` (a new GDD 10 rule, game-designer first);
   - a findable wreck cache: a brighter beam and a crate that splits from the sand by luma. The orange "your stuff"

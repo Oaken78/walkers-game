@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_rig.gd" id="1_rig"]
+[ext_resource type="Script" path="res://scripts/weapons/projectile_pool.gd" id="2_pool"]
+
+[node name="WeaponRig" type="Node3D" node_paths=PackedStringArray("pool")]
+script = ExtResource("1_rig")
+pool = NodePath("Pool")
+
+[node name="Pool" type="Node3D" parent="."]
+script = ExtResource("2_pool")

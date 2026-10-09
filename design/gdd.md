@@ -490,8 +490,13 @@ World palette, from the 50 % style mix (look-test mockup):
       Over an enemy hurtbox the stroke goes from 3 to 5 px. It never takes the threat hue (rule 2).
     - *Merge:* when the reticle centre is within 12 px of the dot, the dot hides and the ring shows a 4 px centre
       pip: on target.
-    - *At an elevation limit (-10 or +45 deg):* the ring is drawn dashed (8 segments), so a shot that cannot reach the
-      dot reads as such.
+    - *At an elevation limit (-10 or +45 deg):* the ring is drawn dashed (8 segments, about 50 % duty) only when it
+      matters: the dot is on an enemy hurtbox, or `fire` is held or was released less than 0.5 s ago. A shot that
+      cannot reach the dot then reads as such. Otherwise the ring stays solid at its true landing point, because at
+      the default pitch 20 the guns cannot reach the ground under the dot nearer than about 12 m, and an always-on
+      dashed ring teaches nothing.
+    - *Hit confirmation:* when a player projectile hits a hurtbox, the ring's stroke flashes player body `#E6E1D6`
+      for 0.06 s, so a hit reads even when the ring covers a distant target.
     - *Off screen or behind the camera:* a 32 px accent chevron at the screen edge, 24 px inset, points to where the
       guns aim. To bring them to the dot, the player turns the body toward the dot. No other HUD element sits within
       40 px of the chevron.
@@ -650,6 +655,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | T16 round 2: a steep face the chassis cannot clear in a stride (its underside height, body height x mean reach less 3 cm: Crawler 0.33, Scout 0.57, Strider 0.93 m) is reached up onto and hauled over even when it is within the stride step-up; each leg's stride step-up is 0.6 x its own reach; a reaching foothold lies at most 0.4 x the leg's reach above its hip | Code-reviewer and playtest-critic: builds held on the rise cap below their step-up (Strider 0.90 m with no reach-up, Crawler 0.30 m): step-up says what a foot can step onto, not what a body can step over | One climb rule from the step-up up |
 | 2026-10-09 | T16 round 2: the support-margin rule is enforced, not only reported: a leg hangs only when the centre of mass stays 0.16 x mean reach (0.12 hysteresis above the 0.1 floor) inside the other feet, the body first moves toward the middle of those feet, and a pose that would cut the margin below its floor is not taken; a leg that waits 1.5 s with the body unable to move goes anyway and is counted (`margin_breaks`) | Lead: the margin gate had been switched off to dodge a Crawler descent deadlock | Report the margin only |
 | 2026-10-09 | T16 round 2: the climb tolerance is 0.66 % of the mean reach (1 cm on the Strider, 0.4 cm on the Crawler), not a flat 3 cm, and a step-down foothold lies 0.30 m (was 0.22) out from the face | A flat 3 cm let the Crawler climb a 0.55 m ledge it cannot step down from (the descent lowers the body 0.32 x reach only); the Crawler's climb is 0.50 m on the 5 cm lane | Lower the body further for the descent |
+| 2026-10-09 | Aim marks: the dashed at-limit ring shows only when the dot is on an enemy or `fire` is held or was released < 0.5 s ago; the ring flashes player body white for 0.06 s on a hit | Lead, from the T06 playtest critique: at the default pitch 20 the dot lands about 6 m ahead and the guns reach the ground only at about 12 m, so the ring was dashed nearly all the time while walking and the state taught nothing; at drone range (12-15 m) the 28 px ring covers most of the target, hiding the target's own hit flash. Klas can tune both at the playtest | Lower the elevation limit to about -25 deg (barrels nod at the feet while walking, changes 8.3); always-on dashed ring; a reduced-opacity limited ring |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
