@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/camera/camera_test.gd" id="1_test"]
+[ext_resource type="PackedScene" path="res://scenes/world/valley.tscn" id="2_valley"]
+[ext_resource type="PackedScene" path="res://scenes/camera/orbit_camera.tscn" id="3_orbit"]
+
+[node name="CameraTest" type="Node3D"]
+script = ExtResource("1_test")
+
+[node name="Valley" parent="." instance=ExtResource("2_valley")]
+
+[node name="Standin" type="Node3D" parent="."]
+
+[node name="OrbitCamera" parent="." instance=ExtResource("3_orbit")]
+capture_mouse = false
