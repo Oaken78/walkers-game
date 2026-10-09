@@ -317,3 +317,24 @@ func test_fore_aft_room_from_the_rest_foot_is_at_least_0_65_reach_even_for_fanne
 	)
 	body.free()
 	assert_gte(room, 0.65)
+
+
+func test_rest_stance_meets_every_gdd_5_target_at_once() -> void:
+	var body := WalkerBody.new()
+	var out: float = body.rest_out_ratio
+	var hip_ratio: float = body.hip_height_ratio
+	body.free()
+	for reach in [0.6, 1.0, 1.6]:
+		var hip := Vector3(0.0, hip_ratio * reach, 0.0)
+		var foot := Vector3(out * reach, 0.0, 0.0)
+		var pole: Vector3 = Vector3.UP + Vector3.RIGHT * 0.8
+		var solution: TwoBoneIK.Solution = TwoBoneIK.solve(hip, foot, 0.46 * reach, 0.69 * reach, pole)
+		var shin: Vector3 = foot - solution.knee
+		# Shin leans 0 to 15 degrees outward from vertical (the knee is inboard of the foot).
+		var shin_deg: float = rad_to_deg(atan2(foot.x - solution.knee.x, shin.y * -1.0))
+		assert_gte(shin_deg, 0.0, "shin outward, reach %s" % reach)
+		assert_lte(shin_deg, 15.0, "shin outward, reach %s" % reach)
+		# Upper bone at least 15 degrees above horizontal.
+		var upper: Vector3 = solution.knee - hip
+		var upper_deg: float = rad_to_deg(atan2(upper.y, Vector2(upper.x, upper.z).length()))
+		assert_gte(upper_deg, 15.0, "upper bone, reach %s" % reach)

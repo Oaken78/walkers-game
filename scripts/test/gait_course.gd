@@ -12,13 +12,13 @@ const LANE_LEDGES: String = "ledges"
 const LANE_WALL: String = "wall"
 const LANE_POCKET: String = "pocket"
 const LANE_PATCH_A: String = "patch_a"
-const LANE_PATCH_B: String = "patch_b"
+const LANE_TALUS: String = "talus"
 const LANE_X: Dictionary = {
-	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0
+	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0, "talus": 300.0
 }
 ## Half-width of the area each lane is meant to be driven in (edge margins are measured against it).
 const LANE_HALF_WIDTH: Dictionary = {
-	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0
+	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0, "talus": 6.0
 }
 const FLAT_LENGTH: float = 150.0
 const FLAT_STRIPE: float = 2.0
@@ -30,8 +30,10 @@ const HILL_P2P: float = 1.0
 const HILL_FREQUENCY: float = 0.1
 const HILL_NOISE_RANGE: float = 0.8
 const PATCH_A_DEG: float = 29.0
-## The steep patch is the 40 degree talus slope of GDD 9.1 (inside the lane's 35-40 rule).
-const PATCH_B_DEG: float = 40.0
+## The talus lane copies ValleyLayout.talus_y: flat apron, sharp corner, 40 degrees for 4.9 m, sharp edge, flat shelf.
+const TALUS_CORNER_ALONG: float = 14.0
+const TALUS_LENGTH: float = 32.0
+const TALUS_HALF_WIDTH: float = 6.0
 const PATCH_FLANK: float = 2.4
 ## Radius of the rounded crest of the steep patches (m).
 const PATCH_CREST_ROUNDING: float = 0.6
@@ -82,7 +84,8 @@ const AUTOPILOT_DEAD_DEG: float = 3.0
 
 ## Mean slope of the two steep patches over a 2 m disc, in degrees (28-30 and 35-40).
 var patch_a_slope_deg: float = 0.0
-var patch_b_slope_deg: float = 0.0
+## Slope of the talus lane between its corner and its edge (measured from the built heights).
+var talus_slope_deg: float = 0.0
 var a_speed: float = 0.0
 var a_step_up: float = 0.0
 var b_speed: float = 0.0
@@ -132,6 +135,8 @@ var stopped_before_crest_block: bool:
 ## Every foot is past the far side of the 29 degree patch (A) or the 38 degree patch (B).
 var past_patch: bool:
 	get:
+		if _lane == LANE_TALUS:
+			return _all_feet_beyond(-(TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN) - 0.2)
 		return _all_feet_beyond(-(PATCH_ALONG + PATCH_FLANK) - 0.5)
 ## Every foot is in front of the wall face (a foot behind a thin wall means a ray started above it).
 var feet_before_wall: bool:
@@ -145,7 +150,11 @@ var feet_before_wall: bool:
 ## Distance from the walker to the foot of the patch flank (positive while still in front of it).
 var patch_gap: float:
 	get:
-		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK) if _walker != null else 0.0
+		if _walker == null:
+			return 0.0
+		if _lane == LANE_TALUS:
+			return _walker.global_position.z + TALUS_CORNER_ALONG
+		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK)
 ## Steps per leg per second of the reference run (record_steps_ref) and the current run's ratio to it.
 var steps_ref: float = 0.0
 var steps_ratio: float:
@@ -201,6 +210,7 @@ func _ready() -> void:
 	_build_ledges()
 	_build_wall()
 	_build_pocket()
+	_build_talus()
 	_telemetry.observe(_walker)
 	_walker.foot_planted.connect(_on_foot_planted)
 	spawn_at(LANE_FLAT)
@@ -314,8 +324,8 @@ func use_build(build_name: String) -> void:
 
 
 ## Teleports the walker to the start of a lane, facing -Z. Telemetry keeps its numbers (call reset() on it).
-func spawn_at(lane: String) -> void:
-	var origin: Vector3 = _spawn_point(lane)
+func spawn_at(lane: String, offset_z: float = 0.0) -> void:
+	var origin: Vector3 = _spawn_point(lane) + Vector3(0.0, 0.0, offset_z)
 	if origin.y < -100.0:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
@@ -332,9 +342,9 @@ func mark() -> void:
 	_mark = _walker.global_position
 
 
-func hold_action(action: String, pressed: bool) -> void:
+func hold_action(action: String, pressed: bool, strength: float = 1.0) -> void:
 	if pressed:
-		Input.action_press(action)
+		Input.action_press(action, strength)
 	else:
 		Input.action_release(action)
 
@@ -542,8 +552,6 @@ func _spawn_point(lane: String) -> Vector3:
 	match lane:
 		LANE_PATCH_A:
 			return Vector3(LANE_X[LANE_BUMPS] - PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
-		LANE_PATCH_B:
-			return Vector3(LANE_X[LANE_BUMPS] + PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
 		"crest":
 			return Vector3(LANE_X[LANE_BUMPS] - 8.0, SPAWN_Y, -CREST_ALONG)
 		"boulders":
@@ -561,11 +569,13 @@ func _spawn_yaw(lane: String) -> float:
 ## True while the walker is over the steep patch (its flank and crest) along the lane.
 func _on_patch() -> bool:
 	var z: float = _walker.global_position.z
+	if _lane == LANE_TALUS:
+		return z < -(TALUS_CORNER_ALONG - 1.0)
 	return z < -(PATCH_ALONG - PATCH_FLANK) and z > -(PATCH_ALONG + PATCH_FLANK)
 
 
 func _lane_key() -> String:
-	if _lane == LANE_PATCH_A or _lane == LANE_PATCH_B or _lane == "boulders" or _lane == "crest":
+	if _lane == LANE_PATCH_A or _lane == "boulders" or _lane == "crest":
 		return LANE_BUMPS
 	return _lane
 
@@ -772,7 +782,7 @@ func _terrain_height(lx: float, along: float) -> float:
 	var hills: float = HILL_P2P * 0.5 * (1.0 + n)
 	hills *= smoothstep(0.0, 4.0, minf(lx + BUMP_WIDTH * 0.5, BUMP_WIDTH * 0.5 - lx))
 	hills *= smoothstep(3.0, 9.0, along)
-	var mask: float = maxf(_patch_mask(lx, along, -PATCH_X), _patch_mask(lx, along, PATCH_X))
+	var mask: float = _patch_mask(lx, along, -PATCH_X)
 	var swell: float = 0.0
 	for centre in SWELLS_ALONG:
 		var gap: float = absf(along - centre)
@@ -783,7 +793,6 @@ func _terrain_height(lx: float, along: float) -> float:
 		swell
 		+ hills * (1.0 - mask)
 		+ _patch_height(lx, along, -PATCH_X, tan(deg_to_rad(PATCH_A_DEG)))
-		+ _patch_height(lx, along, PATCH_X, tan(deg_to_rad(PATCH_B_DEG)))
 	)
 
 
@@ -836,7 +845,6 @@ func _build_bumps() -> void:
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_noise.frequency = HILL_FREQUENCY
 	patch_a_slope_deg = _disc_slope_deg(-PATCH_X)
-	patch_b_slope_deg = _disc_slope_deg(PATCH_X)
 	var nx: int = int(BUMP_WIDTH / BUMP_CELL) + 1
 	var nz: int = int(BUMP_LENGTH / BUMP_CELL) + 1
 	var heights := PackedFloat32Array()
@@ -970,6 +978,57 @@ func _build_pocket() -> void:
 		_block_material
 	)
 	_blocks[LANE_POCKET] = [{"h": POCKET_HEIGHT, "z_front": z_front, "z_back": z_back}]
+
+
+## Height of the talus lane above its apron at `along` metres down the lane: ValleyLayout.talus_y itself.
+func _talus_height(along: float) -> float:
+	return (
+		ValleyLayout.talus_y(ValleyLayout.WALL_RIGHT_X + (along - TALUS_CORNER_ALONG))
+		- ValleyLayout.talus_apron_y()
+	)
+
+
+## The valley's talus (GDD 9.1) copied exactly: flat apron, sharp concave corner, 40 degrees for 4.9 m, sharp edge,
+## flat shelf, 12 m wide.
+func _build_talus() -> void:
+	var x: float = LANE_X[LANE_TALUS]
+	var stops: Array[float] = [
+		0.0,
+		TALUS_CORNER_ALONG,
+		TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN,
+		TALUS_LENGTH
+	]
+	var faces := PackedVector3Array()
+	for k in stops.size() - 1:
+		var a0: float = stops[k]
+		var a1: float = stops[k + 1]
+		var p00 := Vector3(x - TALUS_HALF_WIDTH, _talus_height(a0), -a0)
+		var p10 := Vector3(x + TALUS_HALF_WIDTH, _talus_height(a0), -a0)
+		var p01 := Vector3(x - TALUS_HALF_WIDTH, _talus_height(a1), -a1)
+		var p11 := Vector3(x + TALUS_HALF_WIDTH, _talus_height(a1), -a1)
+		_add_face(faces, p00, p10, p01)
+		_add_face(faces, p10, p11, p01)
+	var rise: float = _talus_height(TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN) - _talus_height(TALUS_CORNER_ALONG)
+	talus_slope_deg = rad_to_deg(atan(rise / ValleyLayout.TALUS_SLOPE_LEN))
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for vertex in faces:
+		tool.add_vertex(vertex)
+	tool.generate_normals()
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	shape.backface_collision = true
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	body.add_child(collider)
+	var instance := MeshInstance3D.new()
+	instance.mesh = tool.commit()
+	instance.material_override = _ground_material
+	body.add_child(instance)
+	add_child(body)
 
 
 func _build_wall() -> void:

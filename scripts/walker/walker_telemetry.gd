@@ -44,6 +44,8 @@ var min_knee_rise_ratio: float = INF
 var min_knee_bend_ratio: float = INF
 ## Lowest hip height above the ground below it (chassis clearance, reported).
 var min_hip_clearance_m: float = INF
+## Largest push-up (rise from ground contact) applied in one tick.
+var max_push_rise_m: float = 0.0
 ## Ticks on which a collision zeroed the commanded velocity.
 var velocity_resets: int = 0
 ## Landings per leg per second since reset.
@@ -121,6 +123,9 @@ func reset() -> void:
 	min_knee_rise_ratio = INF
 	min_knee_bend_ratio = INF
 	min_hip_clearance_m = INF
+	max_push_rise_m = 0.0
+	if walker != null:
+		walker.max_push_rise = 0.0
 	velocity_resets = 0
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
@@ -177,6 +182,7 @@ func report(label: String = "") -> void:
 		"min_knee_rise_ratio": snappedf(minf(min_knee_rise_ratio, 9.0), 0.0001),
 		"min_knee_bend_ratio": snappedf(minf(min_knee_bend_ratio, 9.0), 0.0001),
 		"min_hip_clearance_m": snappedf(minf(min_hip_clearance_m, 9.0), 0.001),
+		"max_push_rise_m": snappedf(max_push_rise_m, 0.001),
 		"velocity_resets": velocity_resets,
 		"steps_per_s": snappedf(steps_per_s, 0.001),
 		"max_foot_slope_deg": snappedf(max_foot_slope_deg, 0.01),
@@ -223,6 +229,7 @@ func _physics_process(delta: float) -> void:
 	min_knee_bend_ratio = minf(min_knee_bend_ratio, walker.min_knee_bend_ratio())
 	velocity_resets = walker.velocity_resets - _resets_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
+	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
 	_track_height(walker.height_above_plane())
 
