@@ -295,6 +295,7 @@ var _yaw_source: Node3D
 var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
+var _pocket_block: Node3D = null
 var _tallest_boulder_radius: float = 0.0
 var _tallest_boulder_top: Vector3 = Vector3.ZERO
 var _track_frames: bool = false
@@ -1144,7 +1145,7 @@ func _edge_margin() -> float:
 
 
 func _first_blocked_block() -> Dictionary:
-	var climb: float = float(_walker.stats()["climb"]) + 0.03
+	var climb: float = _walker.climb_limit()
 	for block in _blocks.get(LANE_LEDGES, []):
 		if float(block["h"]) > climb + 0.001:
 			return block
@@ -1160,10 +1161,14 @@ func _stopped_before_face() -> bool:
 	var face: float = block["z_front"]
 	if _walker.global_position.z < face:
 		return false
+	var nearest: float = INF
 	for i in _walker.leg_count():
 		if _walker.foot_position(i).z < face:
 			return false
-	return true
+		nearest = minf(nearest, _walker.foot_position(i).z - face)
+	# Stopped *at* the face (its nearest foot within one reach of it), not a long way short of it: a walker held back by
+	# the rise cap, or trapped on top of the previous block, is not "blocked by the face".
+	return nearest <= _walker.leg_reach(0)
 
 
 func _track_lateral_flips() -> void:
@@ -1553,18 +1558,23 @@ func _build_ledges() -> void:
 	_blocks[LANE_LEDGES] = list
 
 
-## One 0.8 m block with vertical faces, like the T05 pocket: climb on, then leave over the far face.
-func _build_pocket() -> void:
+## One block with vertical faces (0.8 m, or what `set_pocket_height` sets), like the valley ledge pocket: climb on, then leave: climb on, then leave over the far face.
+func _build_pocket(height: float = POCKET_HEIGHT) -> void:
 	var x: float = LANE_X[LANE_POCKET]
 	var z_front: float = SPAWN_Z - 6.0
 	var z_back: float = z_front - 6.0
 	_pocket_back_z = z_back
-	_add_box(
-		Vector3(x, POCKET_HEIGHT * 0.5, (z_front + z_back) * 0.5),
-		Vector3(LEDGE_WIDTH, POCKET_HEIGHT, 6.0),
-		_block_material
+	if _pocket_block != null:
+		_pocket_block.queue_free()
+	_pocket_block = _add_box(
+		Vector3(x, height * 0.5, (z_front + z_back) * 0.5), Vector3(LEDGE_WIDTH, height, 6.0), _block_material
 	)
-	_blocks[LANE_POCKET] = [{"h": POCKET_HEIGHT, "z_front": z_front, "z_back": z_back}]
+	_blocks[LANE_POCKET] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+
+
+## Rebuilds the pocket block at another height (the quad is blocked by 1.2 m, the Strider steps onto 0.8 m).
+func set_pocket_height(height: float) -> void:
+	_build_pocket(height)
 
 
 ## Height of the talus lane above its apron at `along` metres down the lane: ValleyLayout.talus_y itself.

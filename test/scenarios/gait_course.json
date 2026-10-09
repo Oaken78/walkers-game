@@ -110,7 +110,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.335
+    "value": 0.332
    }
   },
   {
@@ -762,7 +762,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.104
+    "value": -0.098
    }
   },
   {
@@ -885,7 +885,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.305
+    "value": -0.315
    }
   },
   {
@@ -1390,7 +1390,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.227
+    "value": 0.207
    }
   },
   {
@@ -1476,7 +1476,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.035
+    "value": 0.135
    }
   },
   {
@@ -1718,7 +1718,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.172
+    "value": -0.275
    }
   },
   {

@@ -189,3 +189,15 @@ func test_pressed_into_a_wall_the_commanded_speed_collapses() -> void:
 	simulate(walker, 300, 1.0 / 60.0)
 	assert_lt(walker.commanded_speed(), 0.5, "the ramp does not stay at top speed against the wall")
 	Input.action_release("move_forward")
+
+
+func test_applying_two_builds_to_a_walker_and_freeing_it_leaves_no_orphans() -> void:
+	var before: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	var root := _world()
+	add_child(root)
+	var walker: WalkerBody = WALKER_SCENE.instantiate()
+	root.add_child(walker)
+	walker.apply_build(WalkerBuild.strider())
+	walker.apply_build(WalkerBuild.scout())
+	root.free()
+	assert_eq(int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), before, "no orphan nodes after free")

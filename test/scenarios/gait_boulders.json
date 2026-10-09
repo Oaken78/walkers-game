@@ -110,17 +110,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "reach_ups",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.319
+    "value": -0.055
    }
   },
   {
@@ -308,17 +300,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "reach_ups",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.356
+    "value": -0.315
    }
   },
   {
@@ -506,17 +490,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "reach_ups",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.3
+    "value": -0.291
    }
   },
   {

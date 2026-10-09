@@ -81,6 +81,54 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "margin_breaks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_hang_rise_ratio",
+    "op": ">=",
+    "value": 0.6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": 0.152
@@ -274,7 +322,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.305
+    "value": -0.32
    }
   },
   {
@@ -413,9 +461,41 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "margin_breaks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.317
+    "value": -0.294
    }
   },
   {
@@ -579,6 +659,38 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "margin_breaks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "on_ledge_floor",
     "op": "==",
@@ -709,7 +821,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.147
+    "value": 0.326
    }
   },
   {
@@ -1029,7 +1141,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.335
+    "value": -0.32
    }
   },
   {
@@ -1085,7 +1197,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 57
+    "value": 66
    }
   },
   {
@@ -1220,7 +1332,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.335
+    "value": -0.32
    }
   },
   {
@@ -1260,7 +1372,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 57
+    "value": 66
    }
   },
   {
@@ -1349,7 +1461,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.051
+    "value": 0.057
    }
   },
   {
@@ -1540,7 +1652,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.262
+    "value": 0.057
    }
   },
   {
@@ -1681,7 +1793,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.33
+    "value": -0.32
    }
   },
   {

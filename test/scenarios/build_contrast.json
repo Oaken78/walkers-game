@@ -130,7 +130,8 @@
     "node": ".",
     "method": "spawn_at",
     "args": [
-     "ledges"
+     "ledges",
+     -175.0
     ]
    }
   },
@@ -148,7 +149,7 @@
    }
   },
   {
-   "wait_frames": 2900
+   "wait_frames": 3000
   },
   {
    "assert_prop": {
@@ -164,6 +165,30 @@
     "prop": "stopped_before_face",
     "op": "==",
     "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": ">=",
+    "value": 1.4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "<=",
+    "value": 1.47
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": ">",
+    "value": 0
    }
   },
   {
@@ -287,7 +312,31 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.359
+    "value": -0.32
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
    }
   },
   {
@@ -312,6 +361,15 @@
     "method": "record_result",
     "args": [
      "a"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "record_climb",
+    "args": [
+     "strider"
     ]
    }
   },
@@ -439,7 +497,8 @@
     "node": ".",
     "method": "spawn_at",
     "args": [
-     "ledges"
+     "ledges",
+     -43.0
     ]
    }
   },
@@ -457,7 +516,7 @@
    }
   },
   {
-   "wait_frames": 1000
+   "wait_frames": 2400
   },
   {
    "assert_prop": {
@@ -465,6 +524,30 @@
     "prop": "current_speed_mps",
     "op": "<",
     "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": ">=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "<=",
+    "value": 0.56
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": ">",
+    "value": 0
    }
   },
   {
@@ -594,9 +677,33 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.294
+    "value": -0.32
    }
   },
   {
@@ -618,6 +725,15 @@
   {
    "call": {
     "node": ".",
+    "method": "record_climb",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "record_result",
     "args": [
      "b"
@@ -627,7 +743,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "contrast_speed",
+    "prop": "contrast_climb",
     "op": ">=",
     "value": 0.4
    }
@@ -635,7 +751,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "contrast_step_up",
+    "prop": "contrast_speed",
     "op": ">=",
     "value": 0.4
    }
@@ -654,22 +770,6 @@
     "prop": "b_speed",
     "op": ">",
     "value": 2.51
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "a_step_up",
-    "op": "<=",
-    "value": 0.96
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "b_step_up",
-    "op": "<=",
-    "value": 0.36
    }
   },
   {

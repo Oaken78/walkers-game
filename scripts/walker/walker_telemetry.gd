@@ -15,6 +15,8 @@ const STALL_FRACTION: float = 0.1
 const STALL_LOG_S: float = 0.4
 ## A pad box is checked this far above its foot point, so the ground it stands on is not an overlap.
 const PAD_CHECK_LIFT: float = 0.03
+## Stands for "no gap on this axis" in `box_gap` (the vertical axis is left out of the pad separation).
+const PAD_SEP_NO_AXIS: float = 1000.0
 ## `ahead_rise` scans heights from AHEAD_STEP to AHEAD_MAX in these steps (m).
 const AHEAD_STEP: float = 0.1
 const AHEAD_MAX: float = 3.0
@@ -72,8 +74,8 @@ var max_resolve_pitch_deg: float = 0.0
 var stall_exempt: bool = false
 ## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
 var min_pad_gap_m: float = INF
-## Smallest separation of two planted pad boxes on one side in 3D (m): positive = apart, negative = the boxes overlap
-## (how deep). Unlike `min_pad_gap_m` it counts the sideways and vertical offsets, so it does not sit at a -0.34 floor.
+## Smallest separation of two planted pad boxes on one side in 2D, lateral and fore-aft (m): positive = apart, negative = the boxes overlap
+## (how deep). Unlike `min_pad_gap_m` it counts the sideways offset too, so it does not sit at a -0.34 floor.
 var min_pad_sep_m: float = INF
 ## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
 ## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
@@ -92,7 +94,9 @@ var max_hang_rise_ratio: float = 0.0
 var reach_ups: int = 0
 var step_ups: int = 0
 var hang_ticks: int = 0
-## `min_pad_gap_m` as it stood at the last report() (an assert one frame later would see another tick).
+## Ticks a leg went past the support-margin rule because the body could not make the margin (should be 0).
+var margin_breaks: int = 0
+## `min_pad_sep_m` (2D: lateral and fore-aft, not the vertical axis) as it stood at the last report() (an assert one frame later would see another tick).
 var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
 var max_test_motions_per_tick: int = 0
@@ -132,6 +136,8 @@ var _bob_ring: PackedFloat32Array = PackedFloat32Array()
 var _bob_index: int = 0
 var _bob_count: int = 0
 var _teleports_seen: int = 0
+## True on the tick a teleport (spawn, rebuild) happened: root rise and pad checks skip it.
+var _teleported_now: bool = false
 var _resets_base: int = 0
 var _last_root_y: float = 0.0
 var _pad_shape: BoxShape3D
@@ -139,6 +145,7 @@ var _pad_query: PhysicsShapeQueryParameters3D
 var _reach_base: int = 0
 var _step_base: int = 0
 var _hang_base: int = 0
+var _break_base: int = 0
 var _gap_ray: PhysicsRayQueryParameters3D
 
 
@@ -231,9 +238,11 @@ func reset() -> void:
 		_reach_base = walker.reach_ups
 		_step_base = walker.step_ups
 		_hang_base = walker.hang_ticks
+		_break_base = walker.margin_breaks
 	reach_ups = 0
 	step_ups = 0
 	hang_ticks = 0
+	margin_breaks = 0
 	max_pitch_deg = 0.0
 	max_root_rise_tick_m = 0.0
 	min_support_margin_ratio = INF
@@ -267,7 +276,7 @@ var tick_max_ms: float:
 
 
 func report(label: String = "") -> void:
-	pad_gap_at_report_m = minf(min_pad_gap_m, 9.0)
+	pad_gap_at_report_m = minf(min_pad_sep_m, 9.0)
 	var data: Dictionary = {
 		"label": label,
 		"legs": walker.leg_count() if walker != null else 0,
@@ -317,6 +326,7 @@ func report(label: String = "") -> void:
 		"reach_ups": reach_ups,
 		"step_ups": step_ups,
 		"hang_ticks": hang_ticks,
+		"margin_breaks": margin_breaks,
 		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
 		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
 		"tick_max_ms": snappedf(tick_max_ms, 0.001),
@@ -344,7 +354,8 @@ func report(label: String = "") -> void:
 func _physics_process(delta: float) -> void:
 	if walker == null or not is_instance_valid(walker) or walker.gait() == null:
 		return
-	if walker.teleport_count != _teleports_seen:
+	_teleported_now = walker.teleport_count != _teleports_seen
+	if _teleported_now:
 		_teleports_seen = walker.teleport_count
 		_plant_known.fill(0)
 	ticks += 1
@@ -373,6 +384,7 @@ func _physics_process(delta: float) -> void:
 	reach_ups = walker.reach_ups - _reach_base
 	step_ups = walker.step_ups - _step_base
 	hang_ticks = walker.hang_ticks - _hang_base
+	margin_breaks = walker.margin_breaks - _break_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
@@ -390,7 +402,7 @@ func _physics_process(delta: float) -> void:
 func _track_climb(_delta: float) -> void:
 	max_pitch_deg = maxf(max_pitch_deg, absf(walker.pitch_degrees()))
 	var root_y: float = walker.global_position.y
-	if walker.teleport_count == _teleports_seen and ticks > 1:
+	if not _teleported_now and ticks > 1:
 		max_root_rise_tick_m = maxf(max_root_rise_tick_m, root_y - _last_root_y)
 	_last_root_y = root_y
 	var margin: float = walker.support_margin_ratio()
@@ -408,10 +420,16 @@ func _track_climb(_delta: float) -> void:
 	var inside: bool = false
 	for i in walker.leg_count():
 		var foot: Vector3 = walker.foot_position(i)
-		_pad_query.transform = Transform3D(basis, foot + Vector3.UP * (PAD_CHECK_LIFT + 0.06))
-		if not space.intersect_shape(_pad_query, 1).is_empty():
-			inside = true
-		if walker.is_leg_hanging(i):
+		var near_face: bool = walker.is_leg_hanging(i)
+		if (near_face or walker.is_leg_climbing(i)) and not _teleported_now:
+			# Only the pads that reach, step up, step down or hang are checked, with the box tilted to the pad's ground
+			# normal (a pad on a slope lies on it; a stride pad may touch a rock it is stepping onto).
+			var up: Vector3 = walker.foot_normal(i)
+			var tilt: Basis = Basis(Quaternion(Vector3.UP, up)) * basis
+			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + 0.06))
+			if not space.intersect_shape(_pad_query, 1).is_empty():
+				inside = true
+		if near_face:
 			_gap_ray.from = foot + Vector3.UP * 0.5
 			_gap_ray.to = foot + Vector3.DOWN * 3.0
 			var hit: Dictionary = space.intersect_ray(_gap_ray)
@@ -532,7 +550,7 @@ func _track_pad_gap() -> void:
 				min_pad_sep_m,
 				box_gap(
 					absf(offset.dot(right)) - WalkerLeg.PAD_SIZE.x,
-					absf(offset.y) - WalkerLeg.PAD_SIZE.y,
+					-PAD_SEP_NO_AXIS,
 					apart - WalkerLeg.PAD_SIZE.z
 				)
 			)

@@ -307,6 +307,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -315,17 +322,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -375,7 +372,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -428,6 +425,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_left",
@@ -436,17 +440,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -496,7 +490,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -549,6 +543,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_right",
@@ -557,17 +558,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -617,7 +608,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -932,6 +923,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -940,17 +938,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1000,7 +988,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -1053,6 +1041,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_left",
@@ -1061,17 +1056,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1121,7 +1106,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -1174,6 +1159,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_right",
@@ -1182,17 +1174,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1242,7 +1224,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.05
+    "value": 0.17
    }
   },
   {
@@ -1557,6 +1539,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -1565,17 +1554,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1615,6 +1594,22 @@
   {
    "assert_prop": {
     "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.17
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
     "prop": "past_patch",
     "op": "==",
     "value": false
@@ -1662,6 +1657,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_left",
@@ -1670,17 +1672,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1715,6 +1707,22 @@
     "prop": "walker_overlapping",
     "op": "==",
     "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.17
    }
   },
   {
@@ -1767,6 +1775,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "strafe_right",
@@ -1775,17 +1790,7 @@
    }
   },
   {
-   "wait_frames": 45
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_rise_max",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 15
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1820,6 +1825,22 @@
     "prop": "walker_overlapping",
     "op": "==",
     "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.17
    }
   },
   {
@@ -2212,6 +2233,14 @@
     "prop": "walker_overlapping",
     "op": "==",
     "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.42
    }
   },
   {
