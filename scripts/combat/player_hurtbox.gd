@@ -2,8 +2,10 @@ class_name PlayerHurtbox
 extends Hurtbox
 ## The player's hurtbox (T06 plan note): a chassis-sized box on layer 2 that follows the drawn chassis, which is the
 ## walker's body pose plus the chassis centre offset, so a shot that passes between the legs misses (M0 criterion 5).
-## Enemy projectiles (T07) put layer 2 in their mask. It moves in the physics tick after the walker (priority 100),
-## so it matches the chassis the walker drew that tick.
+## It moves in the physics tick after the walker (priority 100), so it matches the chassis the walker drew that tick.
+## Layer 2 contract for enemy projectiles (T07): the WalkerBody itself is on layer 2 too (its chassis box, the hip
+## spheres and the wide Guard cylinder), so a bolt must query layer 2 for AREAS ONLY (collide_with_bodies = false).
+## Then only this hurtbox can be hit, and a bolt that passes between the legs misses (M0 criterion 5).
 
 @export var walker: WalkerBody
 
@@ -49,6 +51,9 @@ func box_size() -> Vector3:
 
 
 func _on_build_applied() -> void:
+	if not walker.is_node_ready():
+		# This hurtbox came up before its walker (a scene may order them so); build_applied follows.
+		return
 	_chassis = walker.get_node_or_null("Chassis") as MeshInstance3D
 	if _chassis == null or not (_chassis.mesh is BoxMesh):
 		push_error("PlayerHurtbox: the walker has no box chassis to follow")

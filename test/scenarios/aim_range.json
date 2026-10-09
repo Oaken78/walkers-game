@@ -628,7 +628,7 @@
     "node": ".",
     "prop": "convergence_max_deg",
     "op": "<=",
-    "value": 5.0
+    "value": 4.0
    }
   },
   {
@@ -718,7 +718,7 @@
     "node": ".",
     "prop": "convergence_max_deg",
     "op": "<=",
-    "value": 5.0
+    "value": 4.0
    }
   },
   {
@@ -1691,6 +1691,225 @@
   {
    "call": {
     "node": ".",
+    "method": "begin_risk9",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "measure_risk9",
+    "args": [
+     "scout -20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_chassis_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": ">=",
+    "value": 4.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": "<=",
+    "value": 7.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_risk9",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "measure_risk9",
+    "args": [
+     "strider -20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_chassis_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": ">=",
+    "value": 4.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": "<=",
+    "value": 7.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_risk9",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "measure_risk9",
+    "args": [
+     "crawler -20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_chassis_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": ">=",
+    "value": 4.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_arm_m",
+    "op": "<=",
+    "value": 7.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "begin_risk9_reach",
     "args": []
    }
@@ -2314,9 +2533,6 @@
      "crawler"
     ]
    }
-  },
-  {
-   "wait_frames": 1
   },
   {
    "assert_prop": {

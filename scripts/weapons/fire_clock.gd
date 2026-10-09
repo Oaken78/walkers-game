@@ -48,6 +48,12 @@ func carry_over(previous: FireClock) -> void:
 	_held = previous._held
 
 
+## Drops every armed shot (input off, cannons unmounted): a volley armed before is not fired when the trigger returns.
+func disarm() -> void:
+	for k in count:
+		_armed[k] = 0
+
+
 ## One tick. `now` is the tick's time in seconds, `held` the trigger. Returns the weapons that fire this tick.
 func update(now: float, held: bool) -> PackedInt32Array:
 	var fired := PackedInt32Array()
@@ -63,6 +69,9 @@ func update(now: float, held: bool) -> PackedInt32Array:
 				_armed[k] = 1
 	_held = held
 	for k in count:
+		if _armed[k] == 1 and now - _next_ready[k] > period():
+			# Stale: nobody asked for this shot for longer than a whole period.
+			_armed[k] = 0
 		if _armed[k] == 0 and not held:
 			continue
 		if now + EPSILON < _next_ready[k]:

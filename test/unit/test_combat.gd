@@ -121,10 +121,10 @@ func test_a_hit_on_a_wreck_does_nothing_and_signals_nothing() -> void:
 	_seen = []
 	box.hit_taken.connect(func(damage: float, from: Node, point: Vector3) -> void: _seen.append([damage, from, point]))
 	for i in 3:
-		box.take_hit(15.0, null, Vector3.ZERO)
+		assert_true(box.take_hit(15.0, null, Vector3.ZERO), "a hit on a live target counts")
 	assert_eq(box.health.hp, 0.0)
 	assert_eq(_seen.size(), 3)
-	box.take_hit(15.0, null, Vector3.ZERO)
+	assert_false(box.take_hit(15.0, null, Vector3.ZERO), "a hit on a wreck reports that it did not count")
 	assert_eq(_seen.size(), 3, "a drone falling with its hurtbox on is not hit again")
 	assert_eq(box.hits_taken, 3)
 	box.free()
@@ -236,3 +236,36 @@ func test_a_shot_between_a_real_walkers_legs_misses_its_hurtbox() -> void:
 		Vector3(-6.0, chassis.origin.y, chassis.origin.z), Vector3(6.0, chassis.origin.y, chassis.origin.z), CombatLayers.PLAYER
 	)
 	assert_false(at_chassis.is_empty(), "at the chassis it is there")
+
+
+func test_the_player_hurtbox_may_come_up_before_its_walker() -> void:
+	var box := PlayerHurtbox.new()
+	var walker: WalkerBody = preload("res://scenes/walker/walker.tscn").instantiate()
+	box.walker = walker
+	add_child_autofree(box)
+	assert_eq(box.box_size(), Vector3.ONE, "nothing to read yet, and no error")
+	add_child_autofree(walker)
+	var chassis: MeshInstance3D = walker.get_node("Chassis")
+	assert_eq(box.box_size(), (chassis.mesh as BoxMesh).size, "the walker's build_applied sized it")
+	walker.apply_build(WalkerBuild.crawler())
+	assert_eq(box.box_size(), (chassis.mesh as BoxMesh).size, "and it follows rebuilds")
+
+
+func test_a_bolt_that_queries_layer_2_with_bodies_hits_the_walker_but_areas_only_do_not() -> void:
+	var walker: WalkerBody = _walker_in_a_world(WalkerBuild.scout())
+	var box := PlayerHurtbox.new()
+	box.walker = walker
+	add_child_autofree(box)
+	await wait_physics_frames(12)
+	var origin: Vector3 = walker.body_pose().origin
+	# Above the chassis (its hurtbox is 0.3 m tall) but inside the walker's wide Guard cylinder, which is on layer 2.
+	var from := Vector3(-6.0, origin.y + 1.2, origin.z)
+	var to := Vector3(6.0, origin.y + 1.2, origin.z)
+	var with_bodies := PhysicsRayQueryParameters3D.create(from, to, CombatLayers.PLAYER)
+	with_bodies.collide_with_areas = true
+	with_bodies.collide_with_bodies = true
+	var hit: Dictionary = get_viewport().world_3d.direct_space_state.intersect_ray(with_bodies)
+	assert_false(hit.is_empty(), "with bodies on, the bolt is stopped by the WalkerBody's own colliders")
+	assert_eq(hit["collider"], walker)
+	var areas_only: Dictionary = _ray(from, to, CombatLayers.PLAYER)
+	assert_true(areas_only.is_empty(), "areas only (the contract): only the hurtbox can be hit, and it is not up here")

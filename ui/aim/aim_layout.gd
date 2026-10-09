@@ -39,9 +39,14 @@ static func stroke_screen_px(thick: bool, scale: float) -> float:
 	return RING_STROKE_PX * scale
 
 
-## The merge pip's diameter in screen pixels, never under 3 px.
+## The merge pip's body in whole screen pixels, never under 3 px (a 4 px pip is 2.7 px at 720p and drew 2 x 2).
 static func pip_screen_px(scale: float) -> float:
-	return maxf(PIP_PX * scale, MIN_STATE_PX)
+	return maxf(ceilf(PIP_PX * scale - 0.001), MIN_STATE_PX)
+
+
+## The pip's ink outline in whole screen pixels, drawn outside the body, at least 1 px.
+static func pip_outline_px(scale: float) -> float:
+	return maxf(ceilf(DOT_OUTLINE_PX * scale - 0.001), 1.0)
 
 
 ## Radius of the ring's centre line, for a stroke `stroke_screen_px` wide: the stroke's outer edge makes the 28 px

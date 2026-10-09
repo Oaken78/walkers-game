@@ -6,6 +6,9 @@ extends Control
 ## camera. Every Control here ignores the mouse, so mouse look is never swallowed (plan note).
 ## refresh() works out what to show (and runs headless, so scenarios can assert on it); _draw() only paints it.
 
+## From this body size (screen pixels) the pip is drawn as a circle; under it as a pixel-aligned square.
+const PIP_ROUND_FROM_PX: float = 6.0
+
 @export var rig: WeaponRig
 @export var orbit: OrbitCamera
 
@@ -102,9 +105,16 @@ func _draw_dot() -> void:
 
 
 func _draw_pip(at: Vector2) -> void:
-	var radius: float = AimLayout.pip_screen_px(ui_scale) * 0.5
-	draw_circle(at, radius + AimLayout.DOT_OUTLINE_PX * ui_scale, AimLayout.INK)
-	draw_circle(at, radius, AimLayout.ACCENT)
+	var body: float = AimLayout.pip_screen_px(ui_scale)
+	var outline: float = AimLayout.pip_outline_px(ui_scale)
+	if body < PIP_ROUND_FROM_PX:
+		# Small: whole-pixel squares, so the orange body is at least 3 solid pixels across with the ink outside it.
+		var top_left: Vector2 = (at - Vector2.ONE * body * 0.5).round()
+		draw_rect(Rect2(top_left - Vector2.ONE * outline, Vector2.ONE * (body + outline * 2.0)), AimLayout.INK)
+		draw_rect(Rect2(top_left, Vector2.ONE * body), AimLayout.ACCENT)
+	else:
+		draw_circle(at, body * 0.5 + outline, AimLayout.INK)
+		draw_circle(at, body * 0.5, AimLayout.ACCENT)
 
 
 func _draw_ring(at: Vector2) -> void:

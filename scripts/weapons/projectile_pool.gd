@@ -6,7 +6,8 @@ extends Node3D
 ## ends it, so damage is applied once per projectile even where hurtboxes overlap. Fire is refused at the cap and
 ## the refusals are counted.
 
-signal impacted(point: Vector3, collider: Object, projectile: Projectile)
+## `counted` is true when the collider took the hit: a hurtbox that was not a wreck. A wall or a wreck gives false.
+signal impacted(point: Vector3, collider: Object, projectile: Projectile, counted: bool)
 
 @export var cap: int = 40
 @export var lifetime_s: float = 2.0
@@ -120,9 +121,11 @@ func _land(bolt: Projectile, hit: Dictionary) -> void:
 	var source: Node = bolt.source
 	var projectile: Projectile = bolt
 	_retire(bolt)
+	var counted: bool = false
 	if collider != null and collider.has_method("take_hit"):
-		collider.take_hit(damage, source, point)
-	impacted.emit(point, collider, projectile)
+		var result: Variant = collider.call("take_hit", damage, source, point)
+		counted = result == null or bool(result)
+	impacted.emit(point, collider, projectile, counted)
 
 
 func _retire(bolt: Projectile) -> void:

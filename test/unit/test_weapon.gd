@@ -147,6 +147,32 @@ func test_a_pending_shot_is_not_doubled_by_clicking_again() -> void:
 	assert_eq(shots.size(), 2, "ten presses before cannon 1's turn still fire it once")
 
 
+func test_a_stale_armed_shot_is_not_fired_when_updates_resume() -> void:
+	var clock := FireClock.new(2, 4.0)
+	assert_eq(clock.update(0.0, true).size(), 1, "cannon 0 fires, cannon 1 is armed for 0.125 s")
+	# Input was off for 2 s (no updates), then the trigger is up.
+	assert_eq(clock.update(2.0, false).size(), 0, "the old volley is gone")
+	assert_eq(clock.update(2.0 + TICK, false).size(), 0)
+
+
+func test_disarm_drops_a_pending_volley() -> void:
+	var clock := FireClock.new(2, 4.0)
+	clock.update(0.0, true)
+	clock.disarm()
+	var shots: Array[Vector2i] = []
+	for tick in range(1, 30):
+		for weapon in clock.update(float(tick) * TICK, false):
+			shots.append(Vector2i(tick, weapon))
+	assert_eq(shots.size(), 0, "cannon 1's armed shot was dropped, and the trigger is up")
+
+
+func test_disarm_keeps_the_cooldown() -> void:
+	var clock := FireClock.new(1, 4.0)
+	clock.update(0.0, true)
+	clock.disarm()
+	assert_eq(clock.update(5.0 * TICK, true).size(), 0, "a new press 5 ticks later still waits for the cooldown")
+
+
 func test_a_rebuild_keeps_the_cooldown_and_the_trigger() -> void:
 	var before := FireClock.new(1, 4.0)
 	assert_eq(before.update(0.0, true).size(), 1)
@@ -409,3 +435,30 @@ func test_a_shot_leaves_the_muzzle_along_the_barrel_with_zero_spread() -> void:
 	assert_eq(_directions[0], rig.muzzle_direction(0))
 	var bolt: Projectile = rig.pool.get_child(0) as Projectile
 	assert_lt(bolt.global_position.distance_to(rig.muzzle_position(0)), 0.0001, "from the muzzle as drawn")
+
+
+func test_a_hit_on_a_wreck_does_not_flash_the_ring_and_a_hit_on_a_live_target_does() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.scout(), 40, 0.0)
+	var direction: Vector3 = rig.muzzle_direction(0)
+	var target := Hurtbox.new()
+	var shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.6
+	shape.shape = sphere
+	target.add_child(shape)
+	target.health = Health.new(45.0)
+	target.position = rig.muzzle_position(0) + direction * 5.0
+	add_child_autofree(target)
+	await wait_physics_frames(2)
+	target.health.damage(45.0)
+	assert_true(target.health.is_depleted())
+	rig.shoot(0)
+	for i in 8:
+		rig.pool.step(TICK)
+	assert_eq(rig.pool.impact_count, 1, "the bolt landed on the wreck's hurtbox")
+	assert_false(rig.ring_flashing, "but a wreck gives no hit confirmation")
+	target.health.repair_full()
+	rig.shoot(0)
+	for i in 8:
+		rig.pool.step(TICK)
+	assert_true(rig.ring_flashing, "a live target does")

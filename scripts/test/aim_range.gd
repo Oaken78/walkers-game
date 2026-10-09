@@ -447,7 +447,8 @@ func end_dash_watch(label: String) -> void:
 func freeze_on_hit() -> void:
 	frozen = false
 	_freeze_pending = false
-	_rig.pool.impacted.connect(_freeze_once, CONNECT_ONE_SHOT)
+	if not _rig.pool.impacted.is_connected(_freeze_once):
+		_rig.pool.impacted.connect(_freeze_once)
 
 
 func unfreeze() -> void:
@@ -504,11 +505,11 @@ func _watch_ring() -> void:
 		_flash_run = 0
 
 
-func _freeze_once(_point: Vector3, collider: Object, _projectile: Projectile) -> void:
-	if collider != null and collider.has_method("take_hit"):
-		_freeze_pending = true
-	else:
-		_rig.pool.impacted.connect(_freeze_once, CONNECT_ONE_SHOT)
+func _freeze_once(_point: Vector3, _collider: Object, _projectile: Projectile, counted: bool) -> void:
+	if not counted:
+		return
+	_freeze_pending = true
+	_rig.pool.impacted.disconnect(_freeze_once)
 
 
 func _on_fired(weapon: int, origin: Vector3, direction: Vector3) -> void:

@@ -19,10 +19,12 @@ func _init() -> void:
 	monitorable = true
 
 
-func take_hit(damage: float, source: Node, point: Vector3) -> void:
+## Returns true when the hit counted, false for a hit on a wreck.
+func take_hit(damage: float, source: Node, point: Vector3) -> bool:
 	if health != null and health.is_depleted():
-		return
+		return false
 	hits_taken += 1
 	if health != null:
 		health.damage(damage)
 	hit_taken.emit(damage, source, point)
+	return true

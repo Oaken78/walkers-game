@@ -139,6 +139,8 @@ func _physics_process(delta: float) -> void:
 	ring_dashed = limited and (aim_on_enemy or firing_recent)
 	if input_enabled:
 		_fire(held)
+	else:
+		_clock.disarm()
 	tick_usec = Time.get_ticks_usec() - started
 
 
@@ -289,6 +291,8 @@ func _mount() -> void:
 
 
 func _unmount() -> void:
+	if _clock != null:
+		_clock.disarm()
 	_show_walker_barrels()
 	for cannon in _cannons:
 		cannon.barrel.queue_free()
@@ -375,8 +379,8 @@ func _fire(held: bool) -> void:
 		shoot(k)
 
 
-func _on_impacted(_point: Vector3, collider: Object, _projectile: Projectile) -> void:
-	if collider != null and collider.has_method("take_hit"):
+func _on_impacted(_point: Vector3, _collider: Object, _projectile: Projectile, counted: bool) -> void:
+	if counted:
 		_flash_left_s = HIT_FLASH_S
 
 

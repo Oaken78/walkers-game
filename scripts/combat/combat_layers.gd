@@ -4,6 +4,7 @@ extends RefCounted
 ## 4 player_projectiles, 5 enemy_projectiles, 6 pickups, 7 triggers). The numbers are bits, not layer indices.
 
 const WORLD: int = 1
+## The player's hurtbox (an Area3D) and the WalkerBody itself are both on this layer: query it with areas only.
 const PLAYER: int = 2
 const ENEMY: int = 4
 const PLAYER_PROJECTILE: int = 8
