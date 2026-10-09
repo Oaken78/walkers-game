@@ -1,0 +1,307 @@
+extends GutTest
+## Unit tests for the pulse cannon (GDD 5, 8.3): FireClock (rate and even phases), ProjectilePool (cap, lifetime,
+## damage once per projectile) and the catalog numbers the rig reads.
+
+const TICK: float = 1.0 / 60.0
+
+var _hits: int = 0
+
+
+## Holds the trigger for `ticks` ticks from tick 0. Returns [tick, weapon] for every shot.
+func _run(clock: FireClock, ticks: int, held_at: Callable = Callable()) -> Array[Vector2i]:
+	var shots: Array[Vector2i] = []
+	for tick in ticks:
+		var held: bool = true if not held_at.is_valid() else bool(held_at.call(tick))
+		for weapon in clock.update(float(tick) * TICK, held):
+			shots.append(Vector2i(tick, weapon))
+	return shots
+
+
+func _pool(cap: int = 40) -> ProjectilePool:
+	var pool := ProjectilePool.new()
+	pool.cap = cap
+	pool.auto_step = false
+	add_child_autofree(pool)
+	return pool
+
+
+func _hurtbox(at: Vector3, radius: float = 0.6) -> Hurtbox:
+	var box := Hurtbox.new()
+	var shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = radius
+	shape.shape = sphere
+	box.add_child(shape)
+	box.position = at
+	box.hit_taken.connect(func(_damage: float, _source: Node, _point: Vector3) -> void: _hits += 1)
+	add_child_autofree(box)
+	return box
+
+
+# --- Catalog ---------------------------------------------------------------------------------------------------
+
+
+func test_the_pulse_cannon_is_4_shots_per_s_15_damage_60_m_per_s() -> void:
+	var part: Dictionary = PartCatalog.get_part(PartCatalog.PULSE_CANNON)
+	assert_eq(part["fire_rate"], 4.0)
+	assert_eq(part["damage"], 15.0)
+	assert_eq(part["projectile_speed"], 60.0)
+
+
+# --- Fire rate and phases ---------------------------------------------------------------------------------
+
+
+func test_one_cannon_fires_4_shots_in_the_first_second() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(1, 4.0), 60)
+	assert_eq(shots.size(), 4, "ticks 0, 15, 30, 45")
+	assert_eq(shots[0].x, 0, "the first shot leaves on the press tick")
+
+
+func test_the_fire_rate_is_capped_at_4_per_s_per_cannon() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(1, 4.0), 600)
+	assert_eq(shots.size(), 40, "10 s of held trigger is 40 shots")
+	for i in range(1, shots.size()):
+		assert_gte(shots[i].x - shots[i - 1].x, 15, "never two shots closer than 0.25 s")
+
+
+func test_tapping_the_trigger_does_not_beat_the_cooldown() -> void:
+	# Pressed for one tick in every three, released for two.
+	var shots: Array[Vector2i] = _run(FireClock.new(1, 4.0), 120, func(tick: int) -> bool: return tick % 3 == 0)
+	assert_lte(shots.size(), 8, "2 s of tapping is at most 8 shots")
+	for i in range(1, shots.size()):
+		assert_gte(shots[i].x - shots[i - 1].x, 15)
+
+
+func test_releasing_and_pressing_again_keeps_the_cooldown() -> void:
+	var clock := FireClock.new(1, 4.0)
+	var shots: Array[Vector2i] = _run(clock, 20, func(tick: int) -> bool: return tick < 1 or tick >= 4)
+	assert_eq(shots.size(), 2)
+	assert_eq(shots[1].x, 15, "the second press waited for the first shot's cooldown")
+
+
+func test_two_cannons_alternate_with_gaps_of_7_and_8_ticks() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 240)
+	assert_eq(shots.size(), 32, "16 shots per cannon in 4 s")
+	for i in shots.size():
+		assert_eq(shots[i].y, i % 2, "cannon 0, then cannon 1, then cannon 0 again")
+	var gaps: Array[int] = []
+	for i in range(1, shots.size()):
+		gaps.append(shots[i].x - shots[i - 1].x)
+	for gap in gaps:
+		assert_true(gap == 7 or gap == 8, "gap of %d ticks" % gap)
+	assert_eq(gaps[0], 8, "cannon 1 follows 0.125 s (7.5 ticks) after cannon 0, on the 8th tick")
+	assert_eq(gaps[1], 7)
+
+
+func test_two_cannons_fire_0_125_s_apart_on_average() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 300)
+	var span: int = shots[shots.size() - 1].x - shots[0].x
+	var mean_s: float = float(span) / float(shots.size() - 1) * TICK
+	assert_almost_eq(mean_s, 0.125, 0.01)
+
+
+func test_each_cannon_keeps_its_own_4_shots_per_s_when_two_fire() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 600)
+	var per_weapon: Array[int] = [0, 0]
+	for shot in shots:
+		per_weapon[shot.y] += 1
+	assert_eq(per_weapon[0], 40)
+	assert_eq(per_weapon[1], 40)
+
+
+func test_the_phase_gap_is_k_over_n_times_rate() -> void:
+	assert_almost_eq(FireClock.new(2, 4.0).phase_gap(), 0.125, 0.000001)
+	assert_almost_eq(FireClock.new(3, 4.0).phase_gap(), 1.0 / 12.0, 0.000001)
+	assert_almost_eq(FireClock.new(1, 4.0).phase_gap(), 0.25, 0.000001)
+
+
+func test_a_stall_does_not_fire_a_catch_up_burst() -> void:
+	var clock := FireClock.new(1, 4.0)
+	assert_eq(clock.update(0.0, true).size(), 1)
+	assert_eq(clock.update(5.0, true).size(), 1, "one shot after a 5 s stall")
+	assert_eq(clock.update(5.0 + TICK, true).size(), 0, "and not another on the next tick")
+
+
+# --- Projectile pool -----------------------------------------------------------------------------------------
+
+
+func test_at_most_40_projectiles_are_live_and_refusals_are_counted() -> void:
+	var pool: ProjectilePool = _pool()
+	var accepted: int = 0
+	for i in 45:
+		if pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0):
+			accepted += 1
+	assert_eq(accepted, 40)
+	assert_eq(pool.live, 40)
+	assert_eq(pool.refused_count, 5)
+	assert_eq(pool.spawned_count, 40)
+
+
+func test_a_slot_frees_when_a_projectile_expires() -> void:
+	var pool: ProjectilePool = _pool(2)
+	assert_true(pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0))
+	assert_true(pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0))
+	assert_false(pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0))
+	for i in 121:
+		pool.step(TICK)
+	assert_eq(pool.live, 0)
+	assert_true(pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0), "the pool reuses the bolt")
+
+
+func test_a_projectile_flies_at_60_m_per_s_and_lives_2_s() -> void:
+	var pool: ProjectilePool = _pool(1)
+	pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, 60.0, 15.0)
+	var bolt: Projectile = pool.get_child(0) as Projectile
+	pool.step(TICK)
+	assert_almost_eq(bolt.position.y, 51.0, 0.0001, "1 m per 60 Hz tick")
+	for i in 118:
+		pool.step(TICK)
+	assert_eq(pool.live, 1, "still flying at 119 ticks")
+	assert_almost_eq(bolt.position.y, 169.0, 0.001)
+	pool.step(TICK)
+	assert_eq(pool.live, 0, "gone after 2 s")
+	assert_almost_eq(bolt.travelled, 120.0, 0.001, "120 m of range")
+
+
+func test_the_projectile_speed_is_the_cannons_alone() -> void:
+	var pool: ProjectilePool = _pool(1)
+	pool.fire(Vector3.ZERO + Vector3(0.0, 50.0, 0.0), Vector3(0.0, 0.0, -1.0), 60.0, 15.0)
+	var bolt: Projectile = pool.get_child(0) as Projectile
+	assert_eq(bolt.velocity, Vector3(0.0, 0.0, -60.0), "no walker velocity is added")
+
+
+func test_a_hit_damages_once_and_ends_the_projectile() -> void:
+	var pool: ProjectilePool = _pool()
+	var box: Hurtbox = _hurtbox(Vector3(0.0, 0.0, -5.0))
+	box.health = Health.new(45.0)
+	await wait_physics_frames(2)
+	pool.fire(Vector3.ZERO, Vector3(0.0, 0.0, -1.0), 60.0, 15.0)
+	for i in 8:
+		pool.step(TICK)
+	assert_eq(box.health.hp, 30.0, "15 damage")
+	assert_eq(box.hits_taken, 1)
+	assert_eq(pool.live, 0)
+	assert_eq(pool.impact_count, 1)
+
+
+func test_damage_is_applied_once_even_where_hurtboxes_overlap() -> void:
+	var pool: ProjectilePool = _pool()
+	_hits = 0
+	var inner: Hurtbox = _hurtbox(Vector3(0.0, 0.0, -5.0), 0.6)
+	var outer: Hurtbox = _hurtbox(Vector3(0.0, 0.0, -5.2), 0.8)
+	inner.health = Health.new(45.0)
+	outer.health = Health.new(45.0)
+	await wait_physics_frames(2)
+	pool.fire(Vector3.ZERO, Vector3(0.0, 0.0, -1.0), 60.0, 15.0)
+	for i in 12:
+		pool.step(TICK)
+	assert_eq(_hits, 1, "one hit in all, not one per overlapping hurtbox")
+	assert_eq(inner.health.hp + outer.health.hp, 75.0, "15 damage taken between them")
+
+
+func test_a_projectile_is_stopped_by_the_world_and_does_no_damage() -> void:
+	var pool: ProjectilePool = _pool()
+	var wall := StaticBody3D.new()
+	wall.collision_layer = CombatLayers.WORLD
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(10.0, 10.0, 1.0)
+	shape.shape = box
+	wall.add_child(shape)
+	wall.position = Vector3(0.0, 0.0, -4.0)
+	add_child_autofree(wall)
+	var behind: Hurtbox = _hurtbox(Vector3(0.0, 0.0, -8.0))
+	behind.health = Health.new(45.0)
+	await wait_physics_frames(2)
+	pool.fire(Vector3.ZERO, Vector3(0.0, 0.0, -1.0), 60.0, 15.0)
+	for i in 12:
+		pool.step(TICK)
+	assert_eq(pool.live, 0)
+	assert_eq(behind.health.hp, 45.0, "the wall kept the shot off the target behind it")
+
+
+func test_a_projectile_passes_the_player_layer() -> void:
+	var pool: ProjectilePool = _pool()
+	var mine := PlayerHurtbox.new()
+	add_child_autofree(mine)
+	mine.set_box(Vector3(2.0, 2.0, 2.0))
+	mine.follow(Transform3D(Basis.IDENTITY, Vector3(0.0, -1.0, -3.0)))
+	mine.health = Health.new(100.0)
+	await wait_physics_frames(2)
+	pool.fire(Vector3.ZERO, Vector3(0.0, 0.0, -1.0), 60.0, 15.0)
+	for i in 8:
+		pool.step(TICK)
+	assert_eq(mine.health.hp, 100.0, "the player's own shots mask layers 1 and 3 only")
+	assert_eq(pool.live, 1, "and keep flying")
+
+
+func test_projectiles_are_on_layer_4_and_hit_layers_1_and_3() -> void:
+	var bolt := Projectile.new()
+	assert_eq(bolt.collision_layer, 8, "layer 4")
+	assert_eq(bolt.hit_mask, 5, "layers 1 and 3")
+	bolt.free()
+
+
+func test_the_per_weapon_rng_is_seeded_and_repeatable() -> void:
+	var a := RandomNumberGenerator.new()
+	var b := RandomNumberGenerator.new()
+	a.seed = WeaponRig.SEED_BASE
+	b.seed = WeaponRig.SEED_BASE
+	for i in 10:
+		assert_eq(a.randf(), b.randf())
+
+
+# --- Mount -------------------------------------------------------------------------------------------------------
+
+
+func _mounted(build: WalkerBuild) -> Array:
+	var walker: WalkerBody = preload("res://scenes/walker/walker.tscn").instantiate()
+	add_child_autofree(walker)
+	walker.apply_build(build)
+	var rig := WeaponRig.new()
+	rig.walker = walker
+	add_child_autofree(rig)
+	return [walker, rig]
+
+
+func test_the_rig_mounts_one_barrel_per_pulse_cannon_and_hides_the_walkers_own() -> void:
+	var scout: Array = _mounted(WalkerBuild.scout())
+	var rig: WeaponRig = scout[1]
+	assert_eq(rig.cannon_count(), 1)
+	var tops: Node = (scout[0] as WalkerBody).get_node("Tops")
+	assert_false((tops.get_child(0) as Node3D).visible, "the walker's static barrel is hidden")
+	var crawler: Array = _mounted(WalkerBuild.crawler())
+	assert_eq((crawler[1] as WeaponRig).cannon_count(), 2, "two cannons and an armor plate")
+	var crawler_tops: Node = (crawler[0] as WalkerBody).get_node("Tops")
+	assert_false((crawler_tops.get_child(0) as Node3D).visible)
+	assert_false((crawler_tops.get_child(1) as Node3D).visible)
+	assert_true((crawler_tops.get_child(2) as Node3D).visible, "the armor plate stays drawn")
+
+
+func test_the_rig_remounts_when_the_build_changes() -> void:
+	var mounted: Array = _mounted(WalkerBuild.scout())
+	var walker: WalkerBody = mounted[0]
+	var rig: WeaponRig = mounted[1]
+	assert_eq(rig.cannon_count(), 1)
+	walker.apply_build(WalkerBuild.crawler())
+	assert_eq(rig.cannon_count(), 2)
+	walker.apply_build(WalkerBuild.strider())
+	assert_eq(rig.cannon_count(), 1)
+	var tops: Node = walker.get_node("Tops")
+	assert_false((tops.get_child(0) as Node3D).visible, "the new static barrel is hidden too")
+
+
+func test_the_rig_shows_the_walkers_barrels_again_when_it_leaves() -> void:
+	var mounted: Array = _mounted(WalkerBuild.scout())
+	var tops: Node = (mounted[0] as WalkerBody).get_node("Tops")
+	(mounted[1] as WeaponRig).free()
+	assert_true((tops.get_child(0) as Node3D).visible)
+
+
+func test_the_rig_reads_the_builds_spread() -> void:
+	var strider: Array = _mounted(WalkerBuild.strider())
+	assert_eq((strider[1] as WeaponRig).spread_deg(), 1.5)
+	var crawler: Array = _mounted(WalkerBuild.crawler())
+	assert_eq((crawler[1] as WeaponRig).spread_deg(), 0.5)
+	(crawler[1] as WeaponRig).spread_override_deg = 0.0
+	assert_eq((crawler[1] as WeaponRig).spread_deg(), 0.0, "a scenario can set the spread to 0")

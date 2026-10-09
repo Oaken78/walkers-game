@@ -24,7 +24,8 @@ const SPEED_SMOOTHING_S: float = 0.10
 @export var aim_fov_time: float = 0.10
 @export var sensitivity_deg_per_px: float = 0.15
 @export var invert_y: bool = false
-@export var pitch_min_deg: float = -10.0
+## -20 to -10 is the aim-up range (GDD 6): the spring arm shortens against the ground there (rock wins).
+@export var pitch_min_deg: float = -20.0
 @export var pitch_max_deg: float = 60.0
 @export var start_pitch_deg: float = 20.0
 @export var position_lag: float = 0.10
