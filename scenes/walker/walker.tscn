@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/walker/walker_body.gd" id="1_body"]
+
+[node name="Walker" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 1
+motion_mode = 1
+script = ExtResource("1_body")
+
+[node name="Collider" type="CollisionShape3D" parent="."]
+
+[node name="Chassis" type="MeshInstance3D" parent="."]
+
+[node name="Tops" type="Node3D" parent="."]
+
+[node name="Legs" type="Node3D" parent="."]

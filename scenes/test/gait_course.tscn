@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/test/gait_course.gd" id="1_course"]
+[ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="2_walker"]
+[ext_resource type="Script" path="res://scripts/walker/walker_telemetry.gd" id="3_telemetry"]
+
+[node name="GaitCourse" type="Node3D"]
+script = ExtResource("1_course")
+
+[node name="Walker" parent="." instance=ExtResource("2_walker")]
+unique_name_in_owner = true
+
+[node name="Telemetry" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_telemetry")
+
+[node name="Camera" type="Camera3D" parent="."]
+current = true
+fov = 60.0
