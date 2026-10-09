@@ -59,9 +59,41 @@ const MAX_PUSH_RATE: float = 1.5
 ## How strongly the tilt target leans toward the plane through the next footholds (0 = planted feet only).
 const PITCH_AHEAD_WEIGHT: float = 0.7
 const PITCH_MAX_DEG: float = 12.0
-const PITCH_BISECT: int = 6
-const RAISE_STEPS: int = 12
-const RAISE_STEP: float = 0.005
+## Low-pass time of the ahead plane and its weight.
+const PITCH_AHEAD_SMOOTH_TIME: float = 0.06
+## The contact resolve (all counts are upper bounds on its work per candidate pose): passes that re-read the hip rays,
+## pitch attempts, raises, and the margin added to a raise.
+const RESOLVE_PASSES: int = 3
+const PITCH_PASSES: int = 3
+const RAISE_PASSES: int = 3
+const RAISE_MARGIN: float = 0.001
+const HIP_RISE_EPSILON: float = 0.0005
+## A pitch is the estimate (rise need over the contact's lever arm) x this + a little slack; the rest comes from the
+## contacts that remain. Contacts whose normal is flatter than this count as steep as it for the rise they ask.
+const PITCH_OVERSHOOT: float = 1.1
+const PITCH_SLACK_DEG: float = 0.1
+const MIN_RISE_NORMAL_Y: float = 0.2
+const MIN_PITCH_LEVER: float = 0.25
+## Candidate fractions tried when the whole step does not work (the first from the rise estimate, then shrinking).
+const FRACTION_TRIES: int = 5
+const FRACTION_RESOLUTION: float = 0.08
+const FRACTION_SHRINK: float = 0.95
+const MIN_FRACTION: float = 0.02
+## Held for the same reason as last tick: fewer tries, starting from a small fraction (the slow crawl).
+const REPEAT_TRIES: int = 2
+const REPEAT_FRACTION: float = 0.25
+## Contact buffers and the collide_shape query size of the overlap test.
+const MAX_CONTACTS: int = 24
+const SHAPE_MAX_PAIRS: int = 6
+const CONTACT_QUERY_MARGIN: float = 0.001
+## Wall probe: a horizontal ray at the feet plane + step-up + this lift runs from WALL_PROBE_BACK outside the contact
+## to WALL_PROBE_LENGTH into the obstacle; any hit means the face is taller than the step-up. Answers are cached per
+## tick by contact cell and direction.
+const WALL_PROBE_LIFT: float = 0.01
+const WALL_PROBE_BACK: float = 0.05
+const WALL_PROBE_LENGTH: float = 0.5
+const WALL_CACHE_CELLS_PER_M: float = 10.0
+const WALL_CACHE_ANGLES_PER_RAD: float = 4.0
 ## The sight ray from the hip stops this far short of the foothold.
 const SIGHT_MARGIN: float = 0.1
 ## While the body lowers toward a footing it settles this x faster than the normal height spring.
@@ -117,8 +149,17 @@ var held_this_tick: bool = false
 var teleport_count: int = 0
 ## Ticks on which a real collision zeroed the commanded velocity.
 var velocity_resets: int = 0
+## Rays cast by the last physics tick (every ray: targets, sight, hover, landing, hip clearance, wall probe).
 var rays_this_tick: int = 0
 var max_rays_per_tick: int = 0
+## `body_test_motion` calls of the last physics tick (the walker makes none since the overlap test uses shape queries).
+var test_motions_this_tick: int = 0
+## `collide_shape` queries of the last physics tick (the overlap tests; about 3 microseconds each).
+var shape_queries_this_tick: int = 0
+## Wall time of the last `_physics_process` in microseconds, and whether it counts (false on the tick that
+## planted the walker after a spawn, teleport or build change: that tick is not a walking tick).
+var tick_usec: int = 0
+var tick_counts: bool = false
 
 var _build: WalkerBuild
 var _stats: Dictionary = {}
@@ -130,8 +171,6 @@ var _defer_plant: bool = false
 var _ray: PhysicsRayQueryParameters3D
 var _shape_query: PhysicsShapeQueryParameters3D
 var _sight: PhysicsRayQueryParameters3D
-var _test_params: PhysicsTestMotionParameters3D
-var _test_result: PhysicsTestMotionResult3D
 var _top_speed: float = 4.5
 var _turn_rate: float = 120.0
 var _step_up: float = 0.6
@@ -262,6 +301,11 @@ func rest_distance_ratio(leg: int) -> float:
 ## True while a collider overlaps static geometry (used after teleport and apply_build).
 func is_overlapping_world() -> bool:
 	return _overlap_state(global_transform) != 0
+
+
+## The speed the held input asks for (the target of the acceleration ramp), m/s.
+func input_speed() -> float:
+	return _target_velocity.length()
 
 
 ## The speed the body is being driven at (commanded), m/s.
@@ -606,11 +650,10 @@ func _make_queries() -> void:
 	_sight.hit_from_inside = false
 	_shape_query = PhysicsShapeQueryParameters3D.new()
 	_shape_query.collision_mask = 1
-	_test_params = PhysicsTestMotionParameters3D.new()
-	_test_params.margin = 0.001
-	_test_params.max_collisions = 8
-	_test_params.recovery_as_collision = true
-	_test_result = PhysicsTestMotionResult3D.new()
+	_shape_query.margin = CONTACT_QUERY_MARGIN
+	_contact_point.resize(MAX_CONTACTS)
+	_contact_normal.resize(MAX_CONTACTS)
+	_contact_depth.resize(MAX_CONTACTS)
 
 
 func _rebuild() -> void:
@@ -781,6 +824,7 @@ func _build_body_meshes(
 			piece.position = Vector3(spot.x, top_y + 0.18, spot.z - 0.35)
 		piece.material_override = WalkerLeg.body_material()
 		tops.add_child(piece)
+	_cache_shapes()
 
 
 # --- Planting ------------------------------------------------------------------------------------------------------
@@ -818,11 +862,21 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 	var z: float = _origin.z
 	_base_y = plane_height(plane, x, z) + body_height_ratio * _mean_reach / plane.normal.y
 	_origin = Vector3(x, _base_y, z)
+	_ref_plane = plane
+	_wall_cache.clear()
+	_ahead_n = _tilt_n
+	_ahead_weight = PITCH_AHEAD_WEIGHT
 	# Hips clear of the ground and the colliders clear of the terrain (pitch first, raise second), as every tick does.
-	if _resolve(_origin, _base_y, _yaw, _tilt_n) != 2:
+	# An overlapping pose is never accepted: ground left over is resolved again; a wall is left to _depenetrate.
+	for attempt in 4:
+		var placed: int = _resolve(_origin, _base_y, _yaw, _tilt_n)
+		if placed == 2:
+			break
 		_origin = _r_origin
 		_base_y = _r_base
 		_tilt_n = _r_tilt
+		if placed == 0:
+			break
 	_height_above_plane = plane.distance_to(_origin)
 	_bob_gain = 0.0
 	_velocity_h = Vector3.ZERO
@@ -865,6 +919,12 @@ func _pose_legs() -> void:
 func _physics_process(delta: float) -> void:
 	if _legs.is_empty():
 		return
+	var started_usec: int = Time.get_ticks_usec()
+	rays_this_tick = 0
+	test_motions_this_tick = 0
+	shape_queries_this_tick = 0
+	_wall_cache.clear()
+	var spawn_tick: bool = _needs_plant
 	if _needs_plant:
 		_plant_all_at_rest()
 	_read_input()
@@ -887,6 +947,8 @@ func _physics_process(delta: float) -> void:
 	_pose_legs()
 	_was_input = move_input_active
 	max_rays_per_tick = maxi(max_rays_per_tick, rays_this_tick)
+	tick_usec = Time.get_ticks_usec() - started_usec
+	tick_counts = not spawn_tick
 
 
 func _read_input() -> void:
@@ -939,7 +1001,6 @@ func _update_targets() -> float:
 			planted_count += 1
 	var plane: Plane = fit_plane(_fit, planted_count) if planted_count >= 3 else Plane(Vector3.UP, gt.origin.y - body_height_ratio * _mean_reach)
 	_lower_to_y = INF
-	rays_this_tick = 0
 	for i in _legs.size():
 		var leg: WalkerLeg = _legs[i]
 		var leg_state: int = _solver.state_of(i)
@@ -1080,27 +1141,29 @@ func _homing_swings() -> void:
 			_to_normal[i] = _target_normal[i]
 
 
-## Pushes the body horizontally out of any static geometry its colliders overlap. True when it moved.
-func _collision_shapes() -> Array[CollisionShape3D]:
-	var shapes: Array[CollisionShape3D] = []
+## Collects the body's collider shapes and their local transforms (after the build's shapes were made).
+func _cache_shapes() -> void:
+	_shape_nodes.clear()
+	_shape_local.clear()
 	for child in get_children():
-		if child is CollisionShape3D:
-			shapes.append(child)
-	return shapes
+		if child is CollisionShape3D and not child.is_queued_for_deletion():
+			_shape_nodes.append(child)
+			_shape_local.append(Transform3D(Basis.IDENTITY, child.position))
 
 
+## Pushes the body horizontally out of any static geometry its colliders overlap. True when it moved.
 func _depenetrate() -> bool:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var moved: bool = false
 	for attempt in 6:
 		var push := Vector3.ZERO
 		var root: Transform3D = global_transform
-		for node in _collision_shapes():
-			_shape_query.shape = node.shape
-			_shape_query.transform = root * Transform3D(Basis.IDENTITY, node.position)
+		for k in _shape_nodes.size():
+			_shape_query.shape = _shape_nodes[k].shape
+			_shape_query.transform = root * _shape_local[k]
 			var contacts: PackedVector3Array = space.collide_shape(_shape_query, 16)
-			for k in range(0, contacts.size() - 1, 2):
-				var along: Vector3 = contacts[k + 1] - contacts[k]
+			for c in range(0, contacts.size() - 1, 2):
+				var along: Vector3 = contacts[c + 1] - contacts[c]
 				along.y = 0.0
 				if along.length() > push.length():
 					push = along
@@ -1112,38 +1175,88 @@ func _depenetrate() -> bool:
 	return moved
 
 
-## True when a collider overlaps static geometry it should not: walls, block faces, anything steeper than the
-## build's grip. Overlap with ground the walker can walk on (a slope inside its grip, a crest) is not a collision.
-## 0 = clear, 1 = overlapping ground inside the grip (the body must rise), 2 = overlapping a wall or block face.
-## Every contact counts; none is ignored.
+## Where the world touches the body in pose `root`: fills the contact buffers (point on the world, push-out
+## normal, depth) and classifies them. 0 = clear, 1 = overlapping ground inside the grip (the body must rise),
+## 2 = overlapping a wall or block face (`_wall_n` is then the horizontal normal of the deepest wall contact).
+## Overlap with ground the walker can walk on (a slope inside its grip, a crest) is not a collision. Every contact
+## counts; none is ignored. One `collide_shape` query per collider shape (a `body_test_motion` costs about 0.5 to 2 ms
+## here, these about 3 microseconds each), with the same 1 mm margin the body test used.
 func _overlap_state(root: Transform3D) -> int:
-	_test_params.from = root
-	_test_params.motion = Vector3.ZERO
-	if not PhysicsServer3D.body_test_motion(get_rid(), _test_params, _test_result):
-		return 0
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	_contact_count = 0
 	var state: int = 0
-	for k in _test_result.get_collision_count():
-		if _contact_is_wall(_test_result.get_collision_normal(k), _test_result.get_collision_point(k)):
-			return 2
-		state = 1
+	var wall_depth: float = -1.0
+	for k in _shape_nodes.size():
+		_shape_query.shape = _shape_nodes[k].shape
+		_shape_query.transform = root * _shape_local[k]
+		var pairs: PackedVector3Array = space.collide_shape(_shape_query, SHAPE_MAX_PAIRS)
+		shape_queries_this_tick += 1
+		for i in range(0, pairs.size() - 1, 2):
+			if _contact_count >= MAX_CONTACTS:
+				break
+			var push: Vector3 = pairs[i + 1] - pairs[i]
+			var depth: float = push.length()
+			var normal: Vector3 = push / depth if depth > 0.000001 else Vector3.UP
+			var point: Vector3 = pairs[i + 1]
+			_contact_point[_contact_count] = point
+			_contact_normal[_contact_count] = normal
+			_contact_depth[_contact_count] = depth
+			_contact_count += 1
+			if _contact_is_wall(normal, point):
+				state = 2
+				if depth > wall_depth:
+					wall_depth = depth
+					_wall_n = _horizontal(normal, _wall_n)
+			elif state == 0:
+				state = 1
 	return state
 
 
+## The horizontal unit direction of `normal`; `fallback` when it points (almost) straight up or down.
+static func _horizontal(normal: Vector3, fallback: Vector3) -> Vector3:
+	var flat := Vector3(normal.x, 0.0, normal.z)
+	if flat.length_squared() < 0.000001:
+		return fallback
+	return flat.normalized()
+
+
+## How far the body must rise to clear every ground contact of the last `_overlap_state`: depth over the normal's
+## upward part, the worst contact.
+func _contact_rise_need() -> float:
+	var need: float = 0.0
+	for k in _contact_count:
+		need = maxf(need, _contact_depth[k] / maxf(_contact_normal[k].y, MIN_RISE_NORMAL_Y))
+	return need
+
+
+## The pitch (radians) that lifts the worst ground contact clear: its rise need over its lever arm from the pivot.
+func _pitch_need(inverse_root: Transform3D, pivot_z: float) -> float:
+	var angle: float = 0.0
+	for k in _contact_count:
+		var lever: float = maxf(absf((inverse_root * _contact_point[k]).z - pivot_z), MIN_PITCH_LEVER)
+		var need: float = _contact_depth[k] / maxf(_contact_normal[k].y, MIN_RISE_NORMAL_Y)
+		angle = maxf(angle, need / lever)
+	return angle
+
+
 ## How far the pose must rise for every hip to stand at least HIP_CLEARANCE above the ground straight below it.
+## Ground that is steeper than the grip and would have to be ridden over sets `_clear_wall` and `_wall_n`.
 func _clearance_rise(pose: Transform3D) -> float:
 	_clear_wall = false
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var rise: float = 0.0
 	for i in _legs.size():
-		var hip: Vector3 = pose * _legs[i].hip_local
+		var hip: Vector3 = pose * _hips_local[i]
 		_sight.from = hip + Vector3.UP * (0.6 * _legs[i].reach)
 		_sight.to = hip + Vector3.DOWN * 2.0
 		var hit: Dictionary = space.intersect_ray(_sight)
+		rays_this_tick += 1
 		if not hit.is_empty():
 			var need: float = hit["position"].y + HIP_CLEARANCE - hip.y
 			if need > 0.0 and _is_wall(hit["normal"]):
 				# Ground steeper than the grip is a wall: the body does not ride up it.
 				_clear_wall = true
+				_wall_n = _horizontal(hit["normal"], _wall_n)
 			rise = maxf(rise, need)
 	return rise
 
@@ -1153,27 +1266,33 @@ func _is_wall(normal: Vector3) -> bool:
 	return rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG
 
 
-## A steep contact is a wall only if what it belongs to stands taller than the legs' step-up above the feet's plane:
-## a low rock, however round, is stepped onto (the body pitches and rises over it). A taller face has no top the
-## ray can find from above, or one higher than the step-up.
+## A steep contact is a wall only if the obstacle it belongs to stands taller than the legs' step-up above the
+## feet's plane: a low rock, however round, is stepped onto (the body pitches and rises over it). The height of the
+## face is measured, not the height of the contact: a horizontal ray at the feet plane + step-up + 1 cm runs from just
+## outside the contact into the obstacle; any hit within WALL_PROBE_LENGTH means the face is taller. The answer is
+## cached for the tick (the same contact is met by every candidate pose).
 func _contact_is_wall(normal: Vector3, point: Vector3) -> bool:
 	if not _is_wall(normal):
 		return false
-	_sight.from = point + Vector3.UP * (_step_up + _mean_reach)
-	_sight.to = point + Vector3.DOWN * 0.05
-	var top: Dictionary = get_world_3d().direct_space_state.intersect_ray(_sight)
-	if top.is_empty():
+	var flat: Vector3 = _horizontal(normal, Vector3.ZERO)
+	if flat == Vector3.ZERO:
 		return true
-	var ground: float = plane_height(_ref_plane, point.x, point.z)
-	return top["position"].y - ground > _step_up
-
-
-## The normal of the first wall among a sweep's contacts (ZERO when every contact is ground inside the grip).
-func _wall_normal(collision: KinematicCollision3D) -> Vector3:
-	for k in collision.get_collision_count():
-		if _contact_is_wall(collision.get_normal(k), collision.get_position(k)):
-			return collision.get_normal(k)
-	return Vector3.ZERO
+	var key := Vector3i(
+		roundi(point.x * WALL_CACHE_CELLS_PER_M),
+		roundi(point.z * WALL_CACHE_CELLS_PER_M),
+		roundi(atan2(flat.x, flat.z) * WALL_CACHE_ANGLES_PER_RAD)
+	)
+	if _wall_cache.has(key):
+		return _wall_cache[key]
+	var height: float = plane_height(_ref_plane, point.x, point.z) + _step_up + WALL_PROBE_LIFT
+	_sight.from = Vector3(point.x + flat.x * WALL_PROBE_BACK, height, point.z + flat.z * WALL_PROBE_BACK)
+	_sight.to = Vector3(
+		point.x - flat.x * WALL_PROBE_LENGTH, height, point.z - flat.z * WALL_PROBE_LENGTH
+	)
+	var taller: bool = not get_world_3d().direct_space_state.intersect_ray(_sight).is_empty()
+	rays_this_tick += 1
+	_wall_cache[key] = taller
+	return taller
 
 
 func _apply_move(delta: float) -> void:
@@ -1212,12 +1331,18 @@ func _apply_move(delta: float) -> void:
 		if _valid[i]:
 			_fit_ahead[ahead_count] = _target[i]
 			ahead_count += 1
+	# The lean is weighted by the share of valid targets (one target flipping moves it by 1/legs of its weight, not
+	# all of it) and the weight is low-passed.
+	var ahead_goal: float = 0.0
 	if ahead_count >= 3:
 		var ahead_plane: Plane = fit_plane(_fit_ahead, ahead_count)
-		tilt_target = clamp_tilt(
-			(tilt_target + PITCH_AHEAD_WEIGHT * clamp_tilt(ahead_plane.normal, _tilt_limit())).normalized(),
-			_tilt_limit()
-		)
+		var ahead_target: Vector3 = clamp_tilt(ahead_plane.normal, _tilt_limit())
+		if (ahead_target - _ahead_n).length_squared() > 0.0000000001:
+			_ahead_n = _ahead_n.slerp(ahead_target, ease_factor(delta, PITCH_AHEAD_SMOOTH_TIME)).normalized()
+		ahead_goal = PITCH_AHEAD_WEIGHT * float(ahead_count) / float(count)
+	_ahead_weight = ease_toward(_ahead_weight, ahead_goal, delta, PITCH_AHEAD_SMOOTH_TIME)
+	if _ahead_weight > 0.001:
+		tilt_target = clamp_tilt((tilt_target + _ahead_weight * _ahead_n).normalized(), _tilt_limit())
 	var tilt_factor: float = ease_factor(delta, tilt_smooth_time)
 	var des_n: Vector3 = _tilt_n
 	if tilt_factor > 0.0 and (tilt_target - _tilt_n).length_squared() > 0.0000000001:
@@ -1272,37 +1397,11 @@ func _apply_move(delta: float) -> void:
 			yaw = lerpf(_yaw, des_yaw, fraction)
 			tilt = des_n if fraction >= 1.0 else _tilt_n.slerp(des_n, fraction)
 			base_y = lerpf(_base_y, des_base, fraction)
-	var cur_root: Transform3D = pose_transform(Vector3(cur_pos.x, _base_y, cur_pos.z), _yaw, _tilt_n)
-	global_transform = cur_root
-	var wall_hit: bool = false
-	if move_fraction > 0.0:
-		var motion := Vector3(origin.x - cur_pos.x, 0.0, origin.z - cur_pos.z)
-		var end := Vector3(origin.x, 0.0, origin.z)
-		if motion.length_squared() > 0.000000000001:
-			# Test-only sweeps: the body is placed by hand so the physics recovery never nudges it.
-			var collision: KinematicCollision3D = move_and_collide(motion, true, 0.001, false, 6)
-			if collision != null:
-				var wall_normal: Vector3 = _wall_normal(collision)
-				if wall_normal != Vector3.ZERO:
-					# A wall or block face (any contact steeper than the grip): stop at the contact and slide.
-					wall_hit = true
-					var travel: Vector3 = collision.get_travel()
-					var slide: Vector3 = collision.get_remainder().slide(wall_normal)
-					slide.y = 0.0
-					end = Vector3(cur_pos.x + travel.x, 0.0, cur_pos.z + travel.z)
-					global_position = Vector3(end.x, global_position.y, end.z)
-					if slide.length_squared() > 0.0000000001:
-						var second: KinematicCollision3D = move_and_collide(slide, true)
-						var step: Vector3 = slide if second == null else second.get_travel()
-						end += Vector3(step.x, 0.0, step.z)
-				# else: ground the walker can walk on (a slope inside its grip): the body rises with its feet,
-				# so the move goes on through the contact.
-		origin.x = end.x
-		origin.z = end.z
-		global_position = Vector3(origin.x, global_position.y, origin.z)
 	# Resolve the pose against the ground: where in-grip ground touches the colliders the body pitches first and rises
-	# second, no faster than MAX_PUSH_RATE; it never ends a tick overlapping anything. If that pose is out of reach
-	# or too fast a push, the largest fraction of the step that works is taken; only when none does is the body held.
+	# second, no faster than MAX_PUSH_RATE; it never ends a tick overlapping anything. A wall at the new pose takes the
+	# into-face part of the move away and keeps the along-face part (a slide). If the pose is out of reach or too fast a
+	# push, the largest fraction of the step that works is taken; only when none does is the body held.
+	var motion := Vector3(origin.x - cur_pos.x, 0.0, origin.z - cur_pos.z)
 	_s_pose = pose_transform(cur_pos, _yaw, _tilt_n)
 	_s_origin = cur_pos
 	_s_base = _base_y
@@ -1313,55 +1412,60 @@ func _apply_move(delta: float) -> void:
 	_g_yaw = yaw
 	_g_tilt = tilt
 	var rise_cap: float = MAX_PUSH_RATE * delta
+	var wall_hit: bool = false
+	var slid: bool = false
 	var state: int = _try_fraction(1.0, rise_cap)
 	if state == 2:
-		# A wall at the new pose: try the new position with the old tilt and height before holding.
+		# A wall at the new pose: try the new position with the old tilt and height before sliding.
 		_g_origin = Vector3(origin.x, cur_pos.y, origin.z)
 		_g_base = _base_y
 		_g_tilt = _tilt_n
 		state = _try_fraction(1.0, rise_cap)
 		if state == 2:
-			wall_hit = true
+			state = _slide_along_wall(cur_pos, motion, rise_cap)
+			slid = state == 0
+			wall_hit = state == 2
 	_push_rise = 0.0
+	var pitch_added: float = 0.0
 	if state == 0:
 		_push_rise = _r_rise
+		pitch_added = _r_pitch
 		yaw = _r_yaw
 		origin = _r_origin
 		base_y = _r_base
 		tilt = _r_tilt
+		_held_state = 0
 	else:
 		held_this_tick = true
 		var found: bool = false
 		if state != 2:
-			var low: float = 0.0
-			var high: float = 1.0
-			var best: Array = []
-			for step in BISECT_STEPS:
-				var mid: float = (low + high) * 0.5
-				if _try_fraction(mid, rise_cap) == 0:
-					low = mid
-					found = true
-					best = [_r_origin, _r_base, _r_tilt, _r_yaw, _r_rise]
-				else:
-					high = mid
+			# The same reason held the whole pose last tick: one probe, not the whole search.
+			var tries: int = REPEAT_TRIES if state == _held_state else FRACTION_TRIES
+			found = _search_fraction(state, _r_need if state == 1 else _r_rise, rise_cap, tries)
 			if found:
-				origin = best[0]
-				base_y = best[1]
-				tilt = best[2]
-				yaw = best[3]
-				_push_rise = best[4]
-		if not found:
+				_push_rise = _b_rise
+				pitch_added = _b_pitch
+				yaw = _b_yaw
+				origin = _b_origin
+				base_y = _b_base
+				tilt = _b_tilt
+		if found:
+			_held_state = 0
+		else:
+			_held_state = state
 			origin = cur_pos
 			base_y = _base_y
 			tilt = _tilt_n
 			yaw = _yaw
 	var actual := Vector3((origin.x - cur_pos.x) / delta, 0.0, (origin.z - cur_pos.z) / delta)
 	var commanded_len: float = _velocity_h.length()
-	# A hold by the legs keeps the commanded speed (the body resumes at speed, no climb back up the ramp); only a
-	# real collision zeroes it.
+	# A hold by the legs keeps the commanded speed (the body resumes at speed, no climb back up the ramp); a slide
+	# carries on at the along-face speed; only a wall that stops the retry too zeroes it.
 	if wall_hit and commanded_len > 0.0001:
 		_velocity_h = actual
 		velocity_resets += 1
+	elif slid:
+		_velocity_h = actual
 	velocity = actual
 	var actual_rate: float = rad_to_deg(yaw - _yaw) / delta
 	if wall_hit and absf(_yaw_rate_cmd) > 0.0001:
@@ -1370,6 +1474,7 @@ func _apply_move(delta: float) -> void:
 	_base_y = base_y
 	_yaw = yaw
 	max_tilt_step_deg = maxf(max_tilt_step_deg, rad_to_deg(_tilt_n.angle_to(tilt)))
+	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, rad_to_deg(pitch_added))
 	_tilt_n = tilt
 	_origin = origin
 	max_push_rise = maxf(max_push_rise, _push_rise)
@@ -1379,8 +1484,21 @@ func _apply_move(delta: float) -> void:
 
 ## Set by `_clearance_rise` when a hip would have to rise over ground steeper than the grip.
 var _clear_wall: bool = false
+## The horizontal normal of the wall the last result named (a collider contact or steep ground under a hip), pointing
+## out of the wall toward the walker. The move slides along it.
+var _wall_n: Vector3 = Vector3.FORWARD
 ## The plane of the planted feet this tick (the reference for 'how tall is this obstacle').
 var _ref_plane: Plane = Plane(Vector3.UP, 0.0)
+## Wall answers of this tick, by contact cell and direction (cleared every tick).
+var _wall_cache: Dictionary = {}
+## Collider shapes of the body and their transforms relative to the node (cached when the build changes).
+var _shape_nodes: Array[CollisionShape3D] = []
+var _shape_local: Array[Transform3D] = []
+## Contacts of the last `_overlap_state` (reused buffers).
+var _contact_count: int = 0
+var _contact_point: PackedVector3Array = PackedVector3Array()
+var _contact_normal: PackedVector3Array = PackedVector3Array()
+var _contact_depth: PackedFloat32Array = PackedFloat32Array()
 ## Start and goal poses of the tick's candidate search (`_try_fraction`).
 var _s_pose: Transform3D = Transform3D.IDENTITY
 var _s_origin: Vector3 = Vector3.ZERO
@@ -1397,92 +1515,119 @@ var _r_origin: Vector3 = Vector3.ZERO
 var _r_base: float = 0.0
 var _r_tilt: Vector3 = Vector3.UP
 var _r_rise: float = 0.0
+## The total rise the resolve would need when it stopped at the rise cap (ground left over), and the pitch it added.
+var _r_need: float = 0.0
+var _r_pitch: float = 0.0
+## The best candidate of the fraction search.
+var _b_origin: Vector3 = Vector3.ZERO
+var _b_base: float = 0.0
+var _b_tilt: Vector3 = Vector3.UP
+var _b_yaw: float = 0.0
+var _b_rise: float = 0.0
+var _b_pitch: float = 0.0
+## Why the last tick held the whole pose (a `_try_fraction` code), 0 when it moved.
+var _held_state: int = 0
 ## The push-up the last tick applied (telemetry: pop on crests).
 var _push_rise: float = 0.0
 var max_push_rise: float = 0.0
 ## Largest tick-to-tick change of the body tilt (degrees).
 var max_tilt_step_deg: float = 0.0
+## Largest pitch the contact resolve added in one tick (degrees), apart from the smoothed tilt.
+var max_resolve_pitch_deg: float = 0.0
+## Low-passed tilt of the plane through the next footholds, and how strongly it leans the body.
+var _ahead_n: Vector3 = Vector3.UP
+var _ahead_weight: float = PITCH_AHEAD_WEIGHT
 
 
 ## Hips and colliders against the ground at a pose: raise for hip clearance, then pitch (toward the contact, by the
-## smallest angle that clears) and raise until nothing overlaps. Returns the final overlap state (0 clear, 1 ground,
-## 2 wall) and fills `_r_*`. Ground steeper than the grip never raises the body: it is a wall.
+## smallest angle that clears) and raise until nothing overlaps; hips are read again after a pitch or raise. Returns the
+## final overlap state (0 clear, 1 ground, 2 wall) and fills `_r_*`. Ground steeper than the grip never raises the
+## body: it is a wall. A rise beyond `rise_cap` is not applied: the state stays 1 and `_r_need` says how much it needs.
 func _resolve(origin: Vector3, base_y: float, yaw: float, tilt: Vector3, rise_cap: float = 10.0) -> int:
 	var applied: float = 0.0
-	var rise: float = _clearance_rise(pose_transform(origin, yaw, tilt))
-	if _clear_wall:
-		_r_origin = origin
-		_r_base = base_y
-		_r_tilt = tilt
-		_r_rise = 0.0
-		return 2
-	if rise > 0.0005:
-		origin.y += rise
-		base_y += rise
-		applied += rise
-	var state: int = _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt))
+	var tilt_in: Vector3 = tilt
+	var state: int = 0
 	var pitched: bool = false
-	var raised: int = 0
-	var across: Vector3 = Basis(Vector3.UP, yaw) * Vector3.RIGHT
-	while state == 1 and (not pitched or (raised < RAISE_STEPS and applied + RAISE_STEP <= rise_cap + 0.0001)):
-		if not pitched:
+	var across: Vector3 = (Basis(Vector3.UP, yaw) * Vector3.RIGHT).normalized()
+	_r_need = 0.0
+	for pass_index in RESOLVE_PASSES:
+		var rise: float = _clearance_rise(pose_transform(origin, yaw, tilt))
+		if _clear_wall:
+			_store_resolved(origin, base_y, tilt, tilt_in, applied)
+			return 2
+		if pass_index > 0 and rise <= HIP_RISE_EPSILON:
+			break
+		if rise > HIP_RISE_EPSILON:
+			origin.y += rise
+			base_y += rise
+			applied += rise
+		state = _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt))
+		var changed: bool = false
+		if state == 1 and not pitched:
 			pitched = true
-			# A contact ahead of the centre pitches the nose up, a contact behind pitches it down.
+			# A contact ahead of the centre pitches the nose up, a contact behind pitches it down. The body pitches
+			# about the support on the far side of the contact (rear going up, front at an edge).
 			var root: Transform3D = pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt)
 			var inverse: Transform3D = root.affine_inverse()
 			var ahead: float = 0.0
-			for k in _test_result.get_collision_count():
-				ahead += (inverse * _test_result.get_collision_point(k)).z
+			for k in _contact_count:
+				ahead += (inverse * _contact_point[k]).z
 			var direction: float = 1.0 if ahead < 0.0 else -1.0
-			var full: Vector3 = clamp_tilt(
-				tilt.rotated(across, direction * deg_to_rad(PITCH_MAX_DEG)), _tilt_limit()
-			)
-			# The body pitches about the support on the far side of the contact (rear going up, front at an edge).
 			var pivot_local := Vector3(0.0, _pivot_y, direction * _pivot_z)
-			if (full - tilt).length_squared() > 0.0000001:
-				var pivot_world: Vector3 = root * pivot_local
-				var full_origin: Vector3 = _pivot_origin(pivot_world, pivot_local, yaw, full)
-				var full_state: int = _overlap_state(
-					pose_transform(full_origin, yaw, full)
+			var pivot_world: Vector3 = root * pivot_local
+			var full_angle: float = deg_to_rad(PITCH_MAX_DEG)
+			var angle: float = minf(
+				_pitch_need(inverse, pivot_local.z) * PITCH_OVERSHOOT + deg_to_rad(PITCH_SLACK_DEG), full_angle
+			)
+			var tilt_zero: Vector3 = tilt
+			for attempt in PITCH_PASSES:
+				var candidate: Vector3 = clamp_tilt(
+					tilt_zero.rotated(across, direction * angle), _tilt_limit()
 				)
-				if full_state == 0:
-					# The smallest pitch that clears, so the tilt does not chatter from tick to tick.
-					var low: float = 0.0
-					var high: float = 1.0
-					for k in PITCH_BISECT:
-						var mid: float = (low + high) * 0.5
-						var candidate: Vector3 = tilt.slerp(full, mid).normalized()
-						var c_origin: Vector3 = _pivot_origin(pivot_world, pivot_local, yaw, candidate)
-						if _overlap_state(pose_transform(c_origin, yaw, candidate)) == 0:
-							high = mid
-						else:
-							low = mid
-					var final_tilt: Vector3 = tilt.slerp(full, high).normalized()
-					var final_origin: Vector3 = _pivot_origin(pivot_world, pivot_local, yaw, final_tilt)
-					var lift: float = final_origin.y - base_y
-					applied += maxf(lift, 0.0)
-					base_y += lift
-					origin += Vector3(final_origin.x - origin.x, lift, final_origin.z - origin.z)
-					tilt = final_tilt
-					state = 0
-				elif full_state == 1:
-					var lift_full: float = full_origin.y - base_y
-					applied += maxf(lift_full, 0.0)
-					base_y += lift_full
-					origin += Vector3(full_origin.x - origin.x, lift_full, full_origin.z - origin.z)
-					tilt = full
-					state = 1
-			continue
-		origin.y += RAISE_STEP
-		base_y += RAISE_STEP
-		applied += RAISE_STEP
-		raised += 1
-		state = _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt))
+				if (candidate - tilt).length_squared() < 0.0000001:
+					break
+				var c_origin: Vector3 = _pivot_origin(pivot_world, pivot_local, yaw, candidate)
+				var c_state: int = _overlap_state(pose_transform(c_origin, yaw, candidate))
+				if c_state == 2:
+					break
+				var lift: float = c_origin.y - base_y
+				applied += maxf(lift, 0.0)
+				base_y += lift
+				origin += Vector3(c_origin.x - origin.x, lift, c_origin.z - origin.z)
+				tilt = candidate
+				state = c_state
+				changed = true
+				if c_state == 0 or angle >= full_angle - 0.000001:
+					break
+				# Still touching: the new contacts say how much more.
+				var rest_inverse: Transform3D = pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt).affine_inverse()
+				angle = minf(angle + _pitch_need(rest_inverse, pivot_local.z) * PITCH_OVERSHOOT, full_angle)
+		var raised: int = 0
+		while state == 1 and raised < RAISE_PASSES:
+			var need: float = _contact_rise_need() + RAISE_MARGIN
+			if applied + need > rise_cap + 0.0001:
+				_r_need = applied + need
+				break
+			origin.y += need
+			base_y += need
+			applied += need
+			raised += 1
+			changed = true
+			state = _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt))
+		if state != 0 or not changed:
+			break
+	_store_resolved(origin, base_y, tilt, tilt_in, applied)
+	return state
+
+
+func _store_resolved(origin: Vector3, base_y: float, tilt: Vector3, tilt_in: Vector3, applied: float) -> void:
 	_r_origin = origin
 	_r_base = base_y
 	_r_tilt = tilt
 	_r_rise = applied
-	return state
+	_r_pitch = tilt_in.angle_to(tilt)
+	if _r_need < applied:
+		_r_need = applied
 
 
 ## Body origin after the tilt changes about a fixed pivot point (the pose root sits at the base height `base_y`).
@@ -1511,6 +1656,62 @@ func _try_fraction(f: float, rise_cap: float) -> int:
 		return 4
 	_r_yaw = yaw
 	return 0
+
+
+## The goal failed at fraction 1 (`first_state`, needing `first_need` of rise): the largest fraction of the step that
+## works, found from an estimate (the rise grows with the fraction) and then by bisecting between the best fraction
+## that worked and the smallest that failed, `tries` candidates in all. Fills `_b_*`.
+func _search_fraction(first_state: int, first_need: float, rise_cap: float, tries: int) -> bool:
+	var f: float = 0.5
+	if tries < FRACTION_TRIES:
+		f = REPEAT_FRACTION
+	elif first_need > rise_cap:
+		f = clampf(rise_cap / first_need * FRACTION_SHRINK, MIN_FRACTION, 0.9)
+	var low: float = -1.0
+	var high: float = 1.0
+	for attempt in tries:
+		var state: int = _try_fraction(f, rise_cap)
+		if state == 0:
+			low = f
+			_b_origin = _r_origin
+			_b_base = _r_base
+			_b_tilt = _r_tilt
+			_b_yaw = _r_yaw
+			_b_rise = _r_rise
+			_b_pitch = _r_pitch
+			if high - low < FRACTION_RESOLUTION:
+				break
+			f = (low + high) * 0.5
+		else:
+			high = f
+			var shrink: float = 0.5
+			if state == 1 and _r_need > rise_cap:
+				shrink = clampf(rise_cap / _r_need * FRACTION_SHRINK, 0.2, 0.9)
+			elif state == 3 and _r_rise > rise_cap:
+				shrink = clampf(rise_cap / _r_rise * FRACTION_SHRINK, 0.2, 0.9)
+			if low >= 0.0:
+				f = (low + high) * 0.5
+			else:
+				# The estimate assumes the need is proportional to the fraction; if it missed, back off harder.
+				f = maxf(f * (minf(shrink, 0.6) if attempt > 0 else shrink), MIN_FRACTION)
+	return low >= 0.0
+
+
+## A wall stops the move: the part into the face goes, the part along it stays (a second wall in a corner takes its
+## part too). The goal keeps the old tilt and height. Returns the `_try_fraction` code of the slid goal.
+func _slide_along_wall(cur_pos: Vector3, motion: Vector3, rise_cap: float) -> int:
+	var state: int = 2
+	var moved: Vector3 = motion
+	for attempt in 2:
+		var into: float = moved.dot(_wall_n)
+		if into >= 0.0:
+			break
+		moved -= _wall_n * into
+		_g_origin = Vector3(cur_pos.x + moved.x, cur_pos.y, cur_pos.z + moved.z)
+		state = _try_fraction(1.0, rise_cap)
+		if state != 2:
+			break
+	return state
 
 
 ## Gait-synced bob: lowest as a group plants, highest mid-swing; fades in with speed.

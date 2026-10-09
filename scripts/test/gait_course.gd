@@ -201,6 +201,15 @@ var steps_ratio: float:
 	get:
 		return _telemetry.steps_per_s / steps_ref if steps_ref > 0.0 else 0.0
 
+## Frame times (ms between consecutive _process calls) since track_frames(true): in the fixed-step test runs
+## that is the work per frame. Used for the boulder lag gate (no frame over 16.7 ms while walking).
+var frame_max_ms: float:
+	get:
+		return _frame_ms_max
+var frame_p95_ms: float:
+	get:
+		return _frame_percentile(0.95)
+
 var _walker: WalkerBody
 var _telemetry: WalkerTelemetry
 var _camera: Camera3D
@@ -241,6 +250,10 @@ var _yaw_source: Node3D
 var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
+var _track_frames: bool = false
+var _frame_last_usec: int = 0
+var _frame_ms: PackedFloat32Array = PackedFloat32Array()
+var _frame_ms_max: float = 0.0
 
 
 func _ready() -> void:
@@ -353,6 +366,13 @@ func _physics_process(delta: float) -> void:
 func _process(_delta: float) -> void:
 	if _walker == null:
 		return
+	if _track_frames:
+		var now_usec: int = Time.get_ticks_usec()
+		if _frame_last_usec > 0:
+			var frame_ms: float = float(now_usec - _frame_last_usec) / 1000.0
+			_frame_ms.append(frame_ms)
+			_frame_ms_max = maxf(_frame_ms_max, frame_ms)
+		_frame_last_usec = now_usec
 	if _hud_label != null:
 		_hud_label.text = "STEER: %s   (T toggles)\n%s" % [steer_mode_name, help_text]
 	if _camera_mode == "orbit":
@@ -548,6 +568,19 @@ func toggle_steer_mode() -> void:
 	else:
 		_walker.steer_mode = WalkerBody.SteerMode.TANK
 		_walker.yaw_source = null
+
+
+## Starts (clears) or stops the frame-time record; read frame_max_ms and frame_p95_ms afterwards.
+func track_frames(enabled: bool) -> void:
+	_track_frames = enabled
+	_frame_last_usec = 0
+	if enabled:
+		_frame_ms.resize(0)
+		_frame_ms_max = 0.0
+
+
+func log_frames(label: String) -> void:
+	print("FRAMES %s p95_ms=%.2f max_ms=%.2f n=%d" % [label, frame_p95_ms, frame_max_ms, _frame_ms.size()])
 
 
 func track_camera_bob(enabled: bool) -> void:
@@ -843,6 +876,14 @@ func _foot_min_height() -> float:
 	for box in _foot_boxes():
 		low = minf(low, box.size.y * scale_1080)
 	return low
+
+
+func _frame_percentile(fraction: float) -> float:
+	if _frame_ms.is_empty():
+		return 0.0
+	var sorted: PackedFloat32Array = _frame_ms.duplicate()
+	sorted.sort()
+	return sorted[clampi(int(ceil(fraction * float(sorted.size()))) - 1, 0, sorted.size() - 1)]
 
 
 func _camera_height() -> float:

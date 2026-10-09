@@ -10,6 +10,7 @@ const MOTION_EPSILON_MPS: float = 0.01
 const TOP_FRACTION: float = 0.98
 const HEIGHT_WINDOW_TICKS: int = 60
 const BOB_WINDOW_TICKS: int = 120
+const STALL_FRACTION: float = 0.1
 
 var top_speed_mps: float = 0.0
 var time_to_top_s: float = UNSET
@@ -51,6 +52,17 @@ var max_tilt_step_deg: float = 0.0
 var max_physics_ms: float = 0.0
 ## Ticks on which a collision zeroed the commanded velocity.
 var velocity_resets: int = 0
+## Longest run of consecutive ticks (seconds) below STALL_FRACTION of the commanded speed while input is held.
+## A hold (`longest_hold_s`) is only reported; a stall is what the player sees as the walker stopping.
+var longest_stall_s: float = 0.0
+## Largest pitch the contact resolve applied in one tick, apart from the smoothed tilt step (degrees).
+var max_resolve_pitch_deg: float = 0.0
+## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
+var min_pad_gap_m: float = INF
+## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
+var max_test_motions_per_tick: int = 0
+var max_shape_queries_per_tick: int = 0
+var max_rays_cast_per_tick: int = 0
 ## Landings per leg per second since reset.
 var steps_per_s: float = 0.0
 ## Steepest ground under any planted foot since reset.
@@ -65,6 +77,8 @@ var _move_start_tick: int = -1
 var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
 var _hold_run: int = 0
+var _stall_run: int = 0
+var _tick_ms: PackedFloat32Array = PackedFloat32Array()
 var _plant_pos: PackedVector3Array = PackedVector3Array()
 var _plant_known: PackedByteArray = PackedByteArray()
 var _steps: PackedInt32Array = PackedInt32Array()
@@ -132,7 +146,16 @@ func reset() -> void:
 	if walker != null:
 		walker.max_push_rise = 0.0
 		walker.max_tilt_step_deg = 0.0
+		walker.max_resolve_pitch_deg = 0.0
 	velocity_resets = 0
+	longest_stall_s = 0.0
+	max_resolve_pitch_deg = 0.0
+	min_pad_gap_m = INF
+	max_test_motions_per_tick = 0
+	max_shape_queries_per_tick = 0
+	max_rays_cast_per_tick = 0
+	_tick_ms.resize(0)
+	_stall_run = 0
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
 	ticks = 0
@@ -155,6 +178,26 @@ func reset() -> void:
 ## Fraction of ticks the body was held by rule 5 (0..1).
 func held_fraction() -> float:
 	return float(held_ticks) / float(maxi(ticks, 1))
+
+
+## Percentile (0..1) of the walker's physics-tick time in ms since reset (0 with no samples).
+func tick_percentile_ms(fraction: float) -> float:
+	if _tick_ms.is_empty():
+		return 0.0
+	var sorted: PackedFloat32Array = _tick_ms.duplicate()
+	sorted.sort()
+	return sorted[clampi(int(ceil(fraction * float(sorted.size()))) - 1, 0, sorted.size() - 1)]
+
+
+var tick_p95_ms: float:
+	get:
+		return tick_percentile_ms(0.95)
+var tick_p99_ms: float:
+	get:
+		return tick_percentile_ms(0.99)
+var tick_max_ms: float:
+	get:
+		return tick_percentile_ms(1.0)
 
 
 func report(label: String = "") -> void:
@@ -192,6 +235,16 @@ func report(label: String = "") -> void:
 		"max_tilt_step_deg": snappedf(max_tilt_step_deg, 0.01),
 		"max_physics_ms": snappedf(max_physics_ms, 0.01),
 		"velocity_resets": velocity_resets,
+		"longest_stall_s": snappedf(longest_stall_s, 0.01),
+		"max_resolve_pitch_deg": snappedf(max_resolve_pitch_deg, 0.01),
+		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
+		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
+		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
+		"tick_max_ms": snappedf(tick_max_ms, 0.001),
+		"tick_samples": _tick_ms.size(),
+		"max_test_motions_per_tick": max_test_motions_per_tick,
+		"max_shape_queries_per_tick": max_shape_queries_per_tick,
+		"max_rays_cast_per_tick": max_rays_cast_per_tick,
 		"steps_per_s": snappedf(steps_per_s, 0.001),
 		"max_foot_slope_deg": snappedf(max_foot_slope_deg, 0.01),
 		"ticks": ticks,
@@ -239,9 +292,46 @@ func _physics_process(delta: float) -> void:
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
+	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, walker.max_resolve_pitch_deg)
+	_track_stall(delta)
+	_track_pad_gap()
+	_track_cost()
 	max_physics_ms = maxf(max_physics_ms, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
 	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
 	_track_height(walker.height_above_plane())
+
+
+func _track_stall(delta: float) -> void:
+	var wanted: float = walker.input_speed()
+	if walker.move_input_active and wanted > MOTION_EPSILON_MPS and walker.velocity.length() < STALL_FRACTION * wanted:
+		_stall_run += 1
+		longest_stall_s = maxf(longest_stall_s, float(_stall_run) * delta)
+	else:
+		_stall_run = 0
+
+
+## Fore-aft distance between planted pads on one side, less a pad length (their drawn pads merge below 0.05).
+func _track_pad_gap() -> void:
+	var gait: GaitSolver = walker.gait()
+	var forward: Vector3 = Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
+	var count: int = walker.leg_count()
+	for i in count:
+		if gait.state_of(i) != GaitSolver.LegState.PLANTED:
+			continue
+		for j in range(i + 1, count):
+			if gait.state_of(j) != GaitSolver.LegState.PLANTED or walker.leg_side(i) != walker.leg_side(j):
+				continue
+			var apart: float = absf((walker.foot_position(i) - walker.foot_position(j)).dot(forward))
+			min_pad_gap_m = minf(min_pad_gap_m, apart - WalkerLeg.PAD_SIZE.z)
+
+
+func _track_cost() -> void:
+	if not walker.tick_counts:
+		return
+	_tick_ms.append(float(walker.tick_usec) / 1000.0)
+	max_test_motions_per_tick = maxi(max_test_motions_per_tick, walker.test_motions_this_tick)
+	max_shape_queries_per_tick = maxi(max_shape_queries_per_tick, walker.shape_queries_this_tick)
+	max_rays_cast_per_tick = maxi(max_rays_cast_per_tick, walker.rays_this_tick)
 
 
 func _track_timings(delta: float, speed: float, input_now: bool) -> void:
