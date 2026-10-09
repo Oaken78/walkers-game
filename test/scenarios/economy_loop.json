@@ -106,6 +106,7 @@
     {"screenshot": "pocket_node"},
     {"assert_prop": {"node": ".", "prop": "conserved", "op": "==", "value": true}},
     {"assert_prop": {"node": ".", "prop": "processing_pickups", "op": "==", "value": 0}},
+    {"call": {"node": ".", "method": "report_cost", "args": []}},
     {"assert_prop": {"node": ".", "prop": "collector_p99_usec", "op": "<=", "value": 600}},
     {"metrics": {"name": "economy_loop", "frames": 120}},
     {"assert_no_errors": true}

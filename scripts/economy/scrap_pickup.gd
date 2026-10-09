@@ -35,13 +35,15 @@ func restore() -> void:
 	_done = false
 	global_position = _home
 	visible = true
-	monitorable = true
+	set_deferred("monitorable", true)
 
 
-func _deplete() -> void:
+## Hidden and inert until restore(). Safe to call from a physics callback.
+func deplete() -> void:
 	depleted = true
+	_done = true
 	visible = false
-	monitorable = false
+	set_deferred("monitorable", false)
 	global_position = _home
 
 
@@ -49,8 +51,11 @@ func _can_collect() -> bool:
 	return not depleted
 
 
+func _on_cancelled() -> void:
+	global_position = _home
+
+
 func _deliver(economy: Economy) -> void:
 	# Whether or not the ledger took it, the node is spent: never count one node twice.
-	if economy != null:
-		economy.pick_up(site_name, amount)
-	_deplete()
+	economy.pick_up(site_name, amount)
+	deplete()

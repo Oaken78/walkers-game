@@ -255,6 +255,11 @@ func teleport_below_pocket(site_name: String, distance: float) -> void:
 	_place_walker(Vector3(wall_x - toward.x * distance, 0.0, site.z), toward)
 
 
+## Prints the measured per-tick cost of the collector scan plus every pickup's pull (bound 200 us p99).
+func report_cost() -> void:
+	print("ECON_COST ticks=%d p99_usec=%d max_usec=%d" % [collector.tick_usec.size(), collector.tick_p99_usec(), collector.tick_max_usec()])
+
+
 ## Prints the valley numbers the packet asks for (work item 7). Not a gate.
 func report_valley_numbers() -> void:
 	var by_ring: Dictionary = {}

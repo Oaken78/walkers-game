@@ -13,6 +13,8 @@ signal changed
 signal cache_changed
 ## Depleted nodes that bank just refilled (names of the sites).
 signal nodes_refilled(names: PackedStringArray)
+## Death or recall, emitted first (before the cache changes) so collectors can drop their pulls in flight.
+signal dropped(position: Vector3)
 
 var carried_scrap: int = 0
 var banked_scrap: int = 0
@@ -25,6 +27,8 @@ var total_picked_up: int = 0
 ## Wreck cache: 0 means none.
 var cache_amount: int = 0
 var cache_position: Vector3 = Vector3.ZERO
+## Counts the caches ever made; the current cache is the one with this id.
+var cache_id: int = 0
 ## Depleted scrap node names (site name -> true).
 var depleted: Dictionary = {}
 
@@ -88,11 +92,14 @@ func bank() -> int:
 
 ## Death: carried scrap becomes the wreck cache at `position`; an older cache is destroyed (counted in `lost`).
 func die(position: Vector3) -> void:
+	dropped.emit(position)
 	var had_cache: bool = cache_amount > 0
 	lost += cache_amount
 	cache_amount = carried_scrap
 	carried_scrap = 0
 	cache_position = position
+	if cache_amount > 0:
+		cache_id += 1
 	changed.emit()
 	if had_cache or cache_amount > 0:
 		cache_changed.emit()
@@ -103,10 +110,13 @@ func recall(position: Vector3) -> void:
 	die(position)
 
 
-## Takes the wreck cache back, once. Returns the amount (0 when there is none).
-func reclaim() -> int:
+## Takes the wreck cache back, once. Returns the amount (0 when there is none). With `expected_id` (a pickup's own
+## cache id) a stale cache cannot take a newer one.
+func reclaim(expected_id: int = -1) -> int:
 	var amount: int = cache_amount
 	if amount <= 0:
+		return 0
+	if expected_id >= 0 and expected_id != cache_id:
 		return 0
 	carried_scrap += amount
 	cache_amount = 0

@@ -213,3 +213,33 @@ func test_one_hold_fires_once_and_needs_a_release_to_fire_again() -> void:
 	_run(hold, false, 0.1)
 	_run(hold, true, 3.0)
 	assert_signal_emit_count(hold, "recall_requested", 2)
+
+
+func test_holding_exactly_0_3_s_is_a_cancelled_hold_not_a_tap() -> void:
+	var hold := _hold()
+	watch_signals(hold)
+	_run(hold, true, 0.3)
+	_run(hold, false, 0.1)
+	assert_signal_emitted(hold, "cancelled")
+	assert_signal_not_emitted(hold, "tapped")
+
+
+func test_a_pause_drops_the_hold_without_a_signal() -> void:
+	var hold := _hold()
+	watch_signals(hold)
+	_run(hold, true, 1.5)
+	hold.notification(Node.NOTIFICATION_PAUSED)
+	assert_eq(hold.progress, 0.0)
+	_run(hold, false, 0.1)
+	assert_signal_not_emitted(hold, "cancelled")
+	assert_signal_not_emitted(hold, "tapped")
+
+
+func test_a_freed_target_does_not_break_the_recall() -> void:
+	var hold := _hold()
+	var body := Node3D.new()
+	hold.target = body
+	body.free()
+	watch_signals(hold)
+	_run(hold, true, 3.0)
+	assert_signal_emit_count(hold, "recall_requested", 1)
