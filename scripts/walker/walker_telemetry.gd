@@ -67,6 +67,8 @@ var min_knee_bend_ratio: float = INF
 var min_hip_clearance_m: float = INF
 ## Largest push-up (rise from ground contact) applied in one tick.
 var max_push_rise_m: float = 0.0
+var max_landing_snap_m: float = 0.0
+var max_landing_slide_m: float = 0.0
 ## Largest tick-to-tick tilt change, and the slowest physics tick (ms) since the last reset.
 var max_tilt_step_deg: float = 0.0
 var max_physics_ms: float = 0.0
@@ -206,10 +208,14 @@ func reset() -> void:
 	min_knee_bend_ratio = INF
 	min_hip_clearance_m = INF
 	max_push_rise_m = 0.0
+	max_landing_snap_m = 0.0
+	max_landing_slide_m = 0.0
 	max_tilt_step_deg = 0.0
 	max_physics_ms = 0.0
 	if walker != null:
 		walker.max_push_rise = 0.0
+		walker.max_landing_snap = 0.0
+		walker.max_landing_slide = 0.0
 		walker.max_tilt_step_deg = 0.0
 		walker.max_resolve_pitch_deg = 0.0
 	velocity_resets = 0
@@ -317,6 +323,8 @@ func report(label: String = "") -> void:
 		"min_knee_bend_ratio": snappedf(minf(min_knee_bend_ratio, 9.0), 0.0001),
 		"min_hip_clearance_m": snappedf(minf(min_hip_clearance_m, 9.0), 0.001),
 		"max_push_rise_m": snappedf(max_push_rise_m, 0.001),
+		"max_landing_snap_m": snappedf(max_landing_snap_m, 0.001),
+		"max_landing_slide_m": snappedf(max_landing_slide_m, 0.001),
 		"max_tilt_step_deg": snappedf(max_tilt_step_deg, 0.01),
 		"max_physics_ms": snappedf(max_physics_ms, 0.01),
 		"velocity_resets": velocity_resets,
@@ -393,6 +401,8 @@ func _physics_process(delta: float) -> void:
 	hang_ticks = walker.hang_ticks - _hang_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
+	max_landing_snap_m = maxf(max_landing_snap_m, walker.max_landing_snap)
+	max_landing_slide_m = maxf(max_landing_slide_m, walker.max_landing_slide)
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
 	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, walker.max_resolve_pitch_deg)
 	_track_stall(delta)

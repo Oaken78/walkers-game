@@ -523,7 +523,7 @@
     "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
-    "value": 0.45
+    "value": 0.495
    }
   },
   {

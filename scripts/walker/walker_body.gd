@@ -105,7 +105,17 @@ const HANG_MARGIN_RATIO: float = 0.16
 ## The body shifts toward the middle of the remaining feet at this x the margin it lacks, per second (capped by the haul speed).
 const HANG_SHIFT_GAIN: float = 10.0
 ## How far under the best margin the feet allow a hang may start (m).
-const HANG_NEED_SLACK: float = 0.01
+const HANG_NEED_SLACK: float = 0.04
+## A support shift looks along the line of the walk, this many probes of this length (m) to each side, for the margin it wants.
+const SHIFT_PROBES: int = 6
+## How far (m) a support shift may take the body sideways of the line it was walking.
+const SHIFT_LATERAL_MAX_M: float = 1.0
+const SHIFT_PROBE_STEP: float = 0.1
+## Back on the line within this many metres; the walker turning more than LINE_TURN_DEG drops the line.
+const LINE_DONE_M: float = 0.03
+const LINE_TURN_DEG: float = 12.0
+## Speed of the return to the line, as a share of top speed.
+const LINE_RETURN_RATIO: float = 0.3
 const HANG_MEMORY_TICKS: int = 20
 ## A hovering leg that saw a face taller than the climb keeps seeing it this many ticks (3 s): the probe misses now and then.
 const TALL_MEMORY_TICKS: int = 180
@@ -126,10 +136,16 @@ const HANG_PULL_STEP: float = 0.05
 const FOLD_SAFETY: float = 1.05
 ## Slack on the fold distance a hip keeps from a planted foot.
 const FOLD_SLACK: float = 1.02
+## A swing whose landing is this far (m) above or below its start counts as a ledge swing.
+const LEDGE_SWING_RISE: float = 0.3
 ## How far beyond its target (m) a landing inside the fold distance looks for ground outside it.
 const FOLD_LANDING_STEPS: Array[float] = [0.04, 0.08, 0.12, 0.18, 0.25, 0.32, 0.4, 0.5, 0.6]
-## A planted foot whose hip is nearer than this many fold distances steps first.
-const FOLD_STEP_FIRST: float = 1.03
+## A planted foot whose hip is nearer than this many fold distances steps first (1.03 left a 2 cm band that a hip crosses in under
+## a tick at haul speed; 1.2 and 1.03 measured the same in the climb runs, a speed-aware band stalled the Strider).
+const LANDING_CLEAR_HEIGHT: float = 0.12
+## A step-down comes at its face along the line of the foot unless that line is more than about 36 degrees off the face's normal.
+const STEP_DOWN_ALIGNED: float = 0.8
+const FOLD_STEP_FIRST: float = 1.2
 ## A pad that cannot be freed from a corner hangs this x its reach straight below its hip.
 const HANG_BELOW_RATIO: float = 0.5
 ## The body stops coming down when a planted leg's hip is within this x the fold distance of its foot.
@@ -311,6 +327,8 @@ var _ray: PhysicsRayQueryParameters3D
 var _shape_query: PhysicsShapeQueryParameters3D
 var _pad_shape: BoxShape3D
 var _pad_params: PhysicsShapeQueryParameters3D
+## A box one EDGE_MIN_PAST larger than the pad all round: a landing correction keeps this clear of every face and lip (GDD 8.2).
+var _clear_params: PhysicsShapeQueryParameters3D
 var _sight: PhysicsRayQueryParameters3D
 var _top_speed: float = 4.5
 var _turn_rate: float = 120.0
@@ -373,11 +391,13 @@ var _climb_session: bool = false
 ## True during this body's own `_physics_process`; a rebuild asked for meanwhile waits (`apply_build`).
 var _in_tick: bool = false
 var _in_apply: bool = false
-var _running_pending: bool = false
 var _pending_build: WalkerBuild = null
 var _rebuild_queued: bool = false
 ## The leg that waits to hang until the body has made a support margin (-1 when none).
 var _hang_wait: int = -1
+var _hang_wait_prev: int = -1
+## Legs that passed the support gate this tick and may lift (`_update_targets`).
+var _lift_claim: PackedByteArray = PackedByteArray()
 var _front: PackedByteArray = PackedByteArray()
 var _edge: PackedVector3Array = PackedVector3Array()
 var _swing_kind: PackedByteArray = PackedByteArray()
@@ -400,6 +420,10 @@ var _hips_local: PackedVector3Array = PackedVector3Array()
 var _limits: PackedFloat32Array = PackedFloat32Array()
 ## The nearest each leg's hip may come to its planted foot (the IK fold distance, plus slack).
 var _folds: PackedFloat32Array = PackedFloat32Array()
+## The line a support shift took the body off (its origin and heading); `_line_set` while the body has to come back to it.
+var _line_set: bool = false
+var _line_origin: Vector3 = Vector3.ZERO
+var _line_yaw: float = 0.0
 ## `_folds` for the feet that are planted this tick (0 for the others: a landing point may be any distance from its hip).
 var _check_folds: PackedFloat32Array = PackedFloat32Array()
 var _foot: PackedVector3Array = PackedVector3Array()
@@ -439,16 +463,17 @@ func _ready() -> void:
 # --- Public contract -------------------------------------------------------------------------------------------
 
 
+## Rebuilds the walker from `build`. Called inside this body's own tick or inside `build_applied`'s emission, the rebuild waits
+## until the frame is over. A caller in a physics callback (an Area3D signal, which runs while the physics step flushes its
+## queries) must defer the call itself, as salvage_field.gd does: the walker cannot tell that context from a plain
+## _physics_process, where a rebuild is fine.
 func apply_build(build: WalkerBuild) -> void:
 	if build == null or not build.is_valid():
 		push_error("WalkerBody.apply_build: invalid build, keeping the old one")
 		return
-	# (The deferred call itself may run inside the physics step's message flush: it has been deferred once already.)
-	var in_flush: bool = Engine.is_in_physics_frame() and not _running_pending
-	if _in_tick or _in_apply or in_flush:
+	if _in_tick or _in_apply:
 		# The rebuild frees the old legs and collision shapes: not inside this body's own tick (a listener of step_started or
-		# foot_planted runs there), nor inside build_applied's own emission, nor while the physics step runs (an Area3D callback
-		# is flushed there). It runs when the frame is over.
+		# foot_planted runs there) nor inside build_applied's own emission. It runs when the frame is over.
 		_pending_build = build.copy()
 		if not _rebuild_queued:
 			_rebuild_queued = true
@@ -470,9 +495,7 @@ func _apply_pending_build() -> void:
 	var build: WalkerBuild = _pending_build
 	_pending_build = null
 	if build != null:
-		_running_pending = true
 		apply_build(build)
-		_running_pending = false
 
 
 func get_build() -> WalkerBuild:
@@ -1087,6 +1110,13 @@ func _make_queries() -> void:
 	_pad_params = PhysicsShapeQueryParameters3D.new()
 	_pad_params.shape = _pad_shape
 	_pad_params.collision_mask = 1
+	var clear_shape := BoxShape3D.new()
+	clear_shape.size = Vector3(
+		WalkerLeg.PAD_SIZE.x + 2.0 * EDGE_MIN_PAST, LANDING_CLEAR_HEIGHT, WalkerLeg.PAD_SIZE.z + 2.0 * EDGE_MIN_PAST
+	)
+	_clear_params = PhysicsShapeQueryParameters3D.new()
+	_clear_params.shape = clear_shape
+	_clear_params.collision_mask = 1
 	_ray = PhysicsRayQueryParameters3D.new()
 	_ray.collision_mask = 1
 	_ray.hit_from_inside = true
@@ -1138,6 +1168,8 @@ func _rebuild() -> void:
 	_hips_local.resize(count)
 	_limits.resize(count)
 	_folds.resize(count)
+	_lift_claim.resize(count)
+	_lift_claim.fill(0)
 	_check_folds.resize(count)
 	var stance_radius: float = 0.0
 	var fronts := PackedByteArray()
@@ -1361,6 +1393,7 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 	_hauling = false
 	_climbing = false
 	_hang_wait = -1
+	_line_set = false
 	_hint.fill(0)
 	_low.fill(0)
 	_hang_ok.fill(0)
@@ -1544,7 +1577,9 @@ func _update_targets() -> float:
 	)
 	var any_low: bool = false
 	_hint.fill(0)
+	_hang_wait_prev = _hang_wait
 	_hang_wait = -1
+	_lift_claim.fill(0)
 	var hanging_now: bool = is_hanging()
 	for i in _legs.size():
 		var leg: WalkerLeg = _legs[i]
@@ -1826,8 +1861,11 @@ func _update_targets() -> float:
 				_valid[i] = false
 				_errors[i] = 0.0
 				_hang_ok[i] = 0
-				if _hang_wait < 0:
-					_hang_wait = i
+				_note_support_wait(i)
+			else:
+				# It may lift: the legs judged after it count it as already up, so two legs never lift together on a margin that
+				# only holds for one of them.
+				_lift_claim[i] = 1
 	if any_low:
 		_hauling = true
 		_climbing = true
@@ -2058,10 +2096,16 @@ func _step_down_foothold(
 	if not face.is_empty():
 		var at: Vector3 = face["position"]
 		edge = Vector3(at.x, stand_y, at.z)
-		var out: float = Vector2(position.x - at.x, position.z - at.z).dot(Vector2(direction.x, direction.z))
+		# The foothold stands out from the face along the face's own normal (a foot that comes at it from the side must still
+		# clear it by the whole step-out, not only along its own line).
+		var away: Vector3 = Vector3(face["normal"].x, 0.0, face["normal"].z)
+		away = away.normalized() if away.length() > 0.5 else direction
+		if away.dot(direction) > STEP_DOWN_ALIGNED:
+			away = direction
+		var out: float = Vector2(position.x - at.x, position.z - at.z).dot(Vector2(away.x, away.z))
 		if out < STEP_DOWN_OUT:
-			var sx: float = at.x + direction.x * STEP_DOWN_OUT
-			var sz: float = at.z + direction.z * STEP_DOWN_OUT
+			var sx: float = at.x + away.x * STEP_DOWN_OUT
+			var sz: float = at.z + away.z * STEP_DOWN_OUT
 			_ray.from = Vector3(sx, position.y + 0.5, sz)
 			_ray.to = Vector3(sx, position.y - 0.5, sz)
 			var lower: Dictionary = space.intersect_ray(_ray)
@@ -2169,8 +2213,8 @@ func _hang_blocked_legs() -> void:
 			if _margin_without(i, _pose) >= _hang_margin_needed(i):
 				if _solver.force_hover(i):
 					state = GaitSolver.LegState.HOVERING
-			elif _hang_wait < 0:
-				_hang_wait = i
+			else:
+				_note_support_wait(i)
 		if state == GaitSolver.LegState.HOVERING and _hang_ok[i] != 0:
 			hanging += 1
 	if hanging > 0:
@@ -2452,6 +2496,11 @@ func _apply_move(delta: float) -> void:
 	var cur_pos: Vector3 = _origin
 	var des_yaw: float = _yaw + deg_to_rad(_yaw_rate_cmd) * delta
 	var advance: Vector3 = _velocity_h
+	if (is_hanging() or _hang_wait >= 0 or _hang_wait_prev >= 0) and (_in_forward < 0.0 or not is_zero_approx(_in_strafe)):
+		# The player backs off (or strafes) while a leg hangs or waits: the body answers at once, not after the smoothed velocity
+		# has stopped coasting forward (GDD 8.2: the player can always back off).
+		_velocity_h = _target_velocity.limit_length(_top_speed * HAUL_SPEED_RATIO)
+		advance = _velocity_h
 	if _hauling:
 		# Hauling (or lowering) the body up a ledge (or with a leg hanging over one): it advances at most HAUL_SPEED_RATIO x top speed (GDD 5).
 		advance = _velocity_h.limit_length(_top_speed * HAUL_SPEED_RATIO)
@@ -2459,19 +2508,24 @@ func _apply_move(delta: float) -> void:
 		# A leg hangs at a face it will not descend (no lowering is planned): the body comes in slowly, so the margin rule can
 		# hold (it acts on what has happened).
 		advance = _velocity_h.limit_length(_top_speed * HAUL_SPEED_RATIO)
+	# What the player asks for while the body waits for its feet: back-off and strafe input act at once (the smoothed velocity would
+	# still be coasting forward), and forward input is not added to the shift.
+	var asked: Vector3 = _target_velocity if (_in_forward < 0.0 or not is_zero_approx(_in_strafe)) else _velocity_h
 	if _hang_wait >= 0:
 		# A leg waits to hang but the centre of mass is too close to the edge of the feet that would stay planted: the body
 		# first moves (back or sideways) toward the middle of those feet, then the leg hangs.
 		advance = support_advance(
-			_velocity_h, Vector3(-sin(_yaw), 0.0, -cos(_yaw)), _support_shift(_hang_wait, (HANG_MARGIN_RATIO + 0.02) * _mean_reach), _top_speed * HAUL_SPEED_RATIO
+			asked, Vector3(-sin(_yaw), 0.0, -cos(_yaw)), _support_shift(_hang_wait, (HANG_MARGIN_RATIO + 0.02) * _mean_reach), _top_speed * HAUL_SPEED_RATIO
 		)
 	elif is_hanging() and _margin_at(_pose) < SUPPORT_MARGIN_RATIO * _mean_reach + 0.004:
 		# A leg hangs and the margin has dipped (a foot in the air turned into a hanging one): the body moves toward the middle
 		# of the feet that hold it until the margin is back.
 		advance = support_advance(
-			_velocity_h, Vector3(-sin(_yaw), 0.0, -cos(_yaw)), _support_shift(-1, SUPPORT_MARGIN_RATIO * _mean_reach + 0.02), _top_speed * HAUL_SPEED_RATIO
+			asked, Vector3(-sin(_yaw), 0.0, -cos(_yaw)), _support_shift(-1, SUPPORT_MARGIN_RATIO * _mean_reach + 0.02), _top_speed * HAUL_SPEED_RATIO
 		)
 
+	if _hang_wait < 0:
+		advance += _line_return(delta)
 	var des_x: float = cur_pos.x + advance.x * delta
 	var des_z: float = cur_pos.z + advance.z * delta
 	var tilt_target: Vector3 = clamp_tilt(support.normal, _tilt_limit())
@@ -2881,6 +2935,11 @@ var _slide_n: Vector3 = Vector3.ZERO
 ## The push-up the last tick applied (telemetry: pop on crests).
 var _push_rise: float = 0.0
 var max_push_rise: float = 0.0
+## The farthest a landing point was moved at touchdown (m): a pop the eye sees when it is large. `max_landing_snap` counts the
+## landings of a ledge (a reach-up, a step-down, a swing from one level to another, or any landing while a ledge is dealt with);
+## `max_landing_slide` the others (ordinary strides, which slide in from the edge of the reach).
+var max_landing_snap: float = 0.0
+var max_landing_slide: float = 0.0
 ## Largest tick-to-tick change of the body tilt (degrees).
 var max_tilt_step_deg: float = 0.0
 ## Largest pitch the contact resolve added in one tick (degrees), apart from the smoothed tilt.
@@ -3073,10 +3132,57 @@ func _support_shift(without: int, target_margin: float) -> Vector3:
 	if deficit <= 0.0 or toward.length() < 0.0001:
 		return Vector3.ZERO
 	toward = toward.normalized() * deficit * HANG_SHIFT_GAIN
-	# Along the walk only: a sideways shift would carry the body off its line a little at every ledge (nothing brings it back).
+	# The shift stays on the line of the walk while some point on that line gives the margin wanted; when none does (the middle
+	# of the planted feet lies to one side), the sideways part is used too.
 	var along := Vector2(-sin(_yaw), -cos(_yaw))
-	toward = along * toward.dot(along)
+	var centre2 := Vector2(centre.x, centre.z)
+	var best_along: float = -INF
+	var best_step: int = 0
+	for step in range(-SHIFT_PROBES, SHIFT_PROBES + 1):
+		var m: float = polygon_margin(hull, centre2 + along * (float(step) * SHIFT_PROBE_STEP))
+		if m > best_along + 0.0005:
+			best_along = m
+			best_step = step
+	if best_along >= target_margin - 0.02:
+		toward = along * float(signi(best_step)) * toward.length()
+	if _line_set:
+		# The sideways part never takes the body more than SHIFT_LATERAL_MAX_M from its line.
+		var right_line := Vector2(cos(_line_yaw), -sin(_line_yaw))
+		var off_now: float = (_origin - _line_origin).dot(Vector3(right_line.x, 0.0, right_line.y))
+		var side_speed: float = toward.dot(right_line)
+		if absf(off_now) >= SHIFT_LATERAL_MAX_M and signf(side_speed) == signf(off_now):
+			toward -= right_line * side_speed
+	if absf(toward.dot(Vector2(cos(_yaw), -sin(_yaw)))) > 0.0001 and not _line_set:
+		# The shift has a sideways part (a ledge met at an angle, or feet that sit to one side): remember the line the walker
+		# was on, to come back to it once the leg has hung (`_line_return`).
+		_line_set = true
+		_line_origin = _origin
+		_line_yaw = _yaw
 	return Vector3(toward.x, 0.0, toward.y)
+
+
+## The sideways speed that brings the body back to the line it left for a support shift, once no leg waits or hangs. Zero when
+## the line is gone (the player turned or strafed) or the body is back on it.
+func _line_return(delta: float) -> Vector3:
+	if not _line_set:
+		return Vector3.ZERO
+	var turned: bool = absf(angle_difference(_yaw, _line_yaw)) > deg_to_rad(LINE_TURN_DEG)
+	if turned or not is_zero_approx(_in_strafe):
+		_line_set = false
+		return Vector3.ZERO
+	var right := Vector3(cos(_line_yaw), 0.0, -sin(_line_yaw))
+	var off: float = (_origin - _line_origin).dot(right)
+	if absf(off) < LINE_DONE_M:
+		_line_set = false
+		return Vector3.ZERO
+	return right * -signf(off) * minf(_top_speed * LINE_RETURN_RATIO, absf(off) / delta)
+
+
+## Leg `i` waits for the body to shift. One leg keeps the wait from tick to tick (the one that waited last tick, while it still
+## has to): two legs pulling the body toward different middles would shuffle it forward and back.
+func _note_support_wait(i: int) -> void:
+	if _hang_wait < 0 or i == _hang_wait_prev:
+		_hang_wait = i
 
 
 ## The margin (m) leg `i` needs before it starts to hang: 0.16 x mean reach, so the body has room to move once it hangs; where the
@@ -3106,7 +3212,7 @@ func _margin_without(without: int, pose: Transform3D) -> float:
 func _support_points(without: int) -> PackedVector2Array:
 	var feet := PackedVector2Array()
 	for i in _legs.size():
-		if i != without and _solver.state_of(i) == GaitSolver.LegState.PLANTED:
+		if i != without and _solver.state_of(i) == GaitSolver.LegState.PLANTED and (without < 0 or _lift_claim[i] == 0):
 			feet.append(Vector2(_foot[i].x, _foot[i].z))
 	return feet
 
@@ -3464,15 +3570,19 @@ func _climb_swing_point(i: int, u: float) -> Vector3:
 	return Vector3(lerpf(from.x, to.x, along), y, lerpf(from.z, to.z, along))
 
 
-func _on_foot_planted(leg: int) -> void:
-	_climbed[leg] = 1 if _swing_kind[leg] != Kind.STRIDE else 0
-	if _swing_kind[leg] != Kind.STRIDE:
-		_climb_session = true
-	_swing_kind[leg] = Kind.STRIDE
-	# A target that went invalid mid-swing leaves a stale landing point: never plant out of reach (the IK clamp
-	# would drag the rendered foot). Slide the landing in toward the hip and re-find the ground there.
-	var hip: Vector3 = _pose * _legs[leg].hip_local
+## True when a pad standing at `point` has EDGE_MIN_PAST of free space round it (no face, lip or rock within the pad's own size plus that).
+func _landing_clear(point: Vector3) -> bool:
+	_clear_params.transform = Transform3D(Basis(Vector3.UP, _yaw), point + Vector3.UP * (LANDING_CLEAR_HEIGHT * 0.5 + 0.04))
+	shape_queries_this_tick += 1
+	return get_world_3d().direct_space_state.intersect_shape(_clear_params, 1).is_empty()
+
+
+## Moves the landing point of `leg` to ground it can plant on from the hip's place now: inside its reach (the IK clamp would
+## drag the rendered foot) and outside its fold distance (the pad would be pushed out of its place). A target that went
+## invalid mid-swing leaves a stale landing point; the landing slides in toward the hip and the ground is found again there.
+func _fit_landing(leg: int, climb_landing: bool) -> void:
 	var limit: float = _limits[leg] * 0.995
+	var hip: Vector3 = _pose * _legs[leg].hip_local
 	if hip.distance_to(_to[leg]) > limit:
 		var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 		var span := Vector2(_to[leg].x - hip.x, _to[leg].z - hip.z)
@@ -3518,9 +3628,10 @@ func _on_foot_planted(leg: int) -> void:
 				var out_ground: Vector3 = out_hit["position"]
 				if (
 					hip.distance_to(out_ground) >= _folds[leg]
-					and hip.distance_to(out_ground) <= _limits[leg] * 0.995
+					and hip.distance_to(out_ground) <= limit
 					and absf(out_ground.y - _to[leg].y) <= 0.03
-					and _foothold_valid(out_ground, out_hit["normal"], _stand_y[leg], hip, _limits[leg], space_out, true, (_climb + _climb_tol) if _climbed[leg] != 0 else -1.0)
+					and _landing_clear(out_ground)
+					and _foothold_valid(out_ground, out_hit["normal"], _stand_y[leg], hip, _limits[leg], space_out, true, (_climb + _climb_tol) if climb_landing else -1.0)
 				):
 					_to[leg] = out_ground
 					_to_normal[leg] = out_hit["normal"]
@@ -3528,6 +3639,38 @@ func _on_foot_planted(leg: int) -> void:
 					break
 			if found:
 				break
+
+
+## True while the walker deals with a ledge (it hauls, hangs a leg, or a leg swings a reach-up or a step-down), not on
+## ordinary rough ground: landing corrections that must not change the flat gait are for this case.
+func _on_a_ledge() -> bool:
+	if _hauling or is_hanging():
+		return true
+	for i in _legs.size():
+		if _swing_kind[i] != Kind.STRIDE:
+			return true
+	return false
+
+
+## True when leg `leg`'s swing is a ledge swing: a reach-up or a step-down, or one that climbs or drops more than a stride on
+## rough ground would (its landing is on another level than its start).
+func _ledge_swing(leg: int) -> bool:
+	return _swing_kind[leg] != Kind.STRIDE or absf(_to[leg].y - _from[leg].y) > LEDGE_SWING_RISE or _climbed[leg] != 0
+
+
+func _on_foot_planted(leg: int) -> void:
+	var touchdown_from: Vector3 = _to[leg]
+	var ledge_landing: bool = _on_a_ledge() or _ledge_swing(leg)
+	_climbed[leg] = 1 if _swing_kind[leg] != Kind.STRIDE else 0
+	if _swing_kind[leg] != Kind.STRIDE:
+		_climb_session = true
+	_swing_kind[leg] = Kind.STRIDE
+	_fit_landing(leg, _climbed[leg] != 0)
+	var snapped: float = touchdown_from.distance_to(_to[leg])
+	if ledge_landing:
+		max_landing_snap = maxf(max_landing_snap, snapped)
+	else:
+		max_landing_slide = maxf(max_landing_slide, snapped)
 	_foot[leg] = _to[leg]
 	foot_planted.emit(leg, _to[leg], _to_normal[leg])
 

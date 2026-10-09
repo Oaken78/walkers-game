@@ -6,12 +6,6 @@ var _depleted: int = 0
 var _seen: Array = []
 
 
-# apply_build waits for the end of the frame inside a physics step: a test starts in a process frame, not in the one the
-# previous test's physics await ended in.
-func before_each() -> void:
-	await get_tree().process_frame
-
-
 func _watch(health: Health) -> void:
 	_changes.clear()
 	_depleted = 0

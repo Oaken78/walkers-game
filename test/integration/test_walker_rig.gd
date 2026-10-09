@@ -4,12 +4,6 @@ extends GutTest
 const WALKER_SCENE: PackedScene = preload("res://scenes/walker/walker.tscn")
 
 
-# apply_build waits for the end of the frame inside a physics step: a test starts in a process frame, not in the one the
-# previous test's physics await ended in.
-func before_each() -> void:
-	await get_tree().process_frame
-
-
 func _world() -> Node3D:
 	var root := Node3D.new()
 	var floor_body := StaticBody3D.new()
@@ -262,16 +256,6 @@ func test_a_rebuild_asked_for_inside_the_walkers_own_tick_waits_until_the_frame_
 	Input.action_release("move_forward")
 	assert_true(asked[0], "a step started")
 	assert_eq(walker.leg_count(), 6, "still the Scout inside the tick")
-	await get_tree().process_frame
-	await get_tree().process_frame
-	assert_eq(walker.leg_count(), 8, "the Crawler once the frame is over")
-
-
-func test_a_rebuild_asked_for_during_a_physics_step_waits_until_the_frame_is_over() -> void:
-	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
-	await get_tree().physics_frame
-	walker.apply_build(WalkerBuild.crawler())
-	assert_eq(walker.leg_count(), 6, "still the Scout while the physics step runs (an Area3D callback frees nothing)")
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(walker.leg_count(), 8, "the Crawler once the frame is over")

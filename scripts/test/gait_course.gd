@@ -278,10 +278,18 @@ var _freeze_stall: float = -1.0
 var _freeze_reach: bool = false
 var _freeze_descend: bool = false
 const BACKOFF_PROBE_TICKS: int = 6
+## The probe opens on a support wait that has lasted this many ticks (not a one-tick flicker).
+const BACKOFF_WAIT_MIN_TICKS: int = 8
+var _backoff_wait_ticks: int = 0
 ## The descent still waits for a front foot this far (m) below the top of the block.
 const DESCEND_FREEZE_BELOW: float = 0.3
 ## How far the walker moved in the 0.1 s of the back-off probe (-1 until it has run).
 var backoff_moved_m: float = -1.0
+## The same window without S (the control), and whether a leg waited when the window opened.
+var backoff_control_m: float = -1.0
+var backoff_waited: bool = false
+var _backoff_press: bool = true
+var _backoff_facing: Vector3 = Vector3.FORWARD
 var _backoff_state: int = 0
 var _backoff_ticks: int = 0
 var _backoff_from: Vector3 = Vector3.ZERO
@@ -412,6 +420,7 @@ func _physics_process(delta: float) -> void:
 		# A rolling hash of the walker's state each tick (position, the leg that waits, contacts): two identical runs must agree.
 		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker._hang_wait * 7 + _walker._contact_count) & 0x3FFFFFFFFFFF
 	_run_backoff_probe()
+	_track_lateral_offset()
 	_track_step_up()
 	_track_lateral_flips()
 	_track_yaw_overshoot()
@@ -580,6 +589,9 @@ func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, off
 	foot_rise_max = -INF
 	root_rise_max = -INF
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane) + deg_to_rad(heading_deg)), origin))
+	_spawn_origin = origin
+	_spawn_heading = _spawn_yaw(lane) + deg_to_rad(heading_deg)
+	lateral_offset_max = 0.0
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
@@ -718,12 +730,20 @@ func arm_freeze_at_clearance(offset: int) -> void:
 	_freeze_tick = clearance_tick + offset
 
 
-## Arms the back-off probe: the first tick a leg waits in a support shift, the forward key is let go and S is pressed for
-## BACKOFF_PROBE_TICKS ticks (0.1 s); backoff_moved_m is how far the walker moved in that time (GDD 8.2: the player can always
-## back off).
-func arm_backoff_probe() -> void:
+## Arms the back-off probe: the first tick a leg waits in a support shift, the forward key is let go and, when `press_back`, S is
+## pressed for BACKOFF_PROBE_TICKS ticks (0.1 s). The distance the walker moved backward (along -facing) in that time is
+## backoff_moved_m with S and backoff_control_m without it (GDD 8.2: the player can always back off).
+func arm_backoff_probe(press_back: bool = true) -> void:
 	_backoff_state = 1
-	backoff_moved_m = -1.0
+	_backoff_press = press_back
+	_backoff_wait_ticks = 0
+	backoff_waited = false
+
+
+## How much further back (m, along -facing) S took the walker than the control window without it.
+var backoff_gain_m: float:
+	get:
+		return backoff_moved_m - backoff_control_m
 
 
 ## True once the probe has run its 0.1 s.
@@ -732,18 +752,39 @@ var backoff_done: bool:
 		return _backoff_state == 3
 
 
+## The widest the walker has been from the line it spawned on (m): a support shift must not carry it off its lane.
+var lateral_offset_max: float = 0.0
+var _spawn_origin: Vector3 = Vector3.ZERO
+var _spawn_heading: float = 0.0
+
+
+func _track_lateral_offset() -> void:
+	var right := Vector3(cos(_spawn_heading), 0.0, -sin(_spawn_heading))
+	lateral_offset_max = maxf(lateral_offset_max, absf((_walker.global_position - _spawn_origin).dot(right)))
+
+
 func _run_backoff_probe() -> void:
-	if _backoff_state == 1 and _walker.is_waiting_for_support():
+	if _backoff_state == 1:
+		_backoff_wait_ticks = _backoff_wait_ticks + 1 if _walker.is_waiting_for_support() else 0
+	if _backoff_state == 1 and _backoff_wait_ticks >= BACKOFF_WAIT_MIN_TICKS:
 		_backoff_state = 2
 		_backoff_ticks = 0
 		_backoff_from = _walker.global_position
+		_backoff_facing = -_walker.global_basis.z
+		backoff_waited = true
 		Input.action_release("move_forward")
-		Input.action_press("move_back")
+		if _backoff_press:
+			Input.action_press("move_back")
 	elif _backoff_state == 2:
 		_backoff_ticks += 1
 		if _backoff_ticks >= BACKOFF_PROBE_TICKS:
-			backoff_moved_m = _walker.global_position.distance_to(_backoff_from)
-			Input.action_release("move_back")
+			var moved: float = (_backoff_from - _walker.global_position).dot(_backoff_facing)
+			print("BACKOFF press=%s moved_back=%.3f" % [str(_backoff_press), moved])
+			if _backoff_press:
+				backoff_moved_m = moved
+				Input.action_release("move_back")
+			else:
+				backoff_control_m = moved
 			_backoff_state = 3
 
 

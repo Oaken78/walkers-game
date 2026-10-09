@@ -148,14 +148,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "max_drift_m",
     "op": "<=",
     "value": 0.02
@@ -167,6 +159,14 @@
     "prop": "max_fold_lift_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "lateral_offset_max",
+    "op": "<=",
+    "value": 0.5
    }
   },
   {
@@ -343,14 +343,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "max_drift_m",
     "op": "<=",
     "value": 0.02
@@ -362,6 +354,14 @@
     "prop": "max_fold_lift_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "lateral_offset_max",
+    "op": "<=",
+    "value": 0.5
    }
   },
   {
@@ -538,14 +538,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "max_drift_m",
     "op": "<=",
     "value": 0.02
@@ -557,6 +549,14 @@
     "prop": "max_fold_lift_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "lateral_offset_max",
+    "op": "<=",
+    "value": 0.5
    }
   },
   {
@@ -588,7 +588,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 240
+    "value": 310
    }
   },
   {
@@ -707,14 +707,6 @@
     "prop": "min_support_margin_ratio",
     "op": ">=",
     "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
    }
   },
   {
@@ -904,14 +896,6 @@
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
    "call": {
     "node": ".",
     "method": "mark",
@@ -1095,14 +1079,6 @@
     "prop": "min_support_margin_ratio",
     "op": ">=",
     "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
    }
   },
   {

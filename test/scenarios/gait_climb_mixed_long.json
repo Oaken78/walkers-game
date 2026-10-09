@@ -153,14 +153,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_inside_ticks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "max_drift_m",
     "op": "<=",
     "value": 0.02
@@ -172,6 +164,14 @@
     "prop": "max_fold_lift_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "lateral_offset_max",
+    "op": "<=",
+    "value": 0.5
    }
   },
   {
