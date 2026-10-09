@@ -1267,6 +1267,7 @@ func _track_step_up() -> void:
 			_telemetry.max_climb_m = maxf(_telemetry.max_climb_m, height)
 			if height <= float(_walker.stats()["step_up"]) + 0.001:
 				_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
+				_reach_start_tick = -1
 			elif _reach_start_tick >= 0:
 				climb_time_s = float(_tick - _reach_start_tick) / float(Engine.physics_ticks_per_second)
 				print("CLIMBTIME height=%.2f s=%.2f" % [height, climb_time_s])
