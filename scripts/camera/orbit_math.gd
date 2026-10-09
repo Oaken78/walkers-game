@@ -5,6 +5,29 @@ extends RefCounted
 ## Pitch > 0 puts the camera above the pivot looking down; -10 is low, looking up.
 
 
+## Mouse motion event to new (yaw, pitch). Uses screen_relative (physical pixels): `relative` is scaled by the
+## canvas_items content scale, which would make the turn rate depend on the window size.
+static func motion_to_angles(
+	event: InputEventMouseMotion,
+	yaw: float,
+	pitch: float,
+	deg_per_px: float,
+	invert_y: bool,
+	pitch_min: float,
+	pitch_max: float
+) -> Vector2:
+	return mouse_to_angles(
+		yaw,
+		pitch,
+		event.screen_relative.x,
+		event.screen_relative.y,
+		deg_per_px,
+		invert_y,
+		pitch_min,
+		pitch_max
+	)
+
+
 ## Mouse motion in pixels to new (yaw, pitch). Mouse right turns the view right (yaw falls); mouse up tilts the
 ## view up (pitch falls toward pitch_min) unless invert_y. Pitch is clamped, yaw wraps to -180..180.
 static func mouse_to_angles(
@@ -55,9 +78,11 @@ static func camera_transform(pivot: Vector3, yaw: float, pitch: float, length: f
 	return Transform3D(basis, pivot + camera_offset(yaw, pitch, length))
 
 
-## Arm length after collision: the shorter of the hit and the wanted length, but never under min_len.
-static func arm_length(hit_length: float, wanted: float, min_len: float) -> float:
-	return maxf(minf(hit_length, wanted), minf(min_len, wanted))
+## Arm length after collision: the shorter of the hit and the wanted length. Rock wins over the 2 m minimum:
+## the camera never ends up behind rock seen from the pivot, so a hit closer than min_len is kept as it is.
+## min_len only guards against a degenerate hit (negative length).
+static func arm_length(hit_length: float, wanted: float, _min_len: float) -> float:
+	return maxf(minf(hit_length, wanted), 0.0)
 
 
 ## Linear move of a value toward a goal so that a full `span` takes `time` seconds.
@@ -82,9 +107,10 @@ static func recenter_step(
 	delta: float,
 	delay_s: float,
 	rate_deg: float,
-	min_speed: float
+	min_speed: float,
+	aiming: bool = false
 ) -> float:
-	if idle_s < delay_s:
+	if aiming or idle_s < delay_s:
 		return yaw
 	if min_speed > 0.0 and target_speed <= min_speed:
 		return yaw

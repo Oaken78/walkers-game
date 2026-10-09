@@ -48,6 +48,7 @@ var _shake_elapsed: float = 0.0
 var _shake_duration: float = 0.0
 var _shake_amplitude: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var _cast_shape := SphereShape3D.new()
 
 @onready var _pitch: Node3D = %Pitch
 @onready var _arm: SpringArm3D = %Arm
@@ -61,17 +62,18 @@ func _ready() -> void:
 	_arm.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_rng.seed = 1234
+	# The rig owns the camera position: it casts the collision sphere itself every rendered frame, so the
+	# SpringArm3D (which only updates in the physics tick) is kept for the hierarchy but switched off.
 	_arm.collision_mask = WORLD_MASK
-	var sphere := SphereShape3D.new()
-	sphere.radius = collision_radius
-	_arm.shape = sphere
-	_arm.margin = 0.01
+	_arm.set_physics_process_internal(false)
+	_cast_shape.radius = collision_radius
+	_arm.shape = _cast_shape
 	_camera.make_current()
 	distance = clampf(distance, min_distance, max_distance)
 	_shown_distance = distance
 	current_fov = fov
 	_camera.fov = current_fov
-	if target != null:
+	if is_instance_valid(target):
 		set_angles(OrbitMath.behind_yaw(-target.global_basis.z), start_pitch_deg)
 		snap()
 	else:
@@ -80,12 +82,14 @@ func _ready() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+## Mouse look is read in _input so a HUD Control under the cursor cannot swallow it.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		orbit_event(event)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			var motion: InputEventMouseMotion = event
-			orbit(motion.relative.x, motion.relative.y)
-	elif event.is_action_pressed("zoom_in"):
+	if event.is_action_pressed("zoom_in"):
 		zoom(1)
 	elif event.is_action_pressed("zoom_out"):
 		zoom(-1)
@@ -100,7 +104,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	_follow(delta)
 	_idle_s += delta
-	if recenter_enabled and target != null:
+	if is_aiming():
+		_idle_s = 0.0
+	if recenter_enabled and is_instance_valid(target):
 		var behind: float = OrbitMath.behind_yaw(-target.global_basis.z)
 		yaw_deg = OrbitMath.recenter_step(
 			yaw_deg,
@@ -110,11 +116,23 @@ func _process(delta: float) -> void:
 			delta,
 			recenter_delay,
 			recenter_rate_deg,
-			recenter_min_target_speed
+			recenter_min_target_speed,
+			is_aiming()
 		)
 	_ease_zoom_and_fov(delta)
 	_apply_rotation()
 	_apply_arm_and_shake(delta)
+
+
+## A mouse motion event, in physical pixels (screen_relative).
+func orbit_event(event: InputEventMouseMotion) -> void:
+	var angles: Vector2 = OrbitMath.motion_to_angles(
+		event, yaw_deg, pitch_deg, sensitivity_deg_per_px, invert_y, pitch_min_deg, pitch_max_deg
+	)
+	yaw_deg = angles.x
+	pitch_deg = angles.y
+	_idle_s = 0.0
+	_apply_rotation()
 
 
 ## Mouse motion in pixels. Rotation shows on this same frame (no smoothing).
@@ -153,7 +171,8 @@ func is_aiming() -> bool:
 
 ## Crosshair ray hit point (world and enemies), else the point max_range along the view.
 func aim_point(max_range: float = 300.0) -> Vector3:
-	var from: Vector3 = _camera.global_position
+	# Start at the pivot (on the view ray), so things between the camera and the player are never hit.
+	var from: Vector3 = global_position
 	var to: Vector3 = from - _camera.global_basis.z * max_range
 	var query := PhysicsRayQueryParameters3D.create(from, to, WORLD_MASK | ENEMY_MASK)
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
@@ -172,7 +191,7 @@ func add_shake(duration: float = 0.15, amplitude: float = 0.15) -> void:
 
 ## Jump to the target with no lag (spawn, teleport).
 func snap() -> void:
-	if target == null:
+	if not is_instance_valid(target):
 		return
 	global_position = _target_goal()
 	_last_target_pos = target.get_global_transform_interpolated().origin
@@ -186,7 +205,7 @@ func _target_goal() -> Vector3:
 
 
 func _follow(delta: float) -> void:
-	if target == null or delta <= 0.0:
+	if not is_instance_valid(target) or delta <= 0.0:
 		return
 	var pos: Vector3 = target.get_global_transform_interpolated().origin
 	if _has_last_pos:
@@ -213,7 +232,7 @@ func _apply_rotation() -> void:
 
 func _apply_arm_and_shake(delta: float) -> void:
 	_arm.spring_length = _shown_distance
-	arm_length = OrbitMath.arm_length(_arm.get_hit_length(), _shown_distance, collision_min_distance)
+	arm_length = OrbitMath.arm_length(_cast_arm(), _shown_distance, collision_min_distance)
 	_camera.position = Vector3(0.0, 0.0, arm_length)
 	if _shake_duration > 0.0:
 		_shake_elapsed += delta
@@ -231,3 +250,18 @@ func _apply_arm_and_shake(delta: float) -> void:
 	else:
 		_camera.h_offset = 0.0
 		_camera.v_offset = 0.0
+
+
+## Free length of the arm along the current view direction: a layer-1 sphere cast from the pivot, done in
+## this frame after the pivot and the angles moved. Returns the wanted distance when nothing is in the way.
+func _cast_arm() -> float:
+	var dir: Vector3 = OrbitMath.camera_offset(yaw_deg, pitch_deg, 1.0)
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _cast_shape
+	query.transform = Transform3D(Basis.IDENTITY, global_position)
+	query.motion = dir * _shown_distance
+	query.collision_mask = WORLD_MASK
+	var result: PackedFloat32Array = get_world_3d().direct_space_state.cast_motion(query)
+	if result.is_empty():
+		return _shown_distance
+	return result[0] * _shown_distance

@@ -90,8 +90,9 @@ func test_rotation_applies_on_the_same_frame() -> void:
 	assert_gt(before.z, 0.0, "yaw 0: camera sits at +Z, looking along -Z")
 
 
-func test_arm_never_shorter_than_2_m() -> void:
-	assert_eq(OrbitMath.arm_length(0.1, 8.0, 2.0), 2.0)
+func test_arm_is_shortened_by_rock_even_closer_than_the_2_m_minimum() -> void:
+	assert_eq(OrbitMath.arm_length(1.0, 8.0, 2.0), 1.0, "rock wins over the 2 m minimum")
+	assert_eq(OrbitMath.arm_length(0.1, 8.0, 2.0), 0.1)
 	assert_eq(OrbitMath.arm_length(3.0, 8.0, 2.0), 3.0)
 	assert_eq(OrbitMath.arm_length(20.0, 8.0, 2.0), 8.0)
 
@@ -137,6 +138,21 @@ func test_recentre_turns_toward_behind_the_target_at_its_rate() -> void:
 	assert_almost_eq(OrbitMath.behind_yaw(Vector3(0.0, 0.0, -1.0)), 0.0, 0.0001)
 	assert_almost_eq(absf(OrbitMath.behind_yaw(Vector3(0.0, 0.0, 1.0))), 180.0, 0.0001)
 	assert_almost_eq(OrbitMath.behind_yaw(Vector3(-1.0, 0.0, 0.0)), 90.0, 0.0001)
+
+
+func test_no_recentre_while_aiming() -> void:
+	var held: float = OrbitMath.recenter_step(90.0, 0.0, 5.0, 4.5, 0.1, 1.5, 90.0, 0.5, true)
+	assert_eq(held, 90.0)
+	var released: float = OrbitMath.recenter_step(90.0, 0.0, 5.0, 4.5, 0.1, 1.5, 90.0, 0.5, false)
+	assert_lt(released, 90.0)
+
+
+func test_mouse_event_turns_by_physical_pixels_not_content_scaled_ones() -> void:
+	var event := InputEventMouseMotion.new()
+	event.screen_relative = Vector2(100.0, 0.0)
+	event.relative = Vector2(67.0, 0.0)
+	var a: Vector2 = OrbitMath.motion_to_angles(event, 0.0, 20.0, SENS, false, -10.0, 60.0)
+	assert_almost_eq(a.x, -15.0, 0.0001, "100 physical px = 15 deg of yaw (right turns the view right)")
 
 
 func test_no_recentre_while_the_target_stands_still() -> void:
@@ -197,3 +213,48 @@ func _check_footprint(xs: Array[float], zs: Array[float], origin_h: float, label
 func test_every_foot_is_in_frame_and_at_least_12_px_tall_at_1080p() -> void:
 	_check_footprint(STRIDER_FEET_X, STRIDER_FEET_Z, 0.96, "strider")
 	_check_footprint(CRAWLER_FEET_X, CRAWLER_FEET_Z, 0.36, "crawler")
+
+func _make_rig(target: Node3D) -> OrbitCamera:
+	var rig: OrbitCamera = load("res://scenes/camera/orbit_camera.tscn").instantiate()
+	rig.capture_mouse = false
+	rig.target = target
+	add_child_autofree(rig)
+	return rig
+
+
+func test_freed_target_is_survived() -> void:
+	var target := Node3D.new()
+	add_child(target)
+	var rig: OrbitCamera = _make_rig(target)
+	await wait_frames(2)
+	target.free()
+	await wait_frames(2)
+	rig.snap()
+	assert_true(is_instance_valid(rig), "rig still running after its target was freed")
+
+
+func test_aim_point_ignores_things_between_the_camera_and_the_player() -> void:
+	var target := Node3D.new()
+	add_child_autofree(target)
+	var rig: OrbitCamera = _make_rig(target)
+	rig.set_angles(0.0, 0.0)
+	var behind := _box(Vector3(0.0, 1.5, 4.0))
+	var ahead := _box(Vector3(0.0, 1.5, -10.0))
+	await wait_physics_frames(3)
+	var hit: Vector3 = rig.aim_point(100.0)
+	assert_almost_eq(hit.z, -9.0, 0.05, "hits the box ahead (face at z=-9), not the enemy behind the player")
+	behind.free()
+	ahead.free()
+
+
+func _box(pos: Vector3) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.collision_layer = 4
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(2.0, 2.0, 2.0)
+	shape.shape = box
+	body.add_child(shape)
+	add_child(body)
+	body.global_position = pos
+	return body

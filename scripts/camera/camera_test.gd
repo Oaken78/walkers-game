@@ -16,7 +16,11 @@ const LINE_COLOR := Color(0.25, 0.25, 0.25)
 @export var workshop_spot: Vector2 = Vector2(-10.0, 25.0)
 @export var cliff_z: float = 100.0
 @export var cliff_wall_gap: float = 4.0
+@export var cliff_close_gap: float = 1.0
 
+var _feet: Array[MeshInstance3D] = []
+var _lines := ImmediateMesh.new()
+var _line_material: StandardMaterial3D
 var _walk_speed: float = 0.0
 var _walk_ticks: int = 0
 
@@ -62,6 +66,7 @@ func _physics_process(delta: float) -> void:
 	pos += -_standin.global_basis.z * _walk_speed * delta
 	pos.y = _valley.floor_height(pos.x, pos.z) + ORIGIN_HEIGHT
 	_standin.global_position = pos
+	_fit_feet()
 
 
 ## spot: "workshop" or "cliff". The stand-in faces -Z (up-valley); the camera is snapped to it.
@@ -69,10 +74,13 @@ func place_standin(spot: String) -> void:
 	var xz := workshop_spot
 	if spot == "cliff":
 		xz = Vector2(ValleyLayout.WALL_LEFT_X + cliff_wall_gap, cliff_z)
+	elif spot == "cliff_close":
+		xz = Vector2(ValleyLayout.WALL_LEFT_X + cliff_close_gap, cliff_z)
 	_standin.global_transform = Transform3D(
 		Basis.IDENTITY, Vector3(xz.x, _valley.floor_height(xz.x, xz.y) + ORIGIN_HEIGHT, xz.y)
 	)
 	_walk_ticks = 0
+	_fit_feet()
 	_standin.reset_physics_interpolation()
 	_orbit.snap()
 
@@ -99,24 +107,36 @@ func _build_standin() -> void:
 	body.mesh = body_mesh
 	body.material_override = _material(BODY_COLOR)
 	_standin.add_child(body)
-	var lines := ImmediateMesh.new()
-	lines.surface_begin(Mesh.PRIMITIVE_LINES, _material(LINE_COLOR, true))
+	_line_material = _material(LINE_COLOR, true)
 	for sx: float in [-FOOT_X, FOOT_X]:
 		for fz: float in FOOT_ZS:
-			var foot_pos := Vector3(sx, -ORIGIN_HEIGHT + 0.5 * FOOT_SIZE.y, fz)
 			var foot := MeshInstance3D.new()
 			var foot_mesh := BoxMesh.new()
 			foot_mesh.size = FOOT_SIZE
 			foot.mesh = foot_mesh
 			foot.material_override = _material(FOOT_COLOR)
-			foot.position = foot_pos
+			foot.position = Vector3(sx, -ORIGIN_HEIGHT + 0.5 * FOOT_SIZE.y, fz)
 			_standin.add_child(foot)
-			lines.surface_add_vertex(Vector3.ZERO)
-			lines.surface_add_vertex(foot_pos)
-	lines.surface_end()
+			_feet.append(foot)
 	var line_node := MeshInstance3D.new()
-	line_node.mesh = lines
+	line_node.mesh = _lines
 	_standin.add_child(line_node)
+	_fit_feet()
+
+
+## Puts each foot on the ground under its own x, z (the terrain rises up-valley) and redraws the body lines.
+func _fit_feet() -> void:
+	if _feet.is_empty():
+		return
+	_lines.clear_surfaces()
+	_lines.surface_begin(Mesh.PRIMITIVE_LINES, _line_material)
+	for foot: MeshInstance3D in _feet:
+		var world: Vector3 = _standin.global_transform * Vector3(foot.position.x, 0.0, foot.position.z)
+		var ground: float = _valley.floor_height(world.x, world.z)
+		foot.global_position = Vector3(world.x, ground + 0.5 * FOOT_SIZE.y, world.z)
+		_lines.surface_add_vertex(Vector3.ZERO)
+		_lines.surface_add_vertex(foot.position)
+	_lines.surface_end()
 
 
 func _material(color: Color, unshaded: bool = false) -> StandardMaterial3D:
