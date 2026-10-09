@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/test/gait_course.tscn" id="1_course"]
+[ext_resource type="Script" path="res://scripts/camera/view_probe.gd" id="2_probe"]
+[ext_resource type="Script" path="res://scripts/camera/view_probe_tail.gd" id="3_tail"]
+
+[node name="ProbeRoot" type="Node3D"]
+
+[node name="GaitCourse" parent="." instance=ExtResource("1_course")]
+
+[node name="ViewProbe" type="Node" parent="."]
+script = ExtResource("2_probe")
+
+[node name="Tail" type="Node" parent="."]
+script = ExtResource("3_tail")
