@@ -308,3 +308,12 @@ func test_hip_hangs_half_its_own_reach_above_the_foot_plane() -> void:
 	assert_almost_eq(WalkerBody.hip_local_y(0.6, 1.0, 0.5, 1.0), -0.1, 0.0001)
 	# A short leg on a body with mean reach 0.867: hip 0.3 above the plane, underside 0.52.
 	assert_almost_eq(WalkerBody.hip_local_y(0.6, 0.867, 0.5, 0.6), -0.22, 0.001)
+
+
+func test_fore_aft_room_from_the_rest_foot_is_at_least_0_65_reach_even_for_fanned_end_legs() -> void:
+	var body := WalkerBody.new()
+	var room: float = WalkerBody.fore_aft_room_ratio(
+		body.hip_height_ratio, body.rest_out_ratio, body.rest_fan_ratio
+	)
+	body.free()
+	assert_gte(room, 0.65)

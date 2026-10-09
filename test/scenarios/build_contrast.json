@@ -86,6 +86,22 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "bob_amplitude_m",
+    "op": ">=",
+    "value": 0.048
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "bob_amplitude_m",
+    "op": "<=",
+    "value": 0.08
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "spawn_at",
@@ -218,6 +234,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -312,6 +336,22 @@
     "prop": "min_knee_bend_ratio",
     "op": ">=",
     "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "bob_amplitude_m",
+    "op": ">=",
+    "value": 0.018000000000000002
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "bob_amplitude_m",
+    "op": "<=",
+    "value": 0.03
    }
   },
   {
@@ -442,6 +482,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }

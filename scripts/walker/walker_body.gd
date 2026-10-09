@@ -25,8 +25,8 @@ const BOB_MEAN_SHIFT: float = 1.2732395
 const CAMERA_YAW_TURN_BAND_DEG: float = 6.0
 const CAMERA_YAW_DEAD_BAND_DEG: float = 1.0
 const MOVE_INPUT_EPSILON: float = 0.01
-## Low collider: bottom this far above the chassis underside (blocks above step-up stop the body).
-const COLLIDER_BOTTOM: float = 0.02
+## Low collider: bottom this far above the lowest hip.
+const COLLIDER_BOTTOM: float = 0.0
 ## Stance guard: bottom this x mean reach above the chassis underside, radius = widest rest foot + margin. Stops at tall walls
 ## without catching rolling terrain.
 const GUARD_BOTTOM_RATIO: float = 0.7
@@ -46,14 +46,15 @@ const LIFT_REACH_SLACK: float = 1.0
 ## A planted foot further than this x its reach limit from its hip asks to step.
 const REACH_STRESS: float = 0.93
 ## Contact normals of a round collider on a slope read steeper than the slope's face: this much slack on the grip.
+## (Measured in round 3: the round collider's rim reads 48.7 degrees on a 38 degree slope. Used only to tell ground
+## from a wall; an overlap is never ignored, ground overlaps push the body up.)
 const CONTACT_SLOPE_MARGIN_DEG: float = 12.0
+## Every hip stands at least this far above the ground below it (telemetry asserts 0.05).
+const HIP_CLEARANCE: float = 0.06
+const MAX_CLEARANCE_RISE: float = 0.6
 ## The sight ray from the hip stops this far short of the foothold.
 const SIGHT_MARGIN: float = 0.1
 ## While the body lowers toward a footing it settles this x faster than the normal height spring.
-## Rule 5 "holds the body" for the foot lead when the body moves at less than this x its commanded speed.
-## 0 = off. Measured on the bumps (20 s): with 0.5 the short pair covers 50.4 m of 88.5 and the Scout 73.6 of 90;
-## off it covers 85.3 and 87.3: shorter leads while held make the body hit its reach limits more often.
-const HELD_LEAD_RATIO: float = 0.0
 const LOWER_SETTLE_SCALE: float = 1.0
 
 @export var steer_mode: SteerMode = SteerMode.TANK
@@ -69,6 +70,7 @@ const LOWER_SETTLE_SCALE: float = 1.0
 ## Body tilt clamp in degrees. Negative (default) = the build's slope grip (lowest max_slope of its legs), GDD 5.
 @export var tilt_max_deg: float = -1.0
 @export var tilt_smooth_time: float = 0.12
+## Bob amplitude in metres per metre of mean leg reach (Klas: 4 cm x mean reach).
 @export var bob_amplitude: float = 0.04
 @export var bob_gain_time: float = 0.1
 @export_group("Gait (copied into GaitSolver)")
@@ -83,9 +85,9 @@ const LOWER_SETTLE_SCALE: float = 1.0
 @export var wave_step_scale: float = 0.6
 @export_group("Stance")
 ## Rest foot distance out from the hip, x leg reach (0.3-0.45 keeps the stride inside the 0.99 reach sphere).
-@export var rest_out_ratio: float = 0.42
+@export var rest_out_ratio: float = 0.40
 ## The front legs fan forward and the rear legs back by up to this x reach.
-@export var rest_fan_ratio: float = 0.10
+@export var rest_fan_ratio: float = 0.08
 ## Hip spacing along a side = base + per_reach x mean reach.
 @export var hip_spacing_base: float = 0.5
 @export var hip_spacing_per_reach: float = 0.3
@@ -246,7 +248,7 @@ func rest_distance_ratio(leg: int) -> float:
 
 ## True while a collider overlaps static geometry (used after teleport and apply_build).
 func is_overlapping_world() -> bool:
-	return _overlaps_world(global_transform)
+	return _overlap_state(global_transform) != 0
 
 
 ## The speed the body is being driven at (commanded), m/s.
@@ -298,6 +300,15 @@ func min_knee_bend_ratio() -> float:
 		off -= chord * off.dot(chord)
 		lowest = minf(lowest, off.dot(side) / leg.reach)
 	return lowest
+
+
+## The hip of leg i in world space (the drawn pose).
+func hip_position(leg: int) -> Vector3:
+	return _pose * _legs[leg].hip_local
+
+
+func leg_side(leg: int) -> int:
+	return _legs[leg].side
 
 
 ## Lowest hip height above the ground straight below it (chassis clearance on a steep slope, telemetry).
@@ -517,6 +528,12 @@ static func hip_z_positions(count: int, spacing: float) -> PackedFloat32Array:
 	return zs
 
 
+## Stride room before the 0.99 x reach limit, from a leg's rest foot, in units of reach: the rest foot is `out_ratio`
+## out and `fan_ratio` fore-aft of its hip (fanned end legs lose that much on one side). GDD 5: at least 0.65.
+static func fore_aft_room_ratio(hip_ratio: float, out_ratio: float, fan_ratio: float) -> float:
+	return sqrt(0.99 * 0.99 - hip_ratio * hip_ratio - out_ratio * out_ratio) - fan_ratio
+
+
 ## Cadence scales with the square root of the shortest mounted leg reach (Scout 1.0, Strider ~1.26, Crawler ~0.77).
 static func cadence_scale(reach: float) -> float:
 	return sqrt(maxf(reach, 0.01) / 1.0)
@@ -679,12 +696,16 @@ func _build_body_meshes(
 	var bottom: float = 0.0
 	_chassis_center = Vector3(0.0, bottom + height * 0.5, 0.0)
 	# Low collider: round, as long as the chassis, so turning in place never swings a corner into a wall.
+	var lowest_hip: float = 0.0
+	for hip_local in _hips_local:
+		lowest_hip = minf(lowest_hip, hip_local.y)
 	var shape := CylinderShape3D.new()
 	shape.radius = maxf(width, length) * 0.5
-	shape.height = height
+	# The collider reaches from the lowest hip up through the chassis (hips never enter the ground or a block).
+	shape.height = height - lowest_hip
 	var collider: CollisionShape3D = get_node("Collider")
 	collider.shape = shape
-	collider.position = Vector3(0.0, COLLIDER_BOTTOM + height * 0.5, 0.0)
+	collider.position = Vector3(0.0, lowest_hip + COLLIDER_BOTTOM + shape.height * 0.5, 0.0)
 	# Stance guard: as wide as the stance, high enough to pass over rolling ground.
 	var guard_node: CollisionShape3D = get_node_or_null("Guard")
 	if guard_node == null:
@@ -771,6 +792,9 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 	var z: float = _origin.z
 	_base_y = plane_height(plane, x, z) + body_height_ratio * _mean_reach / plane.normal.y
 	_origin = Vector3(x, _base_y, z)
+	var plant_rise: float = _clearance_rise(pose_transform(_origin, _yaw, _tilt_n))
+	_base_y += plant_rise
+	_origin.y += plant_rise
 	_height_above_plane = plane.distance_to(_origin)
 	_bob_gain = 0.0
 	_velocity_h = Vector3.ZERO
@@ -896,12 +920,8 @@ func _update_targets() -> float:
 		var rest_speed: float = rest_velocity.length()
 		fastest = maxf(fastest, rest_speed)
 		# Foot lands on a live target; the stance after landing lasts (groups - 1) swings, so the lead covers it.
-		# While rule 5 holds the body the lead uses the speed it really has, so a held body does not lengthen steps.
-		var lead_velocity: Vector3 = rest_velocity
-		if velocity.length() < HELD_LEAD_RATIO * _velocity_h.length():
-			lead_velocity = velocity + Vector3.UP.cross(rest - gt.origin) * yaw_rad
 		var lead: Vector3 = GaitSolver.target_lead(
-			lead_velocity, _solver.step_duration(rest_speed / _top_speed) * lead_groups
+			rest_velocity, _solver.step_duration(rest_speed / _top_speed) * lead_groups
 		)
 		var hip_world: Vector3 = gt * leg.hip_local
 		var about_to_lift: bool = (
@@ -957,10 +977,6 @@ func _update_targets() -> float:
 		_target[i] = position
 		_target_normal[i] = normal
 		_errors[i] = _foot[i].distance_to(position)
-		if leg_state == GaitSolver.LegState.PLANTED and hip_world.distance_to(_foot[i]) > limit * REACH_STRESS:
-			# A planted foot near the end of its reach is about to stop the body (rule 5): it must step now,
-			# even if its own target happens to be close (a dip under the foot).
-			_errors[i] = maxf(_errors[i], (trigger_ratio + 0.05) * leg.reach)
 		_lower_to_y = minf(_lower_to_y, needs_y)
 		# Rise is measured from the height the foot stands (or stood) on: the ground under it while planted, and the
 		# last planted height while it hovers or swings (never from the lifted arc, nor from a body-fixed rest point
@@ -989,9 +1005,14 @@ func _update_targets() -> float:
 				if _foothold_valid(candidate, candidate_normal, stand_y, hip_world, limit, space, true):
 					_target[i] = candidate
 					_target_normal[i] = candidate_normal
+					_errors[i] = _foot[i].distance_to(candidate)
 					valid_now = true
 					break
 		_valid[i] = valid_now
+		if leg_state == GaitSolver.LegState.PLANTED and hip_world.distance_to(_foot[i]) > limit * REACH_STRESS:
+			# A planted foot near the end of its reach is about to stop the body (rule 5): it must step now,
+			# even if its own target happens to be close (a dip under the foot).
+			_errors[i] = maxf(_errors[i], (trigger_ratio + 0.05) * leg.reach)
 	return clampf(fastest / _top_speed, 0.0, 1.0)
 
 
@@ -1058,16 +1079,37 @@ func _depenetrate() -> bool:
 
 ## True when a collider overlaps static geometry it should not: walls, block faces, anything steeper than the
 ## build's grip. Overlap with ground the walker can walk on (a slope inside its grip, a crest) is not a collision.
-func _overlaps_world(root: Transform3D) -> bool:
+## 0 = clear, 1 = overlapping ground inside the grip (the body must rise), 2 = overlapping a wall or block face.
+## Every contact counts; none is ignored.
+func _overlap_state(root: Transform3D) -> int:
 	_test_params.from = root
 	_test_params.motion = Vector3.ZERO
 	if not PhysicsServer3D.body_test_motion(get_rid(), _test_params, _test_result):
-		return false
-	# Every contact counts: ground inside the grip must not hide a wall or a block face behind it.
+		return 0
+	var state: int = 0
 	for k in _test_result.get_collision_count():
 		if _is_wall(_test_result.get_collision_normal(k)):
-			return true
-	return false
+			return 2
+		state = 1
+	return state
+
+
+func _overlaps_world(root: Transform3D) -> bool:
+	return _overlap_state(root) == 2
+
+
+## How far the pose must rise for every hip to stand at least HIP_CLEARANCE above the ground straight below it.
+func _clearance_rise(pose: Transform3D) -> float:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var rise: float = 0.0
+	for i in _legs.size():
+		var hip: Vector3 = pose * _legs[i].hip_local
+		_sight.from = hip + Vector3.UP * (0.6 * _legs[i].reach)
+		_sight.to = hip + Vector3.DOWN * 2.0
+		var hit: Dictionary = space.intersect_ray(_sight)
+		if not hit.is_empty():
+			rise = maxf(rise, hit["position"].y + HIP_CLEARANCE - hip.y)
+	return minf(rise, MAX_CLEARANCE_RISE)
 
 
 ## A surface steeper than the build's grip (plus the round collider's contact slack) is a wall.
@@ -1075,11 +1117,12 @@ func _is_wall(normal: Vector3) -> bool:
 	return rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG
 
 
-func _wall_among(collision: KinematicCollision3D) -> bool:
+## The normal of the first wall among a sweep's contacts (ZERO when every contact is ground inside the grip).
+func _wall_normal(collision: KinematicCollision3D) -> Vector3:
 	for k in collision.get_collision_count():
 		if _is_wall(collision.get_normal(k)):
-			return true
-	return false
+			return collision.get_normal(k)
+	return Vector3.ZERO
 
 
 func _apply_move(delta: float) -> void:
@@ -1177,11 +1220,12 @@ func _apply_move(delta: float) -> void:
 			# Test-only sweeps: the body is placed by hand so the physics recovery never nudges it.
 			var collision: KinematicCollision3D = move_and_collide(motion, true, 0.001, false, 6)
 			if collision != null:
-				if _wall_among(collision):
+				var wall_normal: Vector3 = _wall_normal(collision)
+				if wall_normal != Vector3.ZERO:
 					# A wall or block face (any contact steeper than the grip): stop at the contact and slide.
 					wall_hit = true
 					var travel: Vector3 = collision.get_travel()
-					var slide: Vector3 = collision.get_remainder().slide(collision.get_normal())
+					var slide: Vector3 = collision.get_remainder().slide(wall_normal)
 					slide.y = 0.0
 					end = Vector3(cur_pos.x + travel.x, 0.0, cur_pos.z + travel.z)
 					global_position = Vector3(end.x, global_position.y, end.z)
@@ -1209,6 +1253,17 @@ func _apply_move(delta: float) -> void:
 			base_y = _base_y
 			held_this_tick = true
 			wall_hit = true
+	# Ground clearance (GDD 8.2): where the planted-feet plane runs below the terrain (a crest, a ledge edge) the body
+	# rises until every hip and the colliders clear the ground. Rule 5 below holds the body if the legs cannot reach.
+	var rise: float = _clearance_rise(pose_transform(origin, yaw, tilt))
+	if rise > 0.0005:
+		origin.y += rise
+		base_y += rise
+	var raised: int = 0
+	while raised < 12 and _overlap_state(pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt)) == 1:
+		origin.y += 0.03
+		base_y += 0.03
+		raised += 1
 	var current: Transform3D = pose_transform(cur_pos, _yaw, _tilt_n)
 	var final_pose: Transform3D = pose_transform(origin, yaw, tilt)
 	if not feet_in_reach(final_pose, current, _hips_local, _check_feet, _check_flags, _limits):
@@ -1246,8 +1301,7 @@ func _bob_offset(delta: float) -> float:
 	for i in _legs.size():
 		if _solver.state_of(i) == GaitSolver.LegState.SWINGING:
 			air = maxf(air, sin(PI * _solver.swing_progress(i)))
-	# The bob dips the hips, which costs a short leg knee height: it fades out for the shortest legs (none at 0.6 m, full from 1.0 m).
-	last_bob = bob_amplitude * clampf((_min_reach - 0.6) / 0.4, 0.0, 1.0) * _bob_gain * (2.0 * air - BOB_MEAN_SHIFT)
+	last_bob = bob_amplitude * _mean_reach * _bob_gain * (2.0 * air - BOB_MEAN_SHIFT)
 	return last_bob
 
 
@@ -1290,7 +1344,10 @@ func _on_foot_planted(leg: int) -> void:
 			if hit.is_empty():
 				continue
 			var ground: Vector3 = hit["position"]
-			if hip.distance_to(ground) <= limit:
+			if (
+				hip.distance_to(ground) <= limit
+				and _foothold_valid(ground, hit["normal"], _stand_y[leg], hip, _limits[leg], space, true)
+			):
 				_to[leg] = ground
 				_to_normal[leg] = hit["normal"]
 				landed = true

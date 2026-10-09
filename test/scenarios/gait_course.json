@@ -131,6 +131,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "edge_margin_m",
     "op": ">=",
@@ -377,6 +385,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "edge_margin_m",
     "op": ">=",
@@ -473,6 +489,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -536,6 +560,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }
@@ -668,6 +700,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }
@@ -831,6 +871,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }
@@ -1001,6 +1049,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -1105,16 +1161,7 @@
     "method": "set_camera_mode",
     "args": [
      "side",
-     8.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "set_shadows",
-    "args": [
-     false
+     5.0
     ]
    }
   },
@@ -1156,17 +1203,15 @@
   {
    "call": {
     "node": ".",
-    "method": "resume",
+    "method": "log_shadows",
     "args": []
    }
   },
   {
    "call": {
     "node": ".",
-    "method": "set_shadows",
-    "args": [
-     true
-    ]
+    "method": "resume",
+    "args": []
    }
   },
   {
@@ -1311,6 +1356,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }

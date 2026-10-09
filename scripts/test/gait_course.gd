@@ -33,6 +33,10 @@ const PATCH_A_DEG: float = 29.0
 ## The steep patch is the 40 degree talus slope of GDD 9.1 (inside the lane's 35-40 rule).
 const PATCH_B_DEG: float = 40.0
 const PATCH_FLANK: float = 2.4
+## Radius of the rounded crest of the steep patches (m).
+const PATCH_CREST_ROUNDING: float = 0.6
+## Measured trim so the 2 m disc average at the flank centre lands on the patch slope (28-30 / 40).
+const PATCH_STEEPNESS_TRIM: float = 1.0585
 const PATCH_HALF_WIDTH: float = 3.5
 const PATCH_X: float = 10.5
 const PATCH_ALONG: float = 45.0
@@ -62,7 +66,11 @@ const WALL_WIDTH: float = 20.0
 const SPAWN_Z: float = -2.0
 const SPAWN_Y: float = 1.5
 ## Side-on camera height above the body (about 12 degrees of pitch at 8 m: lifted pads clear of their neighbours).
+## The crest camera looks this far above its own eye height (the body and hips sit above the eye).
+const CREST_LOOK_RISE: float = 0.25
 const SIDE_CAMERA_HEIGHT: float = 2.0
+const SUN_ELEVATION_DEG: float = 60.0
+const SUN_AZIMUTH_DEG: float = 25.0
 const CAMERA_PITCH_DEG: float = 25.0
 const CAMERA_AZIMUTH_DEG: float = 20.0
 const TERRAIN_SEED: int = 99
@@ -162,6 +170,13 @@ var _first_tick: bool = true
 var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
+var _freeze_tick: int = -1
+var _tick: int = 0
+var _track_clearance: bool = false
+## Tick (since spawn_at) and value of the lowest hip clearance seen while tracking.
+var clearance_tick: int = -1
+var clearance_min: float = INF
+var _clearance_first: int = -1
 var _camera_mode: String = "follow"
 var _autopilot: bool = false
 var _autopilot_time: float = 0.0
@@ -176,6 +191,8 @@ func _ready() -> void:
 	_walker = get_node("%Walker")
 	_telemetry = get_node("%Telemetry")
 	_camera = get_node("Camera")
+	# The camera moves in _process from interpolated poses: it must not be interpolated itself.
+	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_make_materials()
 	_build_environment()
 	_build_ground()
@@ -198,6 +215,19 @@ func _physics_process(delta: float) -> void:
 		_run_autopilot(delta)
 	_track_step_up()
 	_track_yaw_overshoot()
+	_tick += 1
+	if _track_clearance and _walker.gait() != null and _on_patch():
+		# The clearance sits on its floor (the push-up holds it there) for a stretch of the crest: take the middle.
+		var clearance: float = _walker.min_hip_clearance()
+		if clearance < clearance_min - 0.0001:
+			clearance_min = clearance
+			_clearance_first = _tick
+			clearance_tick = _tick
+		elif clearance <= clearance_min + 0.0001:
+			clearance_tick = (_clearance_first + _tick) / 2
+	if _freeze_tick >= 0 and _tick >= _freeze_tick:
+		get_tree().paused = true
+		_freeze_tick = -1
 	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
 		get_tree().paused = true
 		_freeze_tilt = -1.0
@@ -212,8 +242,10 @@ func _physics_process(delta: float) -> void:
 func _process(_delta: float) -> void:
 	if _walker == null:
 		return
-	var focus: Vector3 = _walker.get_global_transform_interpolated().origin
-	var yaw: float = _walker.yaw_radians()
+	var walker_pose: Transform3D = _walker.get_global_transform_interpolated()
+	var focus: Vector3 = walker_pose.origin
+	var forward: Vector3 = -walker_pose.basis.z
+	var yaw: float = atan2(-forward.x, -forward.z)
 	if _pair_walker != null:
 		var other: Vector3 = _pair_walker.get_global_transform_interpolated().origin
 		focus = (focus + other) * 0.5
@@ -221,6 +253,14 @@ func _process(_delta: float) -> void:
 		# Perpendicular to the pair: both walkers at the same distance, seen from behind.
 		_camera.global_position = focus + Vector3(0.0, 2.2, camera_distance)
 		_camera.look_at(focus + Vector3(0.0, 0.9, 0.0), Vector3.UP)
+		return
+	if _camera_mode == "crest":
+		# True side-on (perpendicular to travel), about 4 m out, eye 0.4 m above the ground under the body.
+		var across: Vector3 = Basis(Vector3.UP, yaw) * Vector3.RIGHT
+		var sun_side: float = 1.0 if across.dot(_sun.global_transform.basis.z) >= 0.0 else -1.0
+		var ground_y: float = focus.y - _walker.height_above_plane()
+		_camera.global_position = Vector3(focus.x, ground_y + 0.4, focus.z) + across * (camera_distance * sun_side)
+		_camera.look_at(Vector3(focus.x, ground_y + 0.4 + CREST_LOOK_RISE, focus.z), Vector3.UP)
 		return
 	if _camera_mode == "side":
 		# Side-on, level with the legs: a lifted foot shows as a gap under the pad.
@@ -280,6 +320,7 @@ func spawn_at(lane: String) -> void:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
 	_lane = lane
+	_tick = 0
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
@@ -324,6 +365,19 @@ func arm_swing_freeze(progress: float) -> void:
 ## Pauses the game the first tick the body's tilt reaches `degrees` (a still at the steepest part of a climb).
 func arm_tilt_freeze(degrees: float) -> void:
 	_freeze_tilt = degrees
+
+
+## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.
+func track_clearance(enabled: bool) -> void:
+	_track_clearance = enabled
+	if enabled:
+		clearance_min = INF
+		clearance_tick = -1
+
+
+## Pauses the game at tick `offset` ticks from the recorded minimum-clearance tick (a deterministic replay).
+func arm_freeze_at_clearance(offset: int) -> void:
+	_freeze_tick = clearance_tick + offset
 
 
 func resume() -> void:
@@ -430,6 +484,38 @@ func log_pads() -> void:
 		)
 
 
+## Prints where each pad's shadow lands on screen (the lift cue) next to log_pads.
+func log_shadows() -> void:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.new()
+	query.collision_mask = 1
+	var light: Vector3 = -_sun.global_transform.basis.z
+	var horizontal := Vector3(light.x, 0.0, light.z)
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		query.from = foot + Vector3.UP * 1.0
+		query.to = foot + Vector3.DOWN * 3.0
+		var hit: Dictionary = space.intersect_ray(query)
+		var ground: Vector3 = hit["position"] if not hit.is_empty() else foot
+		var lift: float = foot.y - ground.y
+		var spot: Vector3 = ground + horizontal / maxf(-light.y, 0.01) * lift
+		var spot_px: Vector2 = _camera.unproject_position(spot)
+		print("SHADOW leg=%d px=(%.0f,%.0f) lift_m=%.3f" % [i, spot_px.x, spot_px.y, lift])
+
+
+## Prints the projected centre of every hip ball (for pixel checks that the hips are above the ground).
+func log_hips() -> void:
+	var across: Vector3 = Basis(Vector3.UP, _walker.yaw_radians()) * Vector3.RIGHT
+	var camera_side: int = 1 if across.dot(_camera.global_position - _walker.global_position) >= 0.0 else -1
+	for i in _walker.leg_count():
+		var hip: Vector3 = _walker.hip_position(i)
+		var px: Vector2 = _camera.unproject_position(hip)
+		print(
+			"HIPS leg=%d near=%s px=(%.0f,%.0f)"
+			% [i, str(_walker.leg_side(i) == camera_side), px.x, px.y]
+		)
+
+
 ## Prints the on-screen height of both walkers (feet to top) for the Strider-vs-Crawler shot.
 func log_pair_extents() -> void:
 	if _pair_walker == null:
@@ -470,6 +556,12 @@ func _spawn_point(lane: String) -> Vector3:
 func _spawn_yaw(lane: String) -> float:
 	# The crest lane starts on the crest line, facing +X (along the ridge, toward the block face).
 	return -PI * 0.5 if lane == "crest" else 0.0
+
+
+## True while the walker is over the steep patch (its flank and crest) along the lane.
+func _on_patch() -> bool:
+	var z: float = _walker.global_position.z
+	return z < -(PATCH_ALONG - PATCH_FLANK) and z > -(PATCH_ALONG + PATCH_FLANK)
 
 
 func _lane_key() -> String:
@@ -617,7 +709,9 @@ func _build_environment() -> void:
 	add_child(world_environment)
 	var sun := DirectionalLight3D.new()
 	_sun = sun
-	sun.rotation_degrees = Vector3(-48.0, 90.0, 0.0)
+	# One high sun (60 degrees) behind and a little right of the cameras (25 degrees off): it lights the
+	# camera-facing side in every shot, and shadows stay on (a pad leaving its shadow is the lift cue).
+	sun.rotation_degrees = Vector3(-SUN_ELEVATION_DEG, SUN_AZIMUTH_DEG, 0.0)
 	sun.light_energy = 1.1
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 40.0
@@ -703,7 +797,18 @@ func _patch_mask(lx: float, along: float, cx: float) -> float:
 ## A ridge across the patch: flanks at exactly the patch slope, crest PATCH_FLANK x tan(slope) high.
 func _patch_height(lx: float, along: float, cx: float, tan_slope: float) -> float:
 	var taper: float = 1.0 - smoothstep(PATCH_HALF_WIDTH - 1.0, PATCH_HALF_WIDTH, absf(lx - cx))
-	return maxf(0.0, tan_slope * (PATCH_FLANK - absf(along - PATCH_ALONG))) * taper
+	var d: float = absf(along - PATCH_ALONG)
+	if d >= PATCH_FLANK:
+		return 0.0
+	# Rounded crest (a talus crest is not a knife edge): g(d) = sqrt(d^2 + r^2) - r runs like |d| away from the top.
+	# The slope is raised so the flank centre still has the patch's slope.
+	var centre: float = PATCH_FLANK * 0.5
+	var steepness: float = tan_slope / (centre / sqrt(centre * centre + PATCH_CREST_ROUNDING * PATCH_CREST_ROUNDING))
+	return PATCH_STEEPNESS_TRIM * steepness * (_crest_g(PATCH_FLANK) - _crest_g(d)) * taper
+
+
+func _crest_g(d: float) -> float:
+	return sqrt(d * d + PATCH_CREST_ROUNDING * PATCH_CREST_ROUNDING) - PATCH_CREST_ROUNDING
 
 
 ## Mean slope (degrees) over a 2 m disc centred on the approach flank of a patch.

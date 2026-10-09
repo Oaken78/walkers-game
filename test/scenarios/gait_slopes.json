@@ -158,6 +158,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -277,6 +285,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -290,7 +306,7 @@
     "node": ".",
     "method": "spawn_at",
     "args": [
-     "patch_b"
+     "patch_a"
     ]
    }
   },
@@ -299,9 +315,11 @@
   },
   {
    "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
+    "node": ".",
+    "method": "track_clearance",
+    "args": [
+     true
+    ]
    }
   },
   {
@@ -335,65 +353,160 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "gait_slopes crawler crosses the 40 deg patch"
+     "gait_slopes crawler first crest run (finds the clearance tick)"
     ]
    }
   },
   {
-   "assert_prop": {
+   "call": {
     "node": ".",
-    "prop": "past_patch",
-    "op": "==",
-    "value": true
+    "method": "track_clearance",
+    "args": [
+     false
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "longest_hold_s",
-    "op": "<",
-    "value": 1.0
+   "call": {
+    "node": ".",
+    "method": "set_camera_mode",
+    "args": [
+     "crest",
+     4.0
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "patch_a"
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_freeze_at_clearance",
+    "args": [
+     -15
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
+   "wait_frames": 500
+  },
+  {
+   "screenshot": "crawler_crest_a"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_hips",
+    "args": []
    }
   },
   {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "min_knee_bend_ratio",
-    "op": ">=",
-    "value": 0.05
+   "call": {
+    "node": ".",
+    "method": "arm_freeze_at_clearance",
+    "args": [
+     0
+    ]
    }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "crawler_crest_b"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_hips",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_freeze_at_clearance",
+    "args": [
+     15
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "crawler_crest_c"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_hips",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera_mode",
+    "args": [
+     "follow",
+     8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
   },
   {
    "call": {
@@ -458,7 +571,7 @@
     "node": ".",
     "prop": "patch_gap",
     "op": ">=",
-    "value": -1.5
+    "value": 0.2
    }
   },
   {
@@ -605,6 +718,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -667,7 +788,7 @@
     "node": ".",
     "prop": "patch_gap",
     "op": ">=",
-    "value": -1.5
+    "value": 0.2
    }
   },
   {
@@ -809,6 +930,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
     "op": ">=",
     "value": 0.05
    }
@@ -1244,6 +1373,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -1335,6 +1472,133 @@
   },
   {
    "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "patch_b"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 480
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_slopes crawler crosses the 40 deg patch"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_hold_s",
+    "op": "<",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_plant_gap_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_hip_clearance_m",
+    "op": ">=",
+    "value": 0.05
+   }
   },
   {
    "assert_no_errors": true

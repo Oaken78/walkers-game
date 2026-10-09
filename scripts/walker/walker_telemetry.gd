@@ -44,9 +44,8 @@ var min_knee_rise_ratio: float = INF
 var min_knee_bend_ratio: float = INF
 ## Lowest hip height above the ground below it (chassis clearance, reported).
 var min_hip_clearance_m: float = INF
-## Ticks on which a collision zeroed the commanded velocity, and commanded minus actual distance while not held.
+## Ticks on which a collision zeroed the commanded velocity.
 var velocity_resets: int = 0
-var speed_deficit_m: float = 0.0
 ## Landings per leg per second since reset.
 var steps_per_s: float = 0.0
 ## Steepest ground under any planted foot since reset.
@@ -123,7 +122,6 @@ func reset() -> void:
 	min_knee_bend_ratio = INF
 	min_hip_clearance_m = INF
 	velocity_resets = 0
-	speed_deficit_m = 0.0
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
 	ticks = 0
@@ -180,7 +178,6 @@ func report(label: String = "") -> void:
 		"min_knee_bend_ratio": snappedf(minf(min_knee_bend_ratio, 9.0), 0.0001),
 		"min_hip_clearance_m": snappedf(minf(min_hip_clearance_m, 9.0), 0.001),
 		"velocity_resets": velocity_resets,
-		"speed_deficit_m": snappedf(speed_deficit_m, 0.01),
 		"steps_per_s": snappedf(steps_per_s, 0.001),
 		"max_foot_slope_deg": snappedf(max_foot_slope_deg, 0.01),
 		"ticks": ticks,
@@ -226,8 +223,6 @@ func _physics_process(delta: float) -> void:
 	min_knee_bend_ratio = minf(min_knee_bend_ratio, walker.min_knee_bend_ratio())
 	velocity_resets = walker.velocity_resets - _resets_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
-	if not walker.held_this_tick:
-		speed_deficit_m += maxf(walker.commanded_speed() - speed, 0.0) * delta
 	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
 	_track_height(walker.height_above_plane())
 
