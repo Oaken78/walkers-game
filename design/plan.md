@@ -42,7 +42,7 @@ Status: ready, in-progress, review-passed, done.
 | T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
-| T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | in-progress | art/walkers-descent-camera |
+| T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
 | T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, test/scenarios/gait_rig.json, new test/scenarios/gait_*.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | in-progress | fix/walkers-walker-hardening |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 
@@ -59,6 +59,11 @@ Status: ready, in-progress, review-passed, done.
   only airborne slot; accepted, judge it at the gate). Turning tripods can make a leg wait about 2.5 step
   durations. Check stop/start at top speed on a tripod with real 0.25 s acceleration: the fake walker dragged a
   planted foot to 1.28 x reach. `gait_course` should also run a 4-leg build into a blocked foot.
+- T15 follow-ups (code-reviewer, round 3, optional): the sight line starts from the ground under the root, not the
+  lowest foot; the drop ahead has no sight test (walking down the 29 deg patch lifts the camera about 4 deg at pitch
+  20); the smoothstep ease-in peaks at about 0.8 deg per frame (not asserted); the two Scout runs that stop early are
+  not labelled; the decision-evidence shots gait_camera__camera_midface_p45/_p50 and gait_rig__crawler_descend_p45
+  stay NEW (never baselined) and can be removed.
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
   Body tilt now follows the slope up to the build's grip (a Crawler climbs the talus at 39 deg), so decide whether the
   turret's pitch limits are body- or world-relative; body-relative -10..45 deg cannot aim level on the talus.
