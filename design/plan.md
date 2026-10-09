@@ -93,8 +93,15 @@ Status: ready, in-progress, review-passed, done.
   lean (Klas, 2026-10-09: not much effort on the drone design now): build GDD 8.4 as written, no new design rounds.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
-- Walker API (after T16 merges, one small task owning walker_body.gd): the read-only hooks T06 and T09 ask for (top-socket and
-  leg-socket transforms, a flag to skip drawing cannons, a switch that stops field input on the workshop stand).
+- Walker API (after T16 merges, one small task owning walker_body.gd), from the T06 and T09 hand-backs:
+  - `socket_transform(socket_id)` for all 8 leg and 3 top sockets, at fixed slots;
+    - today the hips re-space by how many legs are mounted, so a free socket has no position;
+    - T09's socket_anchors.gd and T06's Tops reading go away;
+  - `top_mounts()` plus a `draw_cannons` flag, so WeaponRig stops hiding the Tops children;
+  - `chassis_size()` and its offset, so PlayerHurtbox stops reading the Chassis mesh;
+  - a way to draw an invalid build in the workshop (`apply_build(build, allow_invalid)`), so T09's DisplayBuild
+    subclass goes away;
+  - `stats()["climb"]`, if T16 does not add it.
 - T08 follow-ups (playtest-critic, optional, after the merge):
   - node value reads by ring: the crystal cluster grows with `amount` (a new GDD 10 rule, game-designer first);
   - a findable wreck cache: a brighter beam and a crate that splits from the sand by luma. The orange "your stuff"
