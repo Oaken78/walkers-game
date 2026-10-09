@@ -40,6 +40,13 @@ var max_rays_per_tick: int = 0
 var max_planted_reach_ratio: float = 0.0
 ## Lowest knee above its hip over the run, / reach.
 var min_knee_rise_ratio: float = INF
+## Smallest knee bend (distance from the hip-foot line on the pole side, / reach) over all legs and states.
+var min_knee_bend_ratio: float = INF
+## Lowest hip height above the ground below it (chassis clearance, reported).
+var min_hip_clearance_m: float = INF
+## Ticks on which a collision zeroed the commanded velocity, and commanded minus actual distance while not held.
+var velocity_resets: int = 0
+var speed_deficit_m: float = 0.0
 ## Landings per leg per second since reset.
 var steps_per_s: float = 0.0
 ## Steepest ground under any planted foot since reset.
@@ -64,6 +71,7 @@ var _bob_ring: PackedFloat32Array = PackedFloat32Array()
 var _bob_index: int = 0
 var _bob_count: int = 0
 var _teleports_seen: int = 0
+var _resets_base: int = 0
 var _gap_ray: PhysicsRayQueryParameters3D
 
 
@@ -112,6 +120,10 @@ func reset() -> void:
 	max_rays_per_tick = 0
 	max_planted_reach_ratio = 0.0
 	min_knee_rise_ratio = INF
+	min_knee_bend_ratio = INF
+	min_hip_clearance_m = INF
+	velocity_resets = 0
+	speed_deficit_m = 0.0
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
 	ticks = 0
@@ -128,6 +140,7 @@ func reset() -> void:
 	if walker != null:
 		_teleports_seen = walker.teleport_count
 		walker.max_rays_per_tick = 0
+		_resets_base = walker.velocity_resets
 
 
 ## Fraction of ticks the body was held by rule 5 (0..1).
@@ -164,6 +177,10 @@ func report(label: String = "") -> void:
 		"max_rays_per_tick": max_rays_per_tick,
 		"max_planted_reach_ratio": snappedf(max_planted_reach_ratio, 0.0001),
 		"min_knee_rise_ratio": snappedf(minf(min_knee_rise_ratio, 9.0), 0.0001),
+		"min_knee_bend_ratio": snappedf(minf(min_knee_bend_ratio, 9.0), 0.0001),
+		"min_hip_clearance_m": snappedf(minf(min_hip_clearance_m, 9.0), 0.001),
+		"velocity_resets": velocity_resets,
+		"speed_deficit_m": snappedf(speed_deficit_m, 0.01),
 		"steps_per_s": snappedf(steps_per_s, 0.001),
 		"max_foot_slope_deg": snappedf(max_foot_slope_deg, 0.01),
 		"ticks": ticks,
@@ -206,8 +223,13 @@ func _physics_process(delta: float) -> void:
 	max_rays_per_tick = maxi(max_rays_per_tick, walker.max_rays_per_tick)
 	max_planted_reach_ratio = maxf(max_planted_reach_ratio, walker.max_planted_reach_ratio())
 	min_knee_rise_ratio = minf(min_knee_rise_ratio, walker.min_knee_rise_ratio())
+	min_knee_bend_ratio = minf(min_knee_bend_ratio, walker.min_knee_bend_ratio())
+	velocity_resets = walker.velocity_resets - _resets_base
+	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
+	if not walker.held_this_tick:
+		speed_deficit_m += maxf(walker.commanded_speed() - speed, 0.0) * delta
 	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
-	_track_height(walker.height_above_plane(), walker.last_bob)
+	_track_height(walker.height_above_plane())
 
 
 func _track_timings(delta: float, speed: float, input_now: bool) -> void:
@@ -275,11 +297,11 @@ func _measure_plant_gap(foot: Vector3) -> void:
 	max_plant_gap_m = maxf(max_plant_gap_m, absf(foot.y - ground.y))
 
 
-func _track_height(height: float, bob: float) -> void:
+func _track_height(height: float) -> void:
 	_height_ring[_height_index] = height
 	_height_index = (_height_index + 1) % HEIGHT_WINDOW_TICKS
 	_height_count = mini(_height_count + 1, HEIGHT_WINDOW_TICKS)
-	_bob_ring[_bob_index] = bob
+	_bob_ring[_bob_index] = height
 	_bob_index = (_bob_index + 1) % BOB_WINDOW_TICKS
 	_bob_count = mini(_bob_count + 1, BOB_WINDOW_TICKS)
 	var total: float = 0.0

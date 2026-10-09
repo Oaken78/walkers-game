@@ -30,7 +30,8 @@ const HILL_P2P: float = 1.0
 const HILL_FREQUENCY: float = 0.1
 const HILL_NOISE_RANGE: float = 0.8
 const PATCH_A_DEG: float = 29.0
-const PATCH_B_DEG: float = 38.0
+## The steep patch is the 40 degree talus slope of GDD 9.1 (inside the lane's 35-40 rule).
+const PATCH_B_DEG: float = 40.0
 const PATCH_FLANK: float = 2.4
 const PATCH_HALF_WIDTH: float = 3.5
 const PATCH_X: float = 10.5
@@ -44,6 +45,10 @@ const SWELL_FLANK: float = 3.6
 const BOULDER_COUNT: int = 30
 const BOULDER_X_MIN: float = 5.5
 const BOULDER_X_MAX: float = 8.5
+## A 1.05 m block face on the crest of the second swell (hills 62 m down the lane), driven into along the crest.
+const CREST_ALONG: float = 62.0
+const CREST_FACE_X: float = 6.0
+const CREST_BLOCK_TOP: float = 2.5
 const LEDGE_WIDTH: float = 10.0
 const LEDGE_FLAT_RUN: float = 6.0
 const LEDGE_DECK_DEPTH: float = 6.0
@@ -56,6 +61,8 @@ const WALL_HEIGHT: float = 1.5
 const WALL_WIDTH: float = 20.0
 const SPAWN_Z: float = -2.0
 const SPAWN_Y: float = 1.5
+## Side-on camera height above the body (about 12 degrees of pitch at 8 m: lifted pads clear of their neighbours).
+const SIDE_CAMERA_HEIGHT: float = 2.0
 const CAMERA_PITCH_DEG: float = 25.0
 const CAMERA_AZIMUTH_DEG: float = 20.0
 const TERRAIN_SEED: int = 99
@@ -102,6 +109,18 @@ var stopped_before_face: bool:
 var past_pocket: bool:
 	get:
 		return _all_feet_beyond(_pocket_back_z - 0.5)
+## The walker (body and every foot) has not reached the block face on the crest.
+var stopped_before_crest_block: bool:
+	get:
+		if _walker == null or _lane != "crest":
+			return false
+		var face: float = LANE_X[LANE_BUMPS] + CREST_FACE_X
+		if _walker.global_position.x >= face:
+			return false
+		for i in _walker.leg_count():
+			if _walker.foot_position(i).x >= face:
+				return false
+		return true
 ## Every foot is past the far side of the 29 degree patch (A) or the 38 degree patch (B).
 var past_patch: bool:
 	get:
@@ -142,6 +161,7 @@ var _noise: FastNoiseLite
 var _first_tick: bool = true
 var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
+var _freeze_tilt: float = -1.0
 var _camera_mode: String = "follow"
 var _autopilot: bool = false
 var _autopilot_time: float = 0.0
@@ -178,6 +198,9 @@ func _physics_process(delta: float) -> void:
 		_run_autopilot(delta)
 	_track_step_up()
 	_track_yaw_overshoot()
+	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
+		get_tree().paused = true
+		_freeze_tilt = -1.0
 	if _freeze_at >= 0.0:
 		for i in _walker.leg_count():
 			if _walker.gait().swing_progress(i) >= _freeze_at:
@@ -204,7 +227,7 @@ func _process(_delta: float) -> void:
 		var right: Vector3 = Basis(Vector3.UP, yaw) * Vector3.RIGHT
 		var toward_sun: Vector3 = _sun.global_transform.basis.z
 		var lit_side: float = 1.0 if right.dot(toward_sun) >= 0.0 else -1.0
-		_camera.global_position = focus + right * (camera_distance * lit_side) + Vector3(0.0, 0.9, 0.0)
+		_camera.global_position = focus + right * (camera_distance * lit_side) + Vector3(0.0, SIDE_CAMERA_HEIGHT, 0.0)
 		_camera.look_at(focus + Vector3(0.0, 0.3, 0.0), Vector3.UP)
 		return
 	var pitch: float = deg_to_rad(CAMERA_PITCH_DEG)
@@ -257,7 +280,7 @@ func spawn_at(lane: String) -> void:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
 	_lane = lane
-	_walker.teleport(Transform3D(Basis.IDENTITY, origin))
+	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
 		_last_plant[i] = _walker.foot_position(i)
@@ -298,6 +321,11 @@ func arm_swing_freeze(progress: float) -> void:
 	_freeze_at = progress
 
 
+## Pauses the game the first tick the body's tilt reaches `degrees` (a still at the steepest part of a climb).
+func arm_tilt_freeze(degrees: float) -> void:
+	_freeze_tilt = degrees
+
+
 func resume() -> void:
 	get_tree().paused = false
 
@@ -305,6 +333,11 @@ func resume() -> void:
 ## Remembers the current run's steps per leg per second as the reference for steps_ratio.
 func record_steps_ref() -> void:
 	steps_ref = _telemetry.steps_per_s
+
+
+## Shadows on or off (the midstride still is shot without them so the sand under a lifted pad reads).
+func set_shadows(enabled: bool) -> void:
+	_sun.shadow_enabled = enabled
 
 
 func set_camera_mode(mode: String, distance: float = 8.0) -> void:
@@ -425,6 +458,8 @@ func _spawn_point(lane: String) -> Vector3:
 			return Vector3(LANE_X[LANE_BUMPS] - PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
 		LANE_PATCH_B:
 			return Vector3(LANE_X[LANE_BUMPS] + PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
+		"crest":
+			return Vector3(LANE_X[LANE_BUMPS] - 8.0, SPAWN_Y, -CREST_ALONG)
 		"boulders":
 			return Vector3(LANE_X[LANE_BUMPS] + (BOULDER_X_MIN + BOULDER_X_MAX) * 0.5, SPAWN_Y, -6.0)
 	if not LANE_X.has(lane):
@@ -432,8 +467,13 @@ func _spawn_point(lane: String) -> Vector3:
 	return Vector3(LANE_X[lane], SPAWN_Y, SPAWN_Z)
 
 
+func _spawn_yaw(lane: String) -> float:
+	# The crest lane starts on the crest line, facing +X (along the ridge, toward the block face).
+	return -PI * 0.5 if lane == "crest" else 0.0
+
+
 func _lane_key() -> String:
-	if _lane == LANE_PATCH_A or _lane == LANE_PATCH_B or _lane == "boulders":
+	if _lane == LANE_PATCH_A or _lane == LANE_PATCH_B or _lane == "boulders" or _lane == "crest":
 		return LANE_BUMPS
 	return _lane
 
@@ -577,7 +617,7 @@ func _build_environment() -> void:
 	add_child(world_environment)
 	var sun := DirectionalLight3D.new()
 	_sun = sun
-	sun.rotation_degrees = Vector3(-52.0, -35.0, 0.0)
+	sun.rotation_degrees = Vector3(-48.0, 90.0, 0.0)
 	sun.light_energy = 1.1
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 40.0
@@ -730,6 +770,16 @@ func _build_bumps() -> void:
 	body.add_child(instance)
 	add_child(body)
 	_build_boulders()
+	_build_crest_block()
+
+
+func _build_crest_block() -> void:
+	var x: float = LANE_X[LANE_BUMPS] + CREST_FACE_X + 2.0
+	_add_box(
+		Vector3(x, CREST_BLOCK_TOP * 0.5, -CREST_ALONG),
+		Vector3(4.0, CREST_BLOCK_TOP, 4.0),
+		_block_material
+	)
 
 
 func _build_boulders() -> void:
@@ -740,7 +790,7 @@ func _build_boulders() -> void:
 		var lx: float = rng.randf_range(BOULDER_X_MIN, BOULDER_X_MAX)
 		var along: float = rng.randf_range(10.0, BUMP_LENGTH - 4.0)
 		var radius: float = rng.randf_range(0.2, 0.6)
-		if absf(along - PATCH_ALONG) < PATCH_FLANK + 2.0:
+		if absf(along - PATCH_ALONG) < PATCH_FLANK + 2.0 or absf(along - CREST_ALONG) < 4.0:
 			continue
 		placed += 1
 		var base: float = _terrain_height(lx, along)

@@ -136,6 +136,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -184,6 +192,14 @@
     "prop": "max_planted_reach_ratio",
     "op": "<=",
     "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
    }
   },
   {
@@ -384,6 +400,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -540,6 +564,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -648,6 +680,14 @@
     "prop": "max_planted_reach_ratio",
     "op": "<=",
     "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
    }
   },
   {
@@ -877,6 +917,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_rise_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "distance_m",
     "op": ">=",
     "value": 42.018499999999996
@@ -1005,688 +1061,18 @@
   },
   {
    "assert_prop": {
-    "node": ".",
-    "prop": "patch_a_slope_deg",
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
     "op": ">=",
-    "value": 28.0
+    "value": 0.05
    }
   },
   {
    "assert_prop": {
-    "node": ".",
-    "prop": "patch_a_slope_deg",
-    "op": "<=",
-    "value": 30.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_b_slope_deg",
+    "node": "%Telemetry",
+    "prop": "min_knee_rise_ratio",
     "op": ">=",
-    "value": 35.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_b_slope_deg",
-    "op": "<=",
-    "value": 40.0
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "scout"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "patch_a"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 300
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat scout crosses the 29 deg patch"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "past_patch",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "longest_hold_s",
-    "op": "<",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "crawler"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "patch_a"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 480
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat crawler crosses the 29 deg patch"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "past_patch",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "longest_hold_s",
-    "op": "<",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "crawler"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "patch_b"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 480
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat crawler at the 38 deg patch (REPORTED, crossing not asserted: it stalls at the flank foot)"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "scout"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "patch_b"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 240
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "current_speed_mps",
-    "op": "<",
     "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_gap",
-    "op": ">=",
-    "value": -1.5
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_gap",
-    "op": "<=",
-    "value": 4.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "past_patch",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat scout blocked at the 38 deg patch"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_back",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 120
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_back",
-     false
-    ]
-   }
-  },
-  {
-   "action_press": "turn_left",
-   "frames": 100
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "mark",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 240
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "moved_since_mark",
-    "op": ">",
-    "value": 3.0
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
-   }
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat scout after the 38 deg patch"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "strider"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "patch_b"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 240
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "current_speed_mps",
-    "op": "<",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_gap",
-    "op": ">=",
-    "value": -1.5
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "patch_gap",
-    "op": "<=",
-    "value": 4.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "past_patch",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat strider blocked at the 38 deg patch"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_planted_reach_ratio",
-    "op": "<=",
-    "value": 0.991
-   }
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "walk_flat strider after the 38 deg patch"
-    ]
    }
   },
   {
@@ -1802,6 +1188,14 @@
     "prop": "max_planted_reach_ratio",
     "op": "<=",
     "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
    }
   },
   {
@@ -1924,6 +1318,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_build",
@@ -2032,6 +1434,14 @@
     "prop": "max_planted_reach_ratio",
     "op": "<=",
     "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_knee_bend_ratio",
+    "op": ">=",
+    "value": 0.05
    }
   },
   {

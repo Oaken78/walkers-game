@@ -35,6 +35,8 @@ const GUARD_MARGIN: float = 0.25
 ## of reach and cannot be reached by lowering the body.
 const LEAD_SCALES: Array[float] = [1.0, 0.5, 0.0]
 const SINGLE_LEAD: Array[float] = [1.0]
+## Fractions of the way from the current foot to the target tried (farthest first) when the target is invalid.
+const SHORTEN_FRACTIONS: Array[float] = [0.75, 0.5, 0.25]
 ## The body lowers at most this x leg reach toward a lower foothold (GDD 5).
 const MAX_LOWER_RATIO: float = 0.25
 ## Reach used when asking "can the hip reach this lower foothold" so the landing has slack.
@@ -48,6 +50,10 @@ const CONTACT_SLOPE_MARGIN_DEG: float = 12.0
 ## The sight ray from the hip stops this far short of the foothold.
 const SIGHT_MARGIN: float = 0.1
 ## While the body lowers toward a footing it settles this x faster than the normal height spring.
+## Rule 5 "holds the body" for the foot lead when the body moves at less than this x its commanded speed.
+## 0 = off. Measured on the bumps (20 s): with 0.5 the short pair covers 50.4 m of 88.5 and the Scout 73.6 of 90;
+## off it covers 85.3 and 87.3: shorter leads while held make the body hit its reach limits more often.
+const HELD_LEAD_RATIO: float = 0.0
 const LOWER_SETTLE_SCALE: float = 1.0
 
 @export var steer_mode: SteerMode = SteerMode.TANK
@@ -60,7 +66,8 @@ const LOWER_SETTLE_SCALE: float = 1.0
 ## Each hip sits this x its own reach above the foot plane, on a strut under the chassis side.
 @export var hip_height_ratio: float = 0.5
 @export var height_settle_time: float = 0.15
-@export var tilt_max_deg: float = 25.0
+## Body tilt clamp in degrees. Negative (default) = the build's slope grip (lowest max_slope of its legs), GDD 5.
+@export var tilt_max_deg: float = -1.0
 @export var tilt_smooth_time: float = 0.12
 @export var bob_amplitude: float = 0.04
 @export var bob_gain_time: float = 0.1
@@ -76,7 +83,7 @@ const LOWER_SETTLE_SCALE: float = 1.0
 @export var wave_step_scale: float = 0.6
 @export_group("Stance")
 ## Rest foot distance out from the hip, x leg reach (0.3-0.45 keeps the stride inside the 0.99 reach sphere).
-@export var rest_out_ratio: float = 0.5
+@export var rest_out_ratio: float = 0.42
 ## The front legs fan forward and the rear legs back by up to this x reach.
 @export var rest_fan_ratio: float = 0.10
 ## Hip spacing along a side = base + per_reach x mean reach.
@@ -97,6 +104,8 @@ var move_input_active: bool = false
 var turn_input: float = 0.0
 var held_this_tick: bool = false
 var teleport_count: int = 0
+## Ticks on which a real collision zeroed the commanded velocity.
+var velocity_resets: int = 0
 var rays_this_tick: int = 0
 var max_rays_per_tick: int = 0
 
@@ -106,9 +115,12 @@ var _solver: GaitSolver
 var _legs: Array[WalkerLeg] = []
 var _needs_plant: bool = false
 var _teleport_pending: bool = false
+var _defer_plant: bool = false
 var _ray: PhysicsRayQueryParameters3D
 var _shape_query: PhysicsShapeQueryParameters3D
 var _sight: PhysicsRayQueryParameters3D
+var _test_params: PhysicsTestMotionParameters3D
+var _test_result: PhysicsTestMotionResult3D
 var _top_speed: float = 4.5
 var _turn_rate: float = 120.0
 var _step_up: float = 0.6
@@ -147,6 +159,7 @@ var _target_normal: PackedVector3Array = PackedVector3Array()
 var _errors: PackedFloat32Array = PackedFloat32Array()
 var _valid: Array[bool] = []
 var _planted: PackedByteArray = PackedByteArray()
+var _stand_y: PackedFloat32Array = PackedFloat32Array()
 ## Rule 5 inputs: planted feet where they stand, swinging feet at their landing point.
 var _check_feet: PackedVector3Array = PackedVector3Array()
 var _check_flags: PackedByteArray = PackedByteArray()
@@ -163,7 +176,10 @@ func _ready() -> void:
 		_origin = global_position
 		_base_y = global_position.y
 	if _build == null:
+		# Static bodies added in the same frame cannot be queried yet: plant on the first physics tick.
+		_defer_plant = true
 		apply_build(WalkerBuild.scout())
+		_defer_plant = false
 
 
 # --- Public contract -------------------------------------------------------------------------------------------
@@ -177,7 +193,7 @@ func apply_build(build: WalkerBuild) -> void:
 	_stats = _build.stats()
 	_rebuild()
 	_needs_plant = true
-	if is_inside_tree():
+	if is_inside_tree() and not _defer_plant:
 		_plant_all_at_rest()
 	build_applied.emit()
 
@@ -233,6 +249,11 @@ func is_overlapping_world() -> bool:
 	return _overlaps_world(global_transform)
 
 
+## The speed the body is being driven at (commanded), m/s.
+func commanded_speed() -> float:
+	return _velocity_h.length()
+
+
 ## Largest planted-foot distance to its hip, as a fraction of that leg's reach (the 0.99 rule).
 func max_planted_reach_ratio() -> float:
 	var worst: float = 0.0
@@ -243,12 +264,53 @@ func max_planted_reach_ratio() -> float:
 	return worst
 
 
-## Lowest knee rise over the legs, (knee.y - hip.y) / reach (GDD 5: at least 0.10 while walking).
+## Lowest knee rise (knee above its hip in the body frame, / reach) over planted feet within 0.5 x reach fore-aft
+## of their rest foot (GDD 5: at least 0.10). INF when no foot qualifies.
 func min_knee_rise_ratio() -> float:
+	var lowest: float = INF
+	var inverse: Transform3D = _pose.affine_inverse()
+	for i in _legs.size():
+		if _solver.state_of(i) != GaitSolver.LegState.PLANTED:
+			continue
+		var leg: WalkerLeg = _legs[i]
+		var foot_local: Vector3 = inverse * _render[i]
+		if absf(foot_local.z - leg.rest_local.z) > 0.5 * leg.reach:
+			continue
+		var knee_local: Vector3 = inverse * leg.knee
+		lowest = minf(lowest, (knee_local.y - leg.hip_local.y) / leg.reach)
+	return lowest
+
+
+## Smallest knee bend over all legs and states: the knee's distance from the hip-foot line on the pole side, / reach.
+## Near zero or negative means a knee flipped or the leg straightened.
+func min_knee_bend_ratio() -> float:
+	var lowest: float = INF
+	for i in _legs.size():
+		var leg: WalkerLeg = _legs[i]
+		var hip: Vector3 = _pose * leg.hip_local
+		var chord: Vector3 = (leg.foot - hip).normalized()
+		var pole: Vector3 = _pose.basis * leg.pole_local
+		var side: Vector3 = pole - chord * pole.dot(chord)
+		if side.length() < 0.0001:
+			return 0.0
+		side = side.normalized()
+		var off: Vector3 = leg.knee - hip
+		off -= chord * off.dot(chord)
+		lowest = minf(lowest, off.dot(side) / leg.reach)
+	return lowest
+
+
+## Lowest hip height above the ground straight below it (chassis clearance on a steep slope, telemetry).
+func min_hip_clearance() -> float:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var lowest: float = INF
 	for i in _legs.size():
 		var hip: Vector3 = _pose * _legs[i].hip_local
-		lowest = minf(lowest, (_legs[i].knee.y - hip.y) / _legs[i].reach)
+		_sight.from = hip + Vector3.UP * 3.0
+		_sight.to = hip + Vector3.DOWN * 3.0
+		var hit: Dictionary = space.intersect_ray(_sight)
+		if not hit.is_empty():
+			lowest = minf(lowest, hip.y - hit["position"].y)
 	return lowest
 
 
@@ -498,6 +560,10 @@ static func _top_spot(index: int, count: int, width: float, length: float) -> Ve
 # --- Build ---------------------------------------------------------------------------------------------------------
 
 
+func _tilt_limit() -> float:
+	return _max_slope if tilt_max_deg < 0.0 else tilt_max_deg
+
+
 func _make_queries() -> void:
 	if _ray != null:
 		return
@@ -510,6 +576,11 @@ func _make_queries() -> void:
 	_sight.hit_from_inside = false
 	_shape_query = PhysicsShapeQueryParameters3D.new()
 	_shape_query.collision_mask = 1
+	_test_params = PhysicsTestMotionParameters3D.new()
+	_test_params.margin = 0.001
+	_test_params.max_collisions = 8
+	_test_params.recovery_as_collision = true
+	_test_result = PhysicsTestMotionResult3D.new()
 
 
 func _rebuild() -> void:
@@ -578,6 +649,7 @@ func _rebuild() -> void:
 	_errors.fill(0.0)
 	_valid.resize(count)
 	_planted.resize(count)
+	_stand_y.resize(count)
 	_check_feet.resize(count)
 	_check_flags.resize(count)
 	_fit.resize(count)
@@ -692,8 +764,9 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 		_to[i] = ground
 		_to_normal[i] = normal
 		_planted[i] = 1
+		_stand_y[i] = ground.y
 	var plane: Plane = fit_plane(_foot)
-	_tilt_n = clamp_tilt(plane.normal, tilt_max_deg)
+	_tilt_n = clamp_tilt(plane.normal, _tilt_limit())
 	var x: float = _origin.x
 	var z: float = _origin.z
 	_base_y = plane_height(plane, x, z) + body_height_ratio * _mean_reach / plane.normal.y
@@ -823,8 +896,12 @@ func _update_targets() -> float:
 		var rest_speed: float = rest_velocity.length()
 		fastest = maxf(fastest, rest_speed)
 		# Foot lands on a live target; the stance after landing lasts (groups - 1) swings, so the lead covers it.
+		# While rule 5 holds the body the lead uses the speed it really has, so a held body does not lengthen steps.
+		var lead_velocity: Vector3 = rest_velocity
+		if velocity.length() < HELD_LEAD_RATIO * _velocity_h.length():
+			lead_velocity = velocity + Vector3.UP.cross(rest - gt.origin) * yaw_rad
 		var lead: Vector3 = GaitSolver.target_lead(
-			rest_velocity, _solver.step_duration(rest_speed / _top_speed) * lead_groups
+			lead_velocity, _solver.step_duration(rest_speed / _top_speed) * lead_groups
 		)
 		var hip_world: Vector3 = gt * leg.hip_local
 		var about_to_lift: bool = (
@@ -885,28 +962,65 @@ func _update_targets() -> float:
 			# even if its own target happens to be close (a dip under the foot).
 			_errors[i] = maxf(_errors[i], (trigger_ratio + 0.05) * leg.reach)
 		_lower_to_y = minf(_lower_to_y, needs_y)
-		# Rise is measured from the height the foot stands (or stood) on, not from the lifted swing arc.
+		# Rise is measured from the height the foot stands (or stood) on: the ground under it while planted, and the
+		# last planted height while it hovers or swings (never from the lifted arc, nor from a body-fixed rest point
+		# that a tilted body carries well above the ground).
 		var stand_y: float = _foot[i].y
-		if leg_state == GaitSolver.LegState.SWINGING:
-			stand_y = _from[i].y
-		elif leg_state == GaitSolver.LegState.HOVERING:
-			stand_y = _foot[i].y - _solver.lift_height(leg.reach)
-		_valid[i] = (
-			GaitSolver.is_target_valid(position.y - stand_y, normal, _step_up, _max_slope)
-			and hip_world.distance_to(position) <= limit * LIFT_REACH_SLACK
-		)
-		if _valid[i] and (about_to_lift or leg_state == GaitSolver.LegState.SWINGING):
-			# The hip must see the foothold: a foot never lands behind a thin wall its ray started above.
-			# (From the hip, or from just above the foothold when that is higher: a block taller than the hip
-			# must still be climbable, a thin wall must still hide what is behind it.)
-			var eye := Vector3(hip_world.x, maxf(hip_world.y, position.y + SIGHT_MARGIN), hip_world.z)
-			var toward: Vector3 = (eye - position).normalized()
-			_sight.from = eye
-			_sight.to = position + toward * SIGHT_MARGIN
-			rays_this_tick += 1
-			if not space.intersect_ray(_sight).is_empty():
-				_valid[i] = false
+		if leg_state == GaitSolver.LegState.PLANTED:
+			_stand_y[i] = _foot[i].y
+		else:
+			stand_y = _stand_y[i]
+		var checked: bool = about_to_lift or leg_state == GaitSolver.LegState.SWINGING
+		var valid_now: bool = _foothold_valid(position, normal, stand_y, hip_world, limit, space, checked)
+		if not valid_now and about_to_lift:
+			# Too high, too steep or out of reach: take the farthest valid foothold between the current foot and
+			# the target (a shorter step). The leg blocks only when none is valid (GDD 8.2).
+			for fraction in SHORTEN_FRACTIONS:
+				var sx: float = lerpf(_foot[i].x, position.x, fraction)
+				var sz: float = lerpf(_foot[i].z, position.z, fraction)
+				_ray.from = Vector3(sx, gt.origin.y + ray_up, sz)
+				_ray.to = Vector3(sx, gt.origin.y + ray_up - ray_len, sz)
+				var shorter: Dictionary = space.intersect_ray(_ray)
+				rays_this_tick += 1
+				if shorter.is_empty():
+					continue
+				var candidate: Vector3 = shorter["position"]
+				var candidate_normal: Vector3 = shorter["normal"]
+				if _foothold_valid(candidate, candidate_normal, stand_y, hip_world, limit, space, true):
+					_target[i] = candidate
+					_target_normal[i] = candidate_normal
+					valid_now = true
+					break
+		_valid[i] = valid_now
 	return clampf(fastest / _top_speed, 0.0, 1.0)
+
+
+## Step-up, slope, reach and line of sight for one foothold.
+func _foothold_valid(
+	position: Vector3,
+	normal: Vector3,
+	stand_y: float,
+	hip_world: Vector3,
+	limit: float,
+	space: PhysicsDirectSpaceState3D,
+	check_sight: bool
+) -> bool:
+	if not GaitSolver.is_target_valid(position.y - stand_y, normal, _step_up, _max_slope):
+		return false
+	if hip_world.distance_to(position) > limit * LIFT_REACH_SLACK:
+		return false
+	if check_sight:
+		# The hip must see the foothold: a foot never lands behind a thin wall its ray started above.
+		# (From the hip, or from just above the foothold when that is higher: a block taller than the hip
+		# must still be climbable, a thin wall must still hide what is behind it.)
+		var eye := Vector3(hip_world.x, maxf(hip_world.y, position.y + SIGHT_MARGIN), hip_world.z)
+		var toward: Vector3 = (eye - position).normalized()
+		_sight.from = eye
+		_sight.to = position + toward * SIGHT_MARGIN
+		rays_this_tick += 1
+		if not space.intersect_ray(_sight).is_empty():
+			return false
+	return true
 
 
 ## A swinging foot homes on its live target, so it lands where the rest point has moved to.
@@ -945,18 +1059,25 @@ func _depenetrate() -> bool:
 ## True when a collider overlaps static geometry it should not: walls, block faces, anything steeper than the
 ## build's grip. Overlap with ground the walker can walk on (a slope inside its grip, a crest) is not a collision.
 func _overlaps_world(root: Transform3D) -> bool:
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	for node_name in ["Collider", "Guard"]:
-		var node: CollisionShape3D = get_node(node_name)
-		_shape_query.shape = node.shape
-		_shape_query.transform = root * Transform3D(Basis.IDENTITY, node.position)
-		if space.intersect_shape(_shape_query, 1).is_empty():
-			continue
-		var rest: Dictionary = space.get_rest_info(_shape_query)
-		if rest.is_empty():
+	_test_params.from = root
+	_test_params.motion = Vector3.ZERO
+	if not PhysicsServer3D.body_test_motion(get_rid(), _test_params, _test_result):
+		return false
+	# Every contact counts: ground inside the grip must not hide a wall or a block face behind it.
+	for k in _test_result.get_collision_count():
+		if _is_wall(_test_result.get_collision_normal(k)):
 			return true
-		var normal: Vector3 = rest["normal"]
-		if rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG:
+	return false
+
+
+## A surface steeper than the build's grip (plus the round collider's contact slack) is a wall.
+func _is_wall(normal: Vector3) -> bool:
+	return rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG
+
+
+func _wall_among(collision: KinematicCollision3D) -> bool:
+	for k in collision.get_collision_count():
+		if _is_wall(collision.get_normal(k)):
 			return true
 	return false
 
@@ -988,7 +1109,7 @@ func _apply_move(delta: float) -> void:
 	var des_yaw: float = _yaw + deg_to_rad(_yaw_rate_cmd) * delta
 	var des_x: float = cur_pos.x + _velocity_h.x * delta
 	var des_z: float = cur_pos.z + _velocity_h.z * delta
-	var tilt_target: Vector3 = clamp_tilt(plane.normal, tilt_max_deg)
+	var tilt_target: Vector3 = clamp_tilt(plane.normal, _tilt_limit())
 	var tilt_factor: float = ease_factor(delta, tilt_smooth_time)
 	var des_n: Vector3 = _tilt_n
 	if tilt_factor > 0.0 and (tilt_target - _tilt_n).length_squared() > 0.0000000001:
@@ -1048,15 +1169,17 @@ func _apply_move(delta: float) -> void:
 			base_y = lerpf(_base_y, des_base, fraction)
 	var cur_root: Transform3D = pose_transform(Vector3(cur_pos.x, _base_y, cur_pos.z), _yaw, _tilt_n)
 	global_transform = cur_root
+	var wall_hit: bool = false
 	if move_fraction > 0.0:
 		var motion := Vector3(origin.x - cur_pos.x, 0.0, origin.z - cur_pos.z)
 		var end := Vector3(origin.x, 0.0, origin.z)
 		if motion.length_squared() > 0.000000000001:
 			# Test-only sweeps: the body is placed by hand so the physics recovery never nudges it.
-			var collision: KinematicCollision3D = move_and_collide(motion, true)
+			var collision: KinematicCollision3D = move_and_collide(motion, true, 0.001, false, 6)
 			if collision != null:
-				if rad_to_deg(collision.get_normal().angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG:
-					# A wall or block face: stop at the contact and slide along it.
+				if _wall_among(collision):
+					# A wall or block face (any contact steeper than the grip): stop at the contact and slide.
+					wall_hit = true
 					var travel: Vector3 = collision.get_travel()
 					var slide: Vector3 = collision.get_remainder().slide(collision.get_normal())
 					slide.y = 0.0
@@ -1085,6 +1208,7 @@ func _apply_move(delta: float) -> void:
 			tilt = _tilt_n
 			base_y = _base_y
 			held_this_tick = true
+			wall_hit = true
 	var current: Transform3D = pose_transform(cur_pos, _yaw, _tilt_n)
 	var final_pose: Transform3D = pose_transform(origin, yaw, tilt)
 	if not feet_in_reach(final_pose, current, _hips_local, _check_feet, _check_flags, _limits):
@@ -1096,12 +1220,14 @@ func _apply_move(delta: float) -> void:
 		held_this_tick = true
 	var actual := Vector3((origin.x - cur_pos.x) / delta, 0.0, (origin.z - cur_pos.z) / delta)
 	var commanded_len: float = _velocity_h.length()
-	# A small hold keeps the commanded speed (no climb back up the ramp); a big stop (wall) resets it.
-	if commanded_len > 0.0001 and actual.length() < 0.5 * commanded_len:
+	# A hold by the legs keeps the commanded speed (the body resumes at speed, no climb back up the ramp); only a
+	# real collision zeroes it.
+	if wall_hit and commanded_len > 0.0001:
 		_velocity_h = actual
+		velocity_resets += 1
 	velocity = actual
 	var actual_rate: float = rad_to_deg(yaw - _yaw) / delta
-	if absf(_yaw_rate_cmd) > 0.0001 and absf(actual_rate) < 0.5 * absf(_yaw_rate_cmd):
+	if wall_hit and absf(_yaw_rate_cmd) > 0.0001:
 		_yaw_rate_cmd = actual_rate
 	yaw_rate_dps = actual_rate
 	_base_y = base_y
@@ -1120,7 +1246,8 @@ func _bob_offset(delta: float) -> float:
 	for i in _legs.size():
 		if _solver.state_of(i) == GaitSolver.LegState.SWINGING:
 			air = maxf(air, sin(PI * _solver.swing_progress(i)))
-	last_bob = bob_amplitude * _bob_gain * (2.0 * air - BOB_MEAN_SHIFT)
+	# The bob dips the hips, which costs a short leg knee height: it fades out for the shortest legs (none at 0.6 m, full from 1.0 m).
+	last_bob = bob_amplitude * clampf((_min_reach - 0.6) / 0.4, 0.0, 1.0) * _bob_gain * (2.0 * air - BOB_MEAN_SHIFT)
 	return last_bob
 
 
