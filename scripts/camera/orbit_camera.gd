@@ -47,10 +47,12 @@ const SPEED_SMOOTHING_S: float = 0.10
 ## blocks never lift the camera.
 @export var floor_min_segments: int = 2
 @export var floor_min_rise: float = 1.2
-## The run must start within this distance (m) of the walker: a slope that begins further back than the camera
-## can be hidden by is no longer in the way (0.75 m per sample; the 40 deg talus face behind a walker 2.3 m past
-## its foot starts 2.3 m back and tops out below the view line).
-@export var floor_max_start_m: float = 1.5
+## The target floor itself moves at most this fast (deg/s) once the floor is up, so a measurement that wobbles
+## (a partial segment at a corner) never pops the view.
+## Sight-line test: ground within this many metres below the line from the walker's feet to the camera still
+## counts as standing in it (camera sphere, rig lag, ray spacing). Without it the camera sat inside the face.
+@export var sight_margin_m: float = 0.5
+@export var floor_target_rate_deg_s: float = 20.0
 ## Ground samples (m apart, at least 0.1). Behind: out to the camera's horizontal distance, at most
 ## slope_sample_max. Ahead: this many samples along the camera's forward line.
 @export var slope_sample_spacing: float = 0.75
@@ -67,6 +69,16 @@ var slope_ahead_deg: float = 0.0
 ## Scenario trackers (reset_trackers): the largest floor lift and the shortest arm since the reset.
 var lift_max_deg: float = 0.0
 var arm_min_m: float = INF
+## Largest frame-to-frame change of shown_pitch_deg while the floor is fully up, since the reset.
+var floor_step_max_deg: float = 0.0
+## Round-1 rule (steepest single sample, behind), kept only to log beside the new measure.
+var old_rule_deg: float = 0.0
+## Read-only: rise per metre of the sight line from the walker's feet to the camera at the player's pitch.
+var sight_line_slope: float = 0.0
+var root_above_base: float = 0.0
+var old_rule_max_deg: float = 0.0
+var _prev_shown_deg: float = 0.0
+var _prev_progress: float = 0.0
 var shown_pitch_deg: float = 0.0
 
 var _shown_distance: float = 8.0
@@ -158,11 +170,18 @@ func _process(delta: float) -> void:
 	_apply_arm_and_shake(delta)
 	lift_max_deg = maxf(lift_max_deg, lift_deg())
 	arm_min_m = minf(arm_min_m, arm_length)
+	if _floor_progress >= 1.0 and _prev_progress >= 1.0:
+		floor_step_max_deg = maxf(floor_step_max_deg, absf(shown_pitch_deg - _prev_shown_deg))
+	_prev_shown_deg = shown_pitch_deg
+	_prev_progress = _floor_progress
+	old_rule_max_deg = maxf(old_rule_max_deg, old_rule_deg)
 
 
 func reset_trackers() -> void:
 	lift_max_deg = 0.0
 	arm_min_m = INF
+	floor_step_max_deg = 0.0
+	old_rule_max_deg = 0.0
 
 
 ## A mouse motion event, in physical pixels (screen_relative). Goes through orbit(), so the idle reset is shared.
@@ -233,8 +252,8 @@ func add_shake(duration: float = 0.15, amplitude: float = 0.15) -> void:
 ## One report line for scenarios: the player's pitch, the pitch shown, the slope behind and the lift between them.
 func log_state(label: String) -> void:
 	print(
-		"CAMSTATE %s player_pitch=%.1f shown_pitch=%.1f slope_behind=%.1f slope_ahead=%.1f lift=%.1f arm=%.2f"
-		% [label, pitch_deg, shown_pitch_deg, slope_behind_deg, slope_ahead_deg, lift_deg(), arm_length]
+		"CAMSTATE %s player_pitch=%.1f shown_pitch=%.1f slope_behind=%.1f slope_ahead=%.1f lift=%.1f arm=%.2f old_rule=%.1f old_max=%.1f sight=%.2f root_h=%.2f step_max=%.2f"
+		% [label, pitch_deg, shown_pitch_deg, slope_behind_deg, slope_ahead_deg, lift_deg(), arm_length, old_rule_deg, old_rule_max_deg, sight_line_slope, root_above_base, floor_step_max_deg]
 	)
 
 
@@ -301,8 +320,10 @@ static func floor_pitch(slope: float, threshold: float, margin: float, cap: floa
 
 ## Sustained steep slope (deg) in a ground profile: `base` is the height under the walker and heights[i] the
 ## height at (i + 1) * spacing along the line. A run is `min_segments` or more consecutive segments, each rising
-## steeper than `threshold` deg, with a total rise over `min_rise`. Returns the mean segment angle of the steepest
-## qualifying run, else 0. A drop ahead is measured by passing negated heights.
+## steeper than `threshold` deg, with a total rise over `min_rise`, and (when `line_slope` is given) with some
+## sample standing above the sight line rising `line_slope` m per m from the walker's feet. Returns the steepest
+## segment of the steepest qualifying run (a partial segment at a corner never lowers it), else 0.
+## A drop ahead is measured by passing negated heights.
 static func slope_from_heights(
 	base: float,
 	heights: PackedFloat32Array,
@@ -310,13 +331,14 @@ static func slope_from_heights(
 	threshold: float = 25.0,
 	min_segments: int = 2,
 	min_rise: float = 1.2,
-	max_start: float = INF
+	line_slope: float = -INF,
+	line_margin: float = 0.0
 ) -> float:
 	var best: float = 0.0
 	var run_len: int = 0
-	var run_sum: float = 0.0
+	var run_max: float = 0.0
 	var run_rise: float = 0.0
-	var run_start: float = 0.0
+	var run_above: bool = false
 	var prev: float = base
 	for i in range(heights.size() + 1):
 		var angle: float = -1.0
@@ -326,18 +348,24 @@ static func slope_from_heights(
 			angle = rad_to_deg(atan2(rise, spacing))
 			prev = heights[i]
 		if angle > threshold:
-			if run_len == 0:
-				run_start = float(i) * spacing
 			run_len += 1
-			run_sum += angle
+			run_max = maxf(run_max, angle)
 			run_rise += rise
+			if heights[i] - base > line_slope * spacing * float(i + 1) - line_margin:
+				run_above = true
 		else:
-			if run_len >= min_segments and run_rise > min_rise and run_start <= max_start + 0.001:
-				best = maxf(best, run_sum / float(run_len))
+			if run_len >= min_segments and run_rise > min_rise and run_above:
+				best = maxf(best, run_max)
 			run_len = 0
-			run_sum = 0.0
+			run_max = 0.0
 			run_rise = 0.0
+			run_above = false
 	return best
+
+
+## A ray height, or `base` when the ray missed (NaN).
+static func sample_or_base(y: float, base: float) -> float:
+	return base if is_nan(y) else y
 
 
 ## One floor step. `measured` (deg) replaces the ground measurement when given (tests).
@@ -352,7 +380,10 @@ func _ease_floor(delta: float, measured: float = NAN) -> void:
 	var wanted: float = floor_pitch(slope, floor_slope_deg, floor_margin_deg, pitch_max_deg)
 	var active: bool = not is_inf(wanted) and not is_aiming()
 	if active:
-		_floor_target_deg = wanted
+		if _floor_progress <= 0.0:
+			_floor_target_deg = wanted
+		else:
+			_floor_target_deg = move_toward(_floor_target_deg, wanted, floor_target_rate_deg_s * delta)
 	var time: float = floor_in_time if active else floor_out_time
 	var lift: float = maxf(_floor_target_deg - pitch_deg, 5.0)
 	var rate: float = floor_ease_span_deg / (maxf(time, 0.001) * lift)
@@ -376,6 +407,7 @@ func _reset_floor() -> void:
 func _measure_slopes() -> void:
 	slope_behind_deg = 0.0
 	slope_ahead_deg = 0.0
+	old_rule_deg = 0.0
 	if not is_instance_valid(target) or not is_inside_tree():
 		return
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
@@ -385,21 +417,28 @@ func _measure_slopes() -> void:
 	var base: float = _ground_y(space, origin)
 	if is_nan(base):
 		return
-	var reach: float = _shown_distance * cos(deg_to_rad(pitch_deg))
+	var p: float = deg_to_rad(pitch_deg)
+	var reach: float = _shown_distance * cos(p)
+	var cam_above_base: float = (origin.y - base) + target_offset.y + _shown_distance * sin(p)
+	var line_slope: float = cam_above_base / maxf(reach, 0.1)
+	sight_line_slope = line_slope
+	root_above_base = origin.y - base
 	var behind := PackedFloat32Array()
 	var ahead := PackedFloat32Array()
 	var count: int = clampi(ceili(reach / spacing), 1, maxi(slope_sample_max, 1))
+	old_rule_deg = 0.0
 	for i in range(1, count + 1):
-		var y: float = _ground_y(space, origin + back * spacing * float(i))
-		behind.append(base if is_nan(y) else y)
+		var y: float = sample_or_base(_ground_y(space, origin + back * spacing * float(i)), base)
+		behind.append(y)
+		old_rule_deg = maxf(old_rule_deg, rad_to_deg(atan2(y - base, spacing * float(i))))
 	for i in range(1, maxi(ahead_sample_count, 0) + 1):
-		var y: float = _ground_y(space, origin - back * spacing * float(i))
-		ahead.append(base if is_nan(y) else -y)
+		var y: float = sample_or_base(_ground_y(space, origin - back * spacing * float(i)), base)
+		ahead.append(-y)
 	slope_behind_deg = slope_from_heights(
-		base, behind, spacing, floor_slope_deg, floor_min_segments, floor_min_rise, floor_max_start_m
+		base, behind, spacing, floor_slope_deg, floor_min_segments, floor_min_rise, line_slope, sight_margin_m
 	)
 	slope_ahead_deg = slope_from_heights(
-		-base, ahead, spacing, floor_slope_deg, floor_min_segments, floor_min_rise, floor_max_start_m
+		-base, ahead, spacing, floor_slope_deg, floor_min_segments, floor_min_rise
 	)
 
 

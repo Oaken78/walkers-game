@@ -347,3 +347,39 @@ func test_sample_spacing_is_clamped_so_the_measure_cannot_hang() -> void:
 	rig.target = holder
 	rig._measure_slopes()
 	assert_eq(rig.slope_behind_deg, 0.0)
+
+
+func test_the_steepest_full_segment_is_used_not_the_mean() -> void:
+	# a partial segment at the corner (0.4 m rise, 28 deg) followed by two full 40 deg segments
+	var h := PackedFloat32Array([0.4, 1.029, 1.658])
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, h, 0.75), 40.0, 0.05)
+
+
+func test_a_slope_below_the_sight_line_gives_no_floor() -> void:
+	var ramp: PackedFloat32Array = _ramp(30.0, 4)
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, ramp, 0.75, 25.0, 2, 1.2, 0.4), 30.0, 0.001, "above")
+	assert_eq(OrbitCamera.slope_from_heights(0.0, ramp, 0.75, 25.0, 2, 1.2, 0.8), 0.0, "below the line: feet seen")
+
+
+func test_a_missed_ahead_ray_falls_back_to_minus_base() -> void:
+	assert_eq(OrbitCamera.sample_or_base(NAN, 2.0), 2.0)
+	assert_eq(OrbitCamera.sample_or_base(1.0, 2.0), 1.0)
+	var base: float = 3.0
+	var ahead := PackedFloat32Array([-OrbitCamera.sample_or_base(NAN, base), -OrbitCamera.sample_or_base(NAN, base)])
+	assert_eq(OrbitCamera.slope_from_heights(-base, ahead, 0.75), 0.0, "a missed ray is level, not a cliff")
+
+
+func test_a_wobbling_measurement_moves_the_shown_pitch_under_half_a_degree_per_frame() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	rig._apply_rotation()
+	var last: float = rig.shown_pitch_deg
+	var worst: float = 0.0
+	for slope: float in [37.9, 40.0, 37.9, 40.0]:
+		for i in range(45):
+			rig._ease_floor(1.0 / 60.0, slope)
+			rig._apply_rotation()
+			worst = maxf(worst, absf(rig.shown_pitch_deg - last))
+			last = rig.shown_pitch_deg
+	assert_lt(worst, 0.5, "target eases at 20 deg/s = 0.33 deg per frame")
