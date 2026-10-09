@@ -26,7 +26,7 @@ Status: ready, in-progress, review-passed, done.
 |---|---|---|---|---|---|
 | T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot, test/unit/test_input_map.gd | 2 | done | main |
 | T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 2 | done | worktree-agent-a21795ac19081cafb, merged ada5280 |
-| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 2 | review-passed | worktree-agent-ab4347227a88ecff3 |
+| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 2 | done | worktree-agent-ab4347227a88ecff3, merged 6c723ee |
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scenes/walker/, scenes/test/gait_course.tscn, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json | 3 | | |
 | T04 | Orbit camera rig (8 m, lag 0.10 s, zoom, aim, spring-arm collision) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd | 3 | | |
 | T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, scripts/world/, assets/world/, test/integration/test_valley_geometry.gd, test/scenarios/valley_overview.json | 3 | review-passed | worktree-agent-a919dedea3b3d2cd4 |
