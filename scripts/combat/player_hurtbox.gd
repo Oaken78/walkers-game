@@ -1,14 +1,15 @@
 class_name PlayerHurtbox
 extends Hurtbox
-## The player's hurtbox (T06 plan note): a chassis-sized box on layer 2 that follows the drawn body pose, so a shot
-## that passes between the legs misses (M0 criterion 5). Enemy projectiles (T07) put layer 2 in their mask.
-## It moves in the physics tick after the walker (priority 100), so it matches the pose the walker drew that tick.
+## The player's hurtbox (T06 plan note): a chassis-sized box on layer 2 that follows the drawn chassis, which is the
+## walker's body pose plus the chassis centre offset, so a shot that passes between the legs misses (M0 criterion 5).
+## Enemy projectiles (T07) put layer 2 in their mask. It moves in the physics tick after the walker (priority 100),
+## so it matches the chassis the walker drew that tick.
 
 @export var walker: WalkerBody
 
 var _shape: CollisionShape3D
 var _box: BoxShape3D
-var _half_height: float = 0.0
+var _chassis: MeshInstance3D
 
 
 func _init() -> void:
@@ -29,19 +30,18 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if walker != null and is_instance_valid(walker):
-		follow(walker.body_pose())
+	if _chassis != null and is_instance_valid(_chassis):
+		follow(_chassis.global_transform)
 
 
-## Box size (m) and the pose of the body's underside; the box is centred half its height above it.
+## The box size (m).
 func set_box(size: Vector3) -> void:
 	_box.size = size
-	_half_height = size.y * 0.5
 
 
-## Places the box on a body pose (the walker's body_pose(): origin at the chassis underside).
-func follow(pose: Transform3D) -> void:
-	global_transform = pose * Transform3D(Basis.IDENTITY, Vector3(0.0, _half_height, 0.0))
+## Places the box: `centre` is the transform of the box's centre (the walker's drawn chassis).
+func follow(centre: Transform3D) -> void:
+	global_transform = centre
 
 
 func box_size() -> Vector3:
@@ -49,8 +49,9 @@ func box_size() -> Vector3:
 
 
 func _on_build_applied() -> void:
-	var chassis: MeshInstance3D = walker.get_node_or_null("Chassis") as MeshInstance3D
-	if chassis == null or not (chassis.mesh is BoxMesh):
+	_chassis = walker.get_node_or_null("Chassis") as MeshInstance3D
+	if _chassis == null or not (_chassis.mesh is BoxMesh):
+		push_error("PlayerHurtbox: the walker has no box chassis to follow")
 		return
-	set_box((chassis.mesh as BoxMesh).size)
-	follow(walker.body_pose())
+	set_box((_chassis.mesh as BoxMesh).size)
+	follow(_chassis.global_transform)

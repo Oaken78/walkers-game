@@ -13,14 +13,18 @@ const RING_OUTLINE_PX: float = 2.0
 const PIP_PX: float = 4.0
 const MERGE_PX: float = 12.0
 const DASH_COUNT: int = 8
-## Share of each dash slot that is drawn (the rest is the gap).
-const DASH_FILL: float = 0.6
+## Share of each dash slot that is drawn (the rest is the gap): about 50 % duty, so a gap is 3 px at 720p.
+const DASH_FILL: float = 0.5
+## The merge pip and the thick stroke never draw thinner than this, so they still read at 720p (screen pixels).
+const MIN_STATE_PX: float = 3.0
 const CHEVRON_PX: float = 32.0
 const CHEVRON_INSET_PX: float = 24.0
 
 const INK: Color = Color("14161A")
 const ACCENT: Color = Color("FF8A3D")
 const BODY: Color = Color("E6E1D6")
+## The ring's stroke colour for the hit flash: the player body colour.
+const FLASH: Color = BODY
 
 
 ## Pixels per reference pixel for a viewport of this height.
@@ -28,9 +32,22 @@ static func ui_scale(viewport_height: float) -> float:
 	return viewport_height / REFERENCE_HEIGHT
 
 
-## Radius of the ring's centre line: the stroke's outer edge makes the 28 px across.
-static func ring_radius(scale: float, stroke_px: float) -> float:
-	return (RING_PX * 0.5 - stroke_px * 0.5) * scale
+## The ring stroke's width in screen pixels. The thick stroke over an enemy never goes under 3 px.
+static func stroke_screen_px(thick: bool, scale: float) -> float:
+	if thick:
+		return maxf(RING_STROKE_ENEMY_PX * scale, MIN_STATE_PX)
+	return RING_STROKE_PX * scale
+
+
+## The merge pip's diameter in screen pixels, never under 3 px.
+static func pip_screen_px(scale: float) -> float:
+	return maxf(PIP_PX * scale, MIN_STATE_PX)
+
+
+## Radius of the ring's centre line, for a stroke `stroke_screen_px` wide: the stroke's outer edge makes the 28 px
+## across (scaled).
+static func ring_radius(scale: float, stroke_screen_px: float) -> float:
+	return RING_PX * 0.5 * scale - stroke_screen_px * 0.5
 
 
 ## The ring merges into the pip when its centre is this close to the dot.

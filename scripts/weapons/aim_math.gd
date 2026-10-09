@@ -5,8 +5,10 @@ extends RefCounted
 ##   P  the camera centre ray's hit (or the point at 120 m)
 ##   d  horizontal range from the body origin to P, clamped to 4-120 m;  h  P's height
 ##   Q  d metres along the body's heading from the body origin, at height h
-## Each weapon's yaw is the heading; its elevation is the angle from its muzzle to Q, clamped to -10..+45 deg
-## world-relative and slewed at 360 deg/s.
+## Q lies on the heading line, so turning the body is how you aim sideways. Each weapon converges on Q from its own
+## muzzle: its yaw is the bearing from its muzzle to Q (the heading, plus a lateral correction from the socket offset
+## that is zero on the centre line and a few degrees at 4 m for a weapon at the side) and its elevation is the angle
+## from its muzzle to Q, clamped to -10..+45 deg world-relative and slewed at 360 deg/s.
 
 const RANGE_MIN_M: float = 4.0
 const RANGE_MAX_M: float = 120.0
@@ -15,9 +17,9 @@ const ELEVATION_MAX_DEG: float = 45.0
 const SLEW_DEG_PER_S: float = 360.0
 ## d and h hold while the camera yaw is more than this far off the heading.
 const HOLD_YAW_DEG: float = 90.0
-## The muzzle moves with the elevation, so the elevation is solved by a few fixed-point passes (the muzzle arm is
-## under 1 m and Q at least 4 m away: each pass shrinks the error by about 5x).
-const MUZZLE_PASSES: int = 4
+## The muzzle moves with the barrel's yaw and elevation, so both are solved by a few fixed-point passes (the muzzle arm
+## is under 1 m and Q at least 4 m away: each pass shrinks the error by about 5x).
+const MUZZLE_PASSES: int = 5
 
 
 ## Horizontal unit vector of a heading.
@@ -72,12 +74,39 @@ static func elevation_to(from: Vector3, to: Vector3) -> float:
 	return rad_to_deg(atan2(to.y - from.y, flat))
 
 
-## The elevation (deg, unclamped) at which a barrel pivoting at `pivot` points from its own muzzle at `q`.
-static func solve_elevation(pivot: Vector3, muzzle_local: Vector3, yaw: float, q: Vector3) -> float:
+## Yaw (radians, the walker's convention) of the horizontal bearing from `from` to `to`.
+static func bearing_to(from: Vector3, to: Vector3) -> float:
+	return atan2(-(to.x - from.x), -(to.z - from.z))
+
+
+## The unclamped aim of a barrel pivoting at `pivot` so that its own muzzle points at `q`: x is the yaw in radians
+## and y the elevation in degrees (up positive).
+static func solve_aim(pivot: Vector3, muzzle_local: Vector3, q: Vector3) -> Vector2:
+	var yaw: float = bearing_to(pivot, q)
 	var elevation: float = elevation_to(pivot, q)
 	for i in MUZZLE_PASSES:
-		elevation = elevation_to(muzzle_position(pivot, yaw, elevation, muzzle_local), q)
-	return elevation
+		var muzzle: Vector3 = muzzle_position(pivot, yaw, elevation, muzzle_local)
+		yaw = bearing_to(muzzle, q)
+		elevation = elevation_to(muzzle, q)
+	return Vector2(yaw, elevation)
+
+
+## The yaw (radians) that points the muzzle at `q` when the barrel is already at `elevation_deg` (the slewed value,
+## not the wanted one): the muzzle sits where the barrel really is.
+static func solve_yaw(
+	pivot: Vector3, muzzle_local: Vector3, elevation_deg: float, q: Vector3, yaw_guess: float
+) -> float:
+	var yaw: float = yaw_guess
+	for i in MUZZLE_PASSES:
+		yaw = bearing_to(muzzle_position(pivot, yaw, elevation_deg, muzzle_local), q)
+	return yaw
+
+
+## Degrees between a barrel's yaw and the bearing from its muzzle to `q`, from the barrel's world transform as drawn.
+static func yaw_error_deg(barrel: Transform3D, muzzle_local: Vector3, q: Vector3) -> float:
+	var forward: Vector3 = -barrel.basis.z
+	var drawn: float = atan2(-forward.x, -forward.z)
+	return absf(rad_to_deg(wrapf(drawn - bearing_to(barrel * muzzle_local, q), -PI, PI)))
 
 
 static func clamp_elevation(elevation_deg: float) -> float:

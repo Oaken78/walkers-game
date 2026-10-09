@@ -20,6 +20,8 @@ var chevron_screen: Vector2 = Vector2.ZERO
 var chevron_direction: Vector2 = Vector2.RIGHT
 var dashed: bool = false
 var thick: bool = false
+## The ring's stroke shows the hit confirmation colour.
+var flashing: bool = false
 var ui_scale: float = 1.0
 ## The viewport the marks are laid out in (canvas units; the stretch scales them to the window).
 var view_size: Vector2 = Vector2(1280.0, 720.0)
@@ -46,6 +48,7 @@ func refresh() -> void:
 	chevron_visible = false
 	dashed = false
 	thick = false
+	flashing = false
 	ring_to_dot_px = INF
 	view_size = get_viewport_rect().size
 	ui_scale = AimLayout.ui_scale(view_size.y)
@@ -70,7 +73,8 @@ func refresh() -> void:
 		dot_visible = true
 		return
 	thick = rig.reticle_on_enemy
-	dashed = rig.limited
+	dashed = rig.ring_dashed
+	flashing = rig.ring_flashing
 	ring_visible = true
 	ring_to_dot_px = ring_screen.distance_to(dot_screen)
 	if AimLayout.is_merged(ring_screen, dot_screen, ui_scale):
@@ -98,24 +102,24 @@ func _draw_dot() -> void:
 
 
 func _draw_pip(at: Vector2) -> void:
-	var radius: float = AimLayout.PIP_PX * 0.5 * ui_scale
+	var radius: float = AimLayout.pip_screen_px(ui_scale) * 0.5
 	draw_circle(at, radius + AimLayout.DOT_OUTLINE_PX * ui_scale, AimLayout.INK)
 	draw_circle(at, radius, AimLayout.ACCENT)
 
 
 func _draw_ring(at: Vector2) -> void:
-	var stroke_px: float = AimLayout.RING_STROKE_ENEMY_PX if thick else AimLayout.RING_STROKE_PX
-	var radius: float = AimLayout.ring_radius(ui_scale, stroke_px)
-	var outline_width: float = (stroke_px + AimLayout.RING_OUTLINE_PX * 2.0) * ui_scale
-	var stroke_width: float = stroke_px * ui_scale
+	var stroke_width: float = AimLayout.stroke_screen_px(thick, ui_scale)
+	var radius: float = AimLayout.ring_radius(ui_scale, stroke_width)
+	var outline_width: float = stroke_width + AimLayout.RING_OUTLINE_PX * 2.0 * ui_scale
+	var colour: Color = AimLayout.FLASH if flashing else AimLayout.ACCENT
 	if dashed:
 		for arc in AimLayout.dash_arcs():
 			draw_arc(at, radius, arc.x, arc.y, 8, AimLayout.INK, outline_width, true)
 		for arc in AimLayout.dash_arcs():
-			draw_arc(at, radius, arc.x, arc.y, 8, AimLayout.ACCENT, stroke_width, true)
+			draw_arc(at, radius, arc.x, arc.y, 8, colour, stroke_width, true)
 	else:
 		draw_arc(at, radius, 0.0, TAU, 48, AimLayout.INK, outline_width, true)
-		draw_arc(at, radius, 0.0, TAU, 48, AimLayout.ACCENT, stroke_width, true)
+		draw_arc(at, radius, 0.0, TAU, 48, colour, stroke_width, true)
 
 
 func _draw_chevron() -> void:

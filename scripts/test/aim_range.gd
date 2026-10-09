@@ -24,12 +24,18 @@ const REF_WIDTH: float = 1920.0
 const REF_HEIGHT: float = 1080.0
 
 ## Checks, since the last reset_checks().
-## Largest angle between a barrel's horizontal heading and the walker's heading, and between it and the drawn chassis.
+## Largest angle between a barrel's yaw and the bearing from its drawn muzzle to Q, and between Q's bearing from the
+## body origin and the walker's heading (both are checked on every tick).
 var yaw_err_max_deg: float = 0.0
-var drawn_yaw_err_max_deg: float = 0.0
-## Largest angle between a shot's horizontal direction and the walker's heading on the tick it left (spread 0).
+var q_bearing_err_max_deg: float = 0.0
+## Largest angle a barrel's yaw is off the walker's heading: the convergence from the socket offset.
+var convergence_max_deg: float = 0.0
+## Largest angle between a shot's horizontal direction and the bearing from its muzzle to Q on the tick it left (spread 0).
 var shot_yaw_err_max_deg: float = 0.0
+## Shots fired with the barrel settled on its wanted elevation (inside the limits) and their largest angle to P. A shot
+## fired while the barrel still slews toward a new P is counted in shots_unsettled and not measured.
 var shots_checked: int = 0
+var shots_unsettled: int = 0
 var shot_err_max_deg: float = 0.0
 var shot_frames: PackedInt32Array = PackedInt32Array()
 ## Risk 8: seconds from the first turn input to the heading being on the target, then the error after the run.
@@ -46,6 +52,37 @@ var risk9_ring_to_dot_px: float = INF
 var risk9_chassis_in_frame: bool = false
 var risk9_arm_m: float = 0.0
 var risk9_chassis_px: Vector2 = Vector2.ZERO
+## The camera pitch (deg) that puts the dot on the target in begin_risk9_reach().
+var risk9_pitch_deg: float = 0.0
+
+## The at-limit ring rule (GDD 12), counted per physics tick since begin_dash_watch(): ticks watched, ticks with a
+## limited aim, ticks with the ring dashed (rig flag) and frames with the marks dashed.
+var watch_ticks: int = 0
+var watch_limited: int = 0
+var watch_dashed: int = 0
+var watch_marks_dashed: int = 0
+## Ticks from pressing `fire` to the ring being dashed, and from releasing it to the ring being solid again.
+var dash_on_latency_ticks: int = -1
+var dash_off_latency_ticks: int = -1
+## Hit flash runs (ticks the ring stroke stayed flashed), since reset_checks().
+var flash_runs: int = 0
+var flash_run_min_ticks: int = 0
+var flash_run_max_ticks: int = 0
+## True while the tree is frozen by freeze_on_hit() (for the hit flash shot).
+var frozen: bool = false
+
+## The share of watched ticks with a limited aim.
+var limited_share: float:
+	get:
+		return float(watch_limited) / float(maxi(watch_ticks, 1))
+## The ring flash of the last target's own hurtbox, in seconds left.
+var target_flash_s: float:
+	get:
+		return _last_target.flash_left_s if _last_target != null and is_instance_valid(_last_target) else 0.0
+## Distance between cannon 0's drawn (interpolated) position and the transform it was given on the last tick.
+var barrel_interp_gap_m: float:
+	get:
+		return (_rig.barrel_drawn_transform(0).origin - _rig.barrel_transform(0).origin).length()
 
 ## Fixed-length gaps between consecutive shots, in physics ticks.
 var gap_count: int:
@@ -86,7 +123,13 @@ var cost_samples: int:
 		return _rig_ms.size()
 
 var _targets: Array[AimTarget] = []
+var _slabs: Array[Hurtbox] = []
 var _last_target: AimTarget
+var _fire_event_frame: int = -1
+var _fire_event_pressed: bool = false
+var _flash_run: int = 0
+var _freeze_pending: bool = false
+var _watching: bool = false
 var _heading_active: bool = false
 var _heading_bearing_deg: float = 0.0
 var _heading_ticks: int = 0
@@ -107,10 +150,23 @@ func _ready() -> void:
 	_rig.fired.connect(_on_fired)
 
 
+func _process(_delta: float) -> void:
+	if _freeze_pending:
+		# The flash was set in the physics tick; let the marks pick it up, then stop the world on it.
+		_freeze_pending = false
+		_marks.refresh()
+		_marks.queue_redraw()
+		frozen = true
+		get_tree().paused = true
+
+
 func _physics_process(delta: float) -> void:
 	for i in _rig.cannon_count():
 		yaw_err_max_deg = maxf(yaw_err_max_deg, _rig.yaw_error_deg(i))
-		drawn_yaw_err_max_deg = maxf(drawn_yaw_err_max_deg, _drawn_yaw_error_deg(i))
+		convergence_max_deg = maxf(convergence_max_deg, _rig.convergence_deg(i))
+	if _rig.cannon_count() > 0:
+		q_bearing_err_max_deg = maxf(q_bearing_err_max_deg, _rig.q_bearing_error_deg)
+	_watch_ring()
 	if _heading_active:
 		_heading_tick(delta)
 	if _cost_on:
@@ -150,9 +206,15 @@ func spawn(yaw_deg: float = 0.0, pitch_deg: float = START_PITCH_DEG) -> void:
 
 func reset_checks() -> void:
 	yaw_err_max_deg = 0.0
-	drawn_yaw_err_max_deg = 0.0
+	q_bearing_err_max_deg = 0.0
+	convergence_max_deg = 0.0
 	shot_yaw_err_max_deg = 0.0
 	shots_checked = 0
+	shots_unsettled = 0
+	flash_runs = 0
+	flash_run_min_ticks = 0
+	flash_run_max_ticks = 0
+	_flash_run = 0
 	shot_err_max_deg = 0.0
 	shot_frames = PackedInt32Array()
 	_rig_ms = PackedFloat32Array()
@@ -168,18 +230,43 @@ func add_target(forward_m: float, up_m: float, right_m: float = 0.0) -> void:
 	_add_target_at(Vector3(right_m, up_m, -forward_m))
 
 
+## A flat enemy hurtbox on the ground (6 m square, 0.1 m thick) centred `forward` metres along -Z: a place where the
+## dot is on an enemy while the guns are at their lower limit.
+func add_slab(forward_m: float) -> void:
+	var slab := Hurtbox.new()
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(6.0, 0.1, 6.0)
+	shape.shape = box
+	slab.add_child(shape)
+	add_child(slab)
+	slab.global_position = Vector3(0.0, 0.05, -forward_m)
+	_slabs.append(slab)
+
+
 func clear_targets() -> void:
 	for target in _targets:
 		if is_instance_valid(target):
 			target.queue_free()
 	_targets.clear()
 	_last_target = null
+	for slab in _slabs:
+		if is_instance_valid(slab):
+			slab.queue_free()
+	_slabs.clear()
 
 
 # --- Scenario helpers: scripted input ---------------------------------------------------------------------------
 
 
 func hold_action(action: String, pressed: bool) -> void:
+	if action == "fire":
+		_fire_event_frame = Engine.get_physics_frames()
+		_fire_event_pressed = pressed
+		if pressed:
+			dash_on_latency_ticks = -1
+		else:
+			dash_off_latency_ticks = -1
 	if pressed:
 		Input.action_press(action)
 	else:
@@ -233,6 +320,16 @@ func begin_risk9() -> void:
 	_orbit.set_angles(rad_to_deg(_walker.yaw_radians()), RISK9_PITCH_DEG)
 
 
+## Risk 9 reach: the same target, with the camera pitched (inside the -20..-10 aim-up range) so that its centre ray goes
+## through the target's centre. The pitch comes from the geometry, then measure_risk9() checks that the dot really is on
+## the target.
+func begin_risk9_reach() -> void:
+	clear_targets()
+	add_target(RISK9_FORWARD_M, RISK9_UP_M)
+	look_at_target()
+	risk9_pitch_deg = _orbit.pitch_deg
+
+
 ## Reads the risk 9 numbers once the camera has settled. Screen numbers are projected at 1920x1080 (the shot size
 ## of GDD 12), whatever the window is, so headless and windowed runs agree.
 func measure_risk9(label: String = "scout") -> void:
@@ -258,7 +355,7 @@ func measure_risk9(label: String = "scout") -> void:
 	risk9_chassis_px = _project_ref(camera, _walker.body_pose() * Vector3(0.0, 0.3, 0.0))
 	print(
 		(
-			"RISK9 %s pitch=%.1f shown=%.1f arm=%.2f ray_gap_m=%.2f dot_on_target=%s target_to_dot_px=%.1f target_radius_px=%.1f chassis_in_frame=%s chassis_px=(%.0f,%.0f) at 1920x1080, hits=%d"
+			"RISK9 %s pitch=%.2f shown=%.1f arm=%.2f ray_gap_m=%.2f dot_on_target=%s target_to_dot_px=%.1f target_radius_px=%.1f chassis_in_frame=%s chassis_px=(%.0f,%.0f) at 1920x1080, hits=%d"
 			% [
 				label, _orbit.pitch_deg, _orbit.shown_pitch_deg, risk9_arm_m, risk9_ray_gap_m, risk9_dot_on_target,
 				risk9_target_to_dot_px, risk9_target_radius_px, risk9_chassis_in_frame, risk9_chassis_px.x,
@@ -316,15 +413,52 @@ func log_marks(label: String) -> void:
 func log_checks(label: String) -> void:
 	print(
 		(
-			"AIMCHECK %s yaw_err_max_deg=%.4f drawn_yaw_err_max_deg=%.4f shot_yaw_err_max_deg=%.4f shots=%d shot_err_max_deg=%.4f gaps=%d gap_min=%d gap_max=%d gap_mean_s=%.4f hits=%d heading_time_s=%.3f heading_final_err_deg=%.2f spread=%.2f"
+			"AIMCHECK %s flash_runs=%d flash_ticks=%d..%d dash_on=%d dash_off=%d yaw_err_max_deg=%.4f q_bearing_err_max_deg=%.4f convergence_max_deg=%.2f shot_yaw_err_max_deg=%.4f shots=%d unsettled=%d shot_err_max_deg=%.4f gaps=%d gap_min=%d gap_max=%d gap_mean_s=%.4f hits=%d heading_time_s=%.3f heading_final_err_deg=%.2f spread=%.2f"
 			% [
-				label, yaw_err_max_deg, drawn_yaw_err_max_deg, shot_yaw_err_max_deg, shots_checked,
+				label, flash_runs, flash_run_min_ticks, flash_run_max_ticks, dash_on_latency_ticks,
+				dash_off_latency_ticks, yaw_err_max_deg, q_bearing_err_max_deg, convergence_max_deg, shot_yaw_err_max_deg,
+				shots_checked, shots_unsettled,
 				shot_err_max_deg, gap_count, gap_min_ticks,
 				gap_max_ticks, gap_mean_s, target_hits, heading_time_s, heading_final_error_deg,
 				_rig.spread_deg(),
 			]
 		)
 	)
+
+
+## The at-limit ring rule: count ticks with a limited aim and ticks with the ring dashed from now on.
+func begin_dash_watch() -> void:
+	watch_ticks = 0
+	watch_limited = 0
+	watch_dashed = 0
+	watch_marks_dashed = 0
+	_watching = true
+
+
+func end_dash_watch(label: String) -> void:
+	_watching = false
+	print(
+		"DASHWATCH %s ticks=%d limited=%d (%.1f %%) ring_dashed=%d marks_dashed_frames=%d"
+		% [label, watch_ticks, watch_limited, limited_share * 100.0, watch_dashed, watch_marks_dashed]
+	)
+
+
+## For the hit flash shot: stop the whole tree (the harness keeps running) on the frame after the first hit lands.
+func freeze_on_hit() -> void:
+	frozen = false
+	_freeze_pending = false
+	_rig.pool.impacted.connect(_freeze_once, CONNECT_ONE_SHOT)
+
+
+func unfreeze() -> void:
+	get_tree().paused = false
+	frozen = false
+
+
+## Moves the walker far away in one step (a teleport), to check that nothing is drawn streaking after it.
+func jump_to(x: float, z: float) -> void:
+	_walker.teleport(Transform3D(Basis(Vector3.UP, _walker.yaw_radians()), Vector3(x, SPAWN_Y, z)))
+	_orbit.snap()
 
 
 # --- Internals -------------------------------------------------------------------------------------------------
@@ -347,12 +481,47 @@ func _heading_tick(delta: float) -> void:
 		hold_action("turn_right", false)
 
 
-func _on_fired(_weapon: int, origin: Vector3, direction: Vector3) -> void:
+func _watch_ring() -> void:
+	if _rig.cannon_count() == 0:
+		return
+	if _watching:
+		watch_ticks += 1
+		watch_limited += 1 if _rig.limited else 0
+		watch_dashed += 1 if _rig.ring_dashed else 0
+		watch_marks_dashed += 1 if _marks.dashed else 0
+	var frames: int = Engine.get_physics_frames() - _fire_event_frame
+	if _fire_event_frame >= 0:
+		if _fire_event_pressed and dash_on_latency_ticks < 0 and _rig.ring_dashed:
+			dash_on_latency_ticks = frames
+		if not _fire_event_pressed and dash_off_latency_ticks < 0 and not _rig.ring_dashed:
+			dash_off_latency_ticks = frames
+	if _rig.ring_flashing:
+		_flash_run += 1
+	elif _flash_run > 0:
+		flash_runs += 1
+		flash_run_min_ticks = _flash_run if flash_runs == 1 else mini(flash_run_min_ticks, _flash_run)
+		flash_run_max_ticks = maxi(flash_run_max_ticks, _flash_run)
+		_flash_run = 0
+
+
+func _freeze_once(_point: Vector3, collider: Object, _projectile: Projectile) -> void:
+	if collider != null and collider.has_method("take_hit"):
+		_freeze_pending = true
+	else:
+		_rig.pool.impacted.connect(_freeze_once, CONNECT_ONE_SHOT)
+
+
+func _on_fired(weapon: int, origin: Vector3, direction: Vector3) -> void:
 	shot_frames.append(Engine.get_physics_frames())
+	var flat: Vector3 = Vector3(direction.x, 0.0, direction.z).normalized()
+	var to_q: Vector3 = Vector3(_rig.convergence.x - origin.x, 0.0, _rig.convergence.z - origin.z).normalized()
+	shot_yaw_err_max_deg = maxf(shot_yaw_err_max_deg, AimMath.angle_between_deg(flat, to_q))
+	var wanted: float = AimMath.clamp_elevation(_rig.wanted_elevation_deg(weapon))
+	if _rig.limited or absf(_rig.elevation_deg(weapon) - wanted) > 0.001:
+		shots_unsettled += 1
+		return
 	shots_checked += 1
 	shot_err_max_deg = maxf(shot_err_max_deg, AimMath.angle_between_deg(direction, _rig.aim_point - origin))
-	var flat: Vector3 = Vector3(direction.x, 0.0, direction.z).normalized()
-	shot_yaw_err_max_deg = maxf(shot_yaw_err_max_deg, AimMath.angle_between_deg(flat, AimMath.heading(_walker.yaw_radians())))
 
 
 func _add_target_at(position_world: Vector3) -> void:
@@ -381,16 +550,6 @@ func _chassis_in_frame(camera: Camera3D) -> bool:
 ## A world point at 1920x1080 pixels through the camera as it is now (INF when behind it).
 func _project_ref(camera: Camera3D, point: Vector3) -> Vector2:
 	return OrbitMath.project(point, camera.global_transform, camera.fov, REF_WIDTH, REF_HEIGHT)
-
-
-## Angle between barrel `index` (horizontal) and the drawn chassis' forward (horizontal), degrees.
-func _drawn_yaw_error_deg(index: int) -> float:
-	var chassis: Node3D = _walker.get_node("Chassis")
-	var body: Vector3 = -chassis.global_transform.basis.z
-	var barrel: Vector3 = _rig.muzzle_direction(index)
-	var flat_body := Vector3(body.x, 0.0, body.z).normalized()
-	var flat_barrel := Vector3(barrel.x, 0.0, barrel.z).normalized()
-	return AimMath.angle_between_deg(flat_body, flat_barrel)
 
 
 func _gap_extreme(smallest: bool) -> int:

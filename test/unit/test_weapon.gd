@@ -122,6 +122,44 @@ func test_a_stall_does_not_fire_a_catch_up_burst() -> void:
 	assert_eq(clock.update(5.0 + TICK, true).size(), 0, "and not another on the next tick")
 
 
+func test_a_click_fires_every_cannon_even_when_released_before_its_phase() -> void:
+	# Pressed for 6 ticks, released for 12, again and again for 2 s.
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 120, func(tick: int) -> bool: return tick % 18 < 6)
+	var per_weapon: Array[int] = [0, 0]
+	var last: Array[int] = [-100, -100]
+	for shot in shots:
+		per_weapon[shot.y] += 1
+		assert_gte(shot.x - last[shot.y], 15, "no two shots of cannon %d closer than 15 ticks" % shot.y)
+		last[shot.y] = shot.x
+	assert_gt(per_weapon[0], 0)
+	assert_eq(per_weapon[1], per_weapon[0], "cannon 1 fires as often as cannon 0, click after click")
+
+
+func test_one_click_of_a_few_ticks_fires_both_cannons_in_phase() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 30, func(tick: int) -> bool: return tick < 3)
+	assert_eq(shots.size(), 2, "one click, one shot from each cannon")
+	assert_eq(shots[0], Vector2i(0, 0))
+	assert_eq(shots[1], Vector2i(8, 1), "cannon 1 after 0.125 s, although the trigger is long released")
+
+
+func test_a_pending_shot_is_not_doubled_by_clicking_again() -> void:
+	var shots: Array[Vector2i] = _run(FireClock.new(2, 4.0), 12, func(tick: int) -> bool: return tick % 2 == 0)
+	assert_eq(shots.size(), 2, "ten presses before cannon 1's turn still fire it once")
+
+
+func test_a_rebuild_keeps_the_cooldown_and_the_trigger() -> void:
+	var before := FireClock.new(1, 4.0)
+	assert_eq(before.update(0.0, true).size(), 1)
+	var after := FireClock.new(2, 4.0)
+	after.carry_over(before)
+	var shots: Array[Vector2i] = []
+	for tick in range(1, 30):
+		for weapon in after.update(float(tick) * TICK, true):
+			shots.append(Vector2i(tick, weapon))
+	assert_eq(shots[0], Vector2i(15, 0), "the trigger was held across the rebuild and the cooldown still runs")
+	assert_eq(shots[1], Vector2i(23, 1), "and the two cannons are a half period apart again")
+
+
 # --- Projectile pool -----------------------------------------------------------------------------------------
 
 
@@ -242,15 +280,6 @@ func test_projectiles_are_on_layer_4_and_hit_layers_1_and_3() -> void:
 	bolt.free()
 
 
-func test_the_per_weapon_rng_is_seeded_and_repeatable() -> void:
-	var a := RandomNumberGenerator.new()
-	var b := RandomNumberGenerator.new()
-	a.seed = WeaponRig.SEED_BASE
-	b.seed = WeaponRig.SEED_BASE
-	for i in 10:
-		assert_eq(a.randf(), b.randf())
-
-
 # --- Mount -------------------------------------------------------------------------------------------------------
 
 
@@ -305,3 +334,78 @@ func test_the_rig_reads_the_builds_spread() -> void:
 	assert_eq((crawler[1] as WeaponRig).spread_deg(), 0.5)
 	(crawler[1] as WeaponRig).spread_override_deg = 0.0
 	assert_eq((crawler[1] as WeaponRig).spread_deg(), 0.0, "a scenario can set the spread to 0")
+
+
+# --- Shots through the rig ---------------------------------------------------------------------------------------
+
+
+var _directions: Array[Vector3] = []
+var _fired_count: int = 0
+
+
+func _rig_with_pool(build: WalkerBuild, cap: int = 40, spread: float = 1.5) -> WeaponRig:
+	var pool := ProjectilePool.new()
+	pool.cap = cap
+	pool.auto_step = false
+	add_child_autofree(pool)
+	var walker: WalkerBody = preload("res://scenes/walker/walker.tscn").instantiate()
+	add_child_autofree(walker)
+	walker.apply_build(build)
+	var rig := WeaponRig.new()
+	rig.walker = walker
+	rig.pool = pool
+	rig.spread_override_deg = spread
+	add_child_autofree(rig)
+	return rig
+
+
+func _collect(rig: WeaponRig) -> void:
+	_directions.clear()
+	_fired_count = 0
+	rig.fired.connect(
+		func(_weapon: int, _origin: Vector3, direction: Vector3) -> void:
+			_directions.append(direction)
+			_fired_count += 1
+	)
+
+
+func test_a_shot_the_pool_refuses_is_not_counted_or_signalled() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.scout(), 1)
+	_collect(rig)
+	assert_true(rig.shoot(0))
+	assert_false(rig.shoot(0), "the pool is full")
+	assert_eq(rig.shots_fired, 1)
+	assert_eq(_fired_count, 1, "fired is emitted for the accepted shot only")
+	assert_eq(rig.pool.refused_count, 1, "and the pool counted the refusal")
+
+
+func test_each_weapon_draws_its_spread_from_its_own_seeded_generator() -> void:
+	var first: WeaponRig = _rig_with_pool(WalkerBuild.crawler())
+	_collect(first)
+	for i in 6:
+		first.shoot(0)
+	var cannon0: Array[Vector3] = _directions.duplicate()
+	_directions.clear()
+	for i in 6:
+		first.shoot(1)
+	var cannon1: Array[Vector3] = _directions.duplicate()
+	var second: WeaponRig = _rig_with_pool(WalkerBuild.crawler())
+	_collect(second)
+	for i in 6:
+		second.shoot(0)
+	assert_eq(_directions, cannon0, "the same build gives the same spread: the generator is seeded")
+	var same: int = 0
+	for i in 6:
+		if cannon0[i] == cannon1[i]:
+			same += 1
+	assert_lt(same, 6, "the two cannons do not share one sequence")
+	assert_ne(cannon0[0], cannon0[1], "and the spread is real")
+
+
+func test_a_shot_leaves_the_muzzle_along_the_barrel_with_zero_spread() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.scout(), 40, 0.0)
+	_collect(rig)
+	rig.shoot(0)
+	assert_eq(_directions[0], rig.muzzle_direction(0))
+	var bolt: Projectile = rig.pool.get_child(0) as Projectile
+	assert_lt(bolt.global_position.distance_to(rig.muzzle_position(0)), 0.0001, "from the muzzle as drawn")

@@ -57,6 +57,201 @@
    "wait_frames": 40
   },
   {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "limited",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "on_target scout 25 m"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "yaw_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "q_bearing_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "convergence_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_yaw_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_checked",
+    "op": ">=",
+    "value": 7
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_unsettled",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_err_max_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "target_hits",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "target_hp",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "flash_runs",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "flash_run_min_ticks",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "flash_run_max_ticks",
+    "op": "<=",
+    "value": 5
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_target",
+    "args": [
+     15.0,
+     4.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
    "call": {
     "node": ".",
     "method": "log_marks",
@@ -116,14 +311,6 @@
   {
    "assert_prop": {
     "node": "%WeaponRig",
-    "prop": "limited",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
     "prop": "aim_on_enemy",
     "op": "==",
     "value": true
@@ -131,6 +318,56 @@
   },
   {
    "screenshot": "on_target"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_target",
+    "args": [
+     25.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
   },
   {
    "call": {
@@ -170,7 +407,7 @@
     "node": ".",
     "method": "log_checks",
     "args": [
-     "on_target scout"
+     "on_target strider"
     ]
    }
   },
@@ -185,7 +422,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "drawn_yaw_err_max_deg",
+    "prop": "q_bearing_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -209,6 +446,162 @@
   {
    "assert_prop": {
     "node": ".",
+    "prop": "shots_unsettled",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_err_max_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "target_hits",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_target",
+    "args": [
+     25.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "on_target crawler"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "yaw_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "q_bearing_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_yaw_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_checked",
+    "op": ">=",
+    "value": 14
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_unsettled",
+    "op": "<=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
     "prop": "shot_err_max_deg",
     "op": "<=",
     "value": 0.5
@@ -225,9 +618,409 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "target_hp",
+    "prop": "convergence_max_deg",
+    "op": ">=",
+    "value": 0.3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "convergence_max_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     35.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "close crawler d=4"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "aim_range_m",
     "op": "==",
-    "value": 0.0
+    "value": 4.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "yaw_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "q_bearing_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "convergence_max_deg",
+    "op": ">=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "convergence_max_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_dash_watch",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 180
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_dash_watch",
+    "args": [
+     "scout walking 3 s at pitch 20, no target"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_ticks",
+    "op": ">=",
+    "value": 175
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "limited_share",
+    "op": ">=",
+    "value": 0.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_marks_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 4
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "dash_on_latency_ticks",
+    "op": ">=",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "dash_on_latency_ticks",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "ring_dashed",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "dashed",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "after fire"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "dash_off_latency_ticks",
+    "op": ">=",
+    "value": 28
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "dash_off_latency_ticks",
+    "op": "<=",
+    "value": 31
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "dash rule"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "ring_dashed",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "dashed",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "limited",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_slab",
+    "args": [
+     6.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "limited on an enemy"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "limited",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "ring_dashed",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "dashed",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "thick",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "ring_visible",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -645,15 +1438,6 @@
    "wait_frames": 60
   },
   {
-   "call": {
-    "node": ".",
-    "method": "log_marks",
-    "args": [
-     "limit"
-    ]
-   }
-  },
-  {
    "assert_prop": {
     "node": "%WeaponRig",
     "prop": "limited",
@@ -674,7 +1458,7 @@
     "node": "%AimMarks",
     "prop": "dashed",
     "op": "==",
-    "value": true
+    "value": false
    }
   },
   {
@@ -686,7 +1470,50 @@
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "limit"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "dashed",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
    "screenshot": "limit"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
   },
   {
    "call": {
@@ -836,6 +1663,162 @@
     "node": ".",
     "method": "use_build",
     "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_risk9_reach",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "measure_risk9",
+    "args": [
+     "scout reach"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "risk9 reach scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": ">=",
+    "value": -20.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": "<=",
+    "value": -10.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_on_target",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_inside_target",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_chassis_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "pip_visible",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "risk9 reach scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "target_hits",
+    "op": ">=",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
      "strider"
     ]
    }
@@ -850,12 +1833,21 @@
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
    "wait_frames": 40
   },
   {
    "call": {
     "node": ".",
-    "method": "begin_risk9",
+    "method": "begin_risk9_reach",
     "args": []
    }
   },
@@ -867,8 +1859,49 @@
     "node": ".",
     "method": "measure_risk9",
     "args": [
-     "strider"
+     "strider reach"
     ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "risk9 reach strider"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": ">=",
+    "value": -20.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": "<=",
+    "value": -10.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_on_target",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_inside_target",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -881,18 +1914,60 @@
   },
   {
    "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "pip_visible",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
     "node": ".",
-    "prop": "risk9_arm_m",
-    "op": ">=",
-    "value": 4.0
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "risk9 reach strider"
+    ]
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "risk9_arm_m",
-    "op": "<=",
-    "value": 7.0
+    "prop": "target_hits",
+    "op": ">=",
+    "value": 1
    }
   },
   {
@@ -914,12 +1989,21 @@
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
    "wait_frames": 40
   },
   {
    "call": {
     "node": ".",
-    "method": "begin_risk9",
+    "method": "begin_risk9_reach",
     "args": []
    }
   },
@@ -931,8 +2015,49 @@
     "node": ".",
     "method": "measure_risk9",
     "args": [
-     "crawler"
+     "crawler reach"
     ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "risk9 reach crawler"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": ">=",
+    "value": -20.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_pitch_deg",
+    "op": "<=",
+    "value": -10.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_on_target",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "risk9_dot_inside_target",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -945,18 +2070,278 @@
   },
   {
    "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "pip_visible",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
     "node": ".",
-    "prop": "risk9_arm_m",
-    "op": ">=",
-    "value": 4.0
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "risk9 reach crawler"
+    ]
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "risk9_arm_m",
+    "prop": "target_hits",
+    "op": ">=",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_target",
+    "args": [
+     15.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "freeze_on_hit",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "frozen",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "ring_flashing",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%AimMarks",
+    "prop": "flashing",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "target_flash_s",
+    "op": ">",
+    "value": 0.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "hit_flash"
+    ]
+   }
+  },
+  {
+   "screenshot": "hit_flash"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "unfreeze",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "frozen",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "ring_flashing",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "jump_to",
+    "args": [
+     150.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_interp_gap_m",
     "op": "<=",
-    "value": 7.0
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "wait_frames": 1
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_interp_gap_m",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
    }
   },
   {
@@ -1044,7 +2429,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "drawn_yaw_err_max_deg",
+    "prop": "q_bearing_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -1134,7 +2519,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "drawn_yaw_err_max_deg",
+    "prop": "q_bearing_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -1224,7 +2609,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "drawn_yaw_err_max_deg",
+    "prop": "q_bearing_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -1388,7 +2773,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "drawn_yaw_err_max_deg",
+    "prop": "q_bearing_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -1399,6 +2784,14 @@
     "prop": "shot_yaw_err_max_deg",
     "op": "<=",
     "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_err_max_deg",
+    "op": "<=",
+    "value": 0.5
    }
   },
   {
