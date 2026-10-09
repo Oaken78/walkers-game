@@ -221,3 +221,50 @@ func test_rig_exposes_its_camera_after_ready() -> void:
 	add_child_autofree(rig)
 	assert_not_null(rig.camera(), "camera() hands out the Camera3D at the end of the arm")
 	assert_true(rig.camera() is Camera3D)
+
+
+func test_descent_floor_is_off_at_or_below_25_deg() -> void:
+	assert_eq(OrbitCamera.floor_lift_goal(20.0, 25.0, 25.0, 5.0, 60.0), 0.0, "25 deg: no floor")
+	assert_eq(OrbitCamera.floor_lift_goal(20.0, 0.0, 25.0, 5.0, 60.0), 0.0, "flat: no floor")
+	assert_eq(OrbitCamera.floor_pitch(10.0, 25.0, 5.0, 60.0), -INF)
+
+
+func test_descent_floor_is_slope_minus_5_above_25_deg() -> void:
+	assert_almost_eq(OrbitCamera.floor_pitch(40.0, 25.0, 5.0, 60.0), 35.0, 0.0001)
+	assert_almost_eq(OrbitCamera.floor_lift_goal(20.0, 40.0, 25.0, 5.0, 60.0), 15.0, 0.0001, "20 -> 35")
+	assert_eq(OrbitCamera.floor_lift_goal(45.0, 40.0, 25.0, 5.0, 60.0), 0.0, "player already above the floor")
+
+
+func test_descent_floor_is_capped_at_pitch_max() -> void:
+	assert_eq(OrbitCamera.floor_pitch(80.0, 25.0, 5.0, 60.0), 60.0)
+
+
+func test_slope_from_heights_takes_the_steepest_sample() -> void:
+	var h := PackedFloat32Array([0.0, 0.0, 3.0])
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, h, 1.0), rad_to_deg(atan(1.0)), 0.0001, "3 m over 3 m = 45")
+	assert_eq(OrbitCamera.slope_from_heights(1.0, PackedFloat32Array([0.0, -1.0]), 1.0), 0.0, "downhill is 0")
+
+
+func test_floor_eases_in_and_out_over_the_exported_time() -> void:
+	var lift: float = 0.0
+	for i in range(18):
+		lift = OrbitMath.ease_linear(lift, 15.0, 20.0, 0.3, 1.0 / 60.0)
+	assert_almost_eq(lift, 15.0, 0.0001, "15 deg at 66 deg/s is done in 0.23 s")
+	lift = OrbitMath.ease_linear(lift, 0.0, 20.0, 0.3, 1.0 / 60.0)
+	assert_gt(lift, 13.0, "one frame back only moves about 1.1 deg")
+
+
+func test_floor_raises_the_shown_pitch_and_keeps_the_players() -> void:
+	var rig: OrbitCamera = load("res://scenes/camera/orbit_camera.tscn").instantiate()
+	rig.capture_mouse = false
+	add_child_autofree(rig)
+	rig.set_angles(0.0, 20.0)
+	rig._floor_lift_deg = 15.0
+	rig._apply_rotation()
+	assert_eq(rig.pitch_deg, 20.0, "player pitch untouched")
+	assert_almost_eq(rig.shown_pitch_deg, 35.0, 0.0001)
+	rig.orbit(0.0, 100.0)
+	assert_almost_eq(rig.pitch_deg, 35.0, 0.0001, "mouse still moves the player's pitch")
+	rig._floor_lift_deg = 0.0
+	rig._apply_rotation()
+	assert_almost_eq(rig.shown_pitch_deg, 35.0, 0.0001)

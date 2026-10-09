@@ -33,13 +33,27 @@ const SPEED_SMOOTHING_S: float = 0.10
 @export var recenter_rate_deg: float = 90.0
 @export var recenter_min_target_speed: float = 0.5
 @export var capture_mouse: bool = true
+## Descent floor (GDD 6): while the ground behind the walker rises steeper than this, the shown pitch is held
+## at least (slope - floor_margin_deg), so the edge behind never hides the walker. Flatter: the player's pitch.
+@export var floor_slope_deg: float = 25.0
+@export var floor_margin_deg: float = 5.0
+## Seconds for the shown pitch to ease through floor_ease_span_deg toward the floor and back.
+@export var floor_ease_time: float = 0.3
+@export var floor_ease_span_deg: float = 20.0
+## Ground samples behind the walker (m apart) and how many; reach = spacing * count, capped by the arm's ground run.
+@export var slope_sample_spacing: float = 0.75
+@export var slope_sample_count: int = 7
 
 var yaw_deg: float = 0.0
 var pitch_deg: float = 0.0
 var arm_length: float = 8.0
 var current_fov: float = 70.0
+## Read-only: ground rise angle (deg) between the walker and the camera, and the pitch actually shown.
+var slope_behind_deg: float = 0.0
+var shown_pitch_deg: float = 0.0
 
 var _shown_distance: float = 8.0
+var _floor_lift_deg: float = 0.0
 var _idle_s: float = 0.0
 var _target_speed: float = 0.0
 var _snap_frame: int = -1
@@ -121,6 +135,7 @@ func _process(delta: float) -> void:
 			is_aiming()
 		)
 	_ease_zoom_and_fov(delta)
+	_ease_floor(delta)
 	_apply_rotation()
 	_apply_arm_and_shake(delta)
 
@@ -190,6 +205,14 @@ func add_shake(duration: float = 0.15, amplitude: float = 0.15) -> void:
 		_shake_amplitude = amplitude
 
 
+## One report line for scenarios: the player's pitch, the pitch shown, the slope behind and the lift between them.
+func log_state(label: String) -> void:
+	print(
+		"CAMSTATE %s player_pitch=%.1f shown_pitch=%.1f slope_behind=%.1f lift=%.1f"
+		% [label, pitch_deg, shown_pitch_deg, slope_behind_deg, _floor_lift_deg]
+	)
+
+
 ## Jump to the target with no lag (spawn, teleport). Reads the target's real transform: outside a physics
 ## tick the interpolated one still shows the target where it was drawn last frame, before the teleport.
 func snap() -> void:
@@ -228,8 +251,76 @@ func _ease_zoom_and_fov(delta: float) -> void:
 
 
 func _apply_rotation() -> void:
+	shown_pitch_deg = clampf(pitch_deg + _floor_lift_deg, pitch_min_deg, pitch_max_deg)
 	rotation_degrees = Vector3(0.0, yaw_deg, 0.0)
-	_pitch.rotation_degrees = Vector3(-pitch_deg, 0.0, 0.0)
+	_pitch.rotation_degrees = Vector3(-shown_pitch_deg, 0.0, 0.0)
+
+
+## Pitch the descent floor asks for: none (-INF) at or below `threshold`, else slope - margin, capped at `cap`.
+static func floor_pitch(slope: float, threshold: float, margin: float, cap: float) -> float:
+	if slope <= threshold:
+		return -INF
+	return minf(slope - margin, cap)
+
+
+## Extra degrees on top of the player's pitch that the floor wants (0 when the player is already above it).
+static func floor_lift_goal(pitch: float, slope: float, threshold: float, margin: float, cap: float) -> float:
+	var wanted: float = floor_pitch(slope, threshold, margin, cap)
+	if is_inf(wanted):
+		return 0.0
+	return maxf(wanted - pitch, 0.0)
+
+
+## Steepest rise angle (deg) from the ground under the walker to the sampled ground behind it.
+## `heights[i]` is the ground height at distance (i + 1) * spacing behind; `base` is the height under the walker.
+static func slope_from_heights(base: float, heights: PackedFloat32Array, spacing: float) -> float:
+	var best: float = 0.0
+	for i in heights.size():
+		var run: float = float(i + 1) * spacing
+		best = maxf(best, rad_to_deg(atan2(heights[i] - base, run)))
+	return best
+
+
+func _ease_floor(delta: float) -> void:
+	slope_behind_deg = _measure_slope_behind()
+	var goal: float = floor_lift_goal(
+		pitch_deg, slope_behind_deg, floor_slope_deg, floor_margin_deg, pitch_max_deg
+	)
+	_floor_lift_deg = OrbitMath.ease_linear(
+		_floor_lift_deg, goal, floor_ease_span_deg, floor_ease_time, delta
+	)
+
+
+## Downward world rays along the horizontal line from the walker toward the camera.
+func _measure_slope_behind() -> float:
+	if not is_instance_valid(target) or not is_inside_tree():
+		return 0.0
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var origin: Vector3 = target.global_position
+	var back: Vector3 = OrbitMath.camera_offset(yaw_deg, 0.0, 1.0)
+	var reach: float = minf(
+		slope_sample_spacing * float(slope_sample_count), _shown_distance * cos(deg_to_rad(pitch_deg))
+	)
+	var base: float = _ground_y(space, origin)
+	if is_nan(base):
+		return 0.0
+	var heights := PackedFloat32Array()
+	var run: float = slope_sample_spacing
+	while run <= reach + 0.001:
+		var y: float = _ground_y(space, origin + back * run)
+		heights.append(base if is_nan(y) else y)
+		run += slope_sample_spacing
+	return slope_from_heights(base, heights, slope_sample_spacing)
+
+
+func _ground_y(space: PhysicsDirectSpaceState3D, at: Vector3) -> float:
+	var query := PhysicsRayQueryParameters3D.create(
+		Vector3(at.x, at.y + 6.0, at.z), Vector3(at.x, at.y - 40.0, at.z), WORLD_MASK
+	)
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return NAN
+	return hit["position"].y
 
 
 func _apply_arm_and_shake(delta: float) -> void:
@@ -257,7 +348,7 @@ func _apply_arm_and_shake(delta: float) -> void:
 ## Free length of the arm along the current view direction: a layer-1 sphere cast from the pivot, done in
 ## this frame after the pivot and the angles moved. Returns the wanted distance when nothing is in the way.
 func _cast_arm() -> float:
-	var dir: Vector3 = OrbitMath.camera_offset(yaw_deg, pitch_deg, 1.0)
+	var dir: Vector3 = OrbitMath.camera_offset(yaw_deg, shown_pitch_deg, 1.0)
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = _cast_shape
 	query.transform = Transform3D(Basis.IDENTITY, global_position)

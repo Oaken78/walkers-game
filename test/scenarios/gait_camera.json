@@ -1,0 +1,342 @@
+{
+ "scene": "res://scenes/test/gait_course.tscn",
+ "seed": 1234,
+ "timeout_frames": 7200,
+ "steps": [
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "screenshot": "camera_edge"
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "edge"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 19.0
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "screenshot": "camera_midface"
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "midface"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "slope_behind_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "pitch_deg",
+    "op": "==",
+    "value": 20.0
+   }
+  },
+  {
+   "wait_frames": 65
+  },
+  {
+   "screenshot": "camera_foot"
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "foot"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "pitch_deg",
+    "op": "==",
+    "value": 20.0
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "flat+60f"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "flat+60f"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "flat+80f"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "flat+80f"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "flat+100f"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "flat+100f"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": "<=",
+    "value": 21.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 19.0
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "screenshot": "camera_flat"
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "log_state",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": "<=",
+    "value": 21.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "shown_pitch_deg",
+    "op": ">=",
+    "value": 19.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "assert_no_errors": true
+  }
+ ]
+}
