@@ -110,6 +110,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": -0.319
@@ -300,6 +308,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": -0.356
@@ -485,6 +501,14 @@
     "args": [
      "gait_boulders crawler through the boulder field"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
    }
   },
   {

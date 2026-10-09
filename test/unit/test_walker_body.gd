@@ -377,3 +377,44 @@ func test_pad_box_gap_is_the_shallowest_overlap_when_the_boxes_intersect() -> vo
 	assert_almost_eq(WalkerTelemetry.box_gap(-0.3, -0.2, -0.34), -0.2, 0.0001)
 	# Pads one above the other do not overlap: the vertical gap is positive.
 	assert_gt(WalkerTelemetry.box_gap(-0.3, 0.5, -0.34), 0.0)
+
+
+func test_convex_hull_drops_interior_points_and_is_counter_clockwise() -> void:
+	var points := PackedVector2Array([Vector2(0, 0), Vector2(2, 0), Vector2(2, 2), Vector2(0, 2), Vector2(1, 1), Vector2(1, 0)])
+	var hull: PackedVector2Array = WalkerBody.convex_hull(points)
+	assert_eq(hull.size(), 4, "the interior and edge points are dropped")
+	var area: float = 0.0
+	for k in hull.size():
+		area += hull[k].cross(hull[(k + 1) % hull.size()]) * 0.5
+	assert_almost_eq(area, 4.0, 0.0001, "positive area means counter-clockwise")
+
+
+func test_convex_hull_of_fewer_than_three_points_is_returned_as_is() -> void:
+	assert_eq(WalkerBody.convex_hull(PackedVector2Array([Vector2(1, 1), Vector2(2, 2)])).size(), 2)
+
+
+func test_polygon_margin_is_positive_inside_negative_outside() -> void:
+	var square := PackedVector2Array([Vector2(0, 0), Vector2(2, 0), Vector2(2, 2), Vector2(0, 2)])
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(1, 1)), 1.0, 0.0001)
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(1.8, 1)), 0.2, 0.0001)
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(2.5, 1)), -0.5, 0.0001)
+	assert_eq(WalkerBody.polygon_margin(PackedVector2Array([Vector2(0, 0), Vector2(1, 0)]), Vector2(0.5, 0.1)), -1.0)
+
+
+func test_climb_plane_follows_the_line_from_the_rear_feet_to_the_front_feet() -> void:
+	# Two rows of feet 2 m apart along -Z, the front row 1 m up on a ledge: the body must lie along a 1 m per 2 m line.
+	var feet := PackedVector3Array(
+		[Vector3(-0.5, 0, 1), Vector3(0.5, 0, 1), Vector3(-0.5, 0, 0), Vector3(0.5, 0, 0), Vector3(-0.5, 1, -1), Vector3(0.5, 1, -1)]
+	)
+	var plane: Plane = WalkerBody.climb_plane(feet, feet.size(), Vector3(0, 0, -1))
+	assert_gt(plane.normal.z, 0.0, "the normal leans back when the front is up")
+	var slope: float = plane.normal.z / plane.normal.y
+	assert_gt(slope, 0.3, "steeper than the flat least-squares fit of a long body with two feet up")
+
+
+func test_climb_plane_of_flat_ground_is_flat() -> void:
+	var feet := PackedVector3Array(
+		[Vector3(-0.5, 0, 1), Vector3(0.5, 0, 1), Vector3(-0.5, 0, 0), Vector3(0.5, 0, 0), Vector3(-0.5, 0, -1), Vector3(0.5, 0, -1)]
+	)
+	var plane: Plane = WalkerBody.climb_plane(feet, feet.size(), Vector3(0, 0, -1))
+	assert_almost_eq(plane.normal.y, 1.0, 0.0001)

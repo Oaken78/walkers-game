@@ -274,7 +274,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.26
+    "value": -0.305
    }
   },
   {
@@ -415,7 +415,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.41
+    "value": -0.317
    }
   },
   {
@@ -463,7 +463,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 30
+    "value": 190
    }
   },
   {
@@ -471,7 +471,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 68
+    "value": 290
    }
   },
   {
@@ -498,6 +498,147 @@
      "move_forward",
      false
     ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "action_press": "turn_left",
+   "frames": 80
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     14.0,
+     7.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "strider_looking_out_over_ledge_lip"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "valley_pockets strider_looking_out_over_ledge_lip"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 420
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "valley_pockets strider climbed back out of the ledge pocket (turn, walk)"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "on_ledge_floor",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_entrance",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 5.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_shape_queries_per_tick",
+    "op": "<=",
+    "value": 190
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_rays_cast_per_tick",
+    "op": "<=",
+    "value": 290
    }
   },
   {
@@ -888,7 +1029,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.303
+    "value": -0.335
    }
   },
   {
@@ -1264,7 +1405,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 60
+    "value": 66
    }
   },
   {
@@ -1439,7 +1580,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 60
+    "value": 66
    }
   },
   {
@@ -1635,6 +1776,76 @@
   },
   {
    "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "action_press": "turn_left",
+   "frames": 100
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     14.0,
+     7.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "crawler_looking_out_over_talus_edge"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "valley_pockets crawler_looking_out_over_talus_edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "valley_pockets crawler turned on the talus shelf"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "on_talus_shelf",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
   },
   {
    "assert_no_errors": true

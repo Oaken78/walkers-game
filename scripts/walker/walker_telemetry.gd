@@ -87,7 +87,6 @@ var min_support_margin_ratio: float = INF
 ## Ticks on which a pad (a box 3 cm above its foot point) overlapped the world: a reaching or hanging pad must never.
 var pad_inside_ticks: int = 0
 ## Prints the first PADIN lines (debugging).
-var pad_log: bool = false
 ## Highest a hanging foot got above the ground below it, over its reach (hanging legs only).
 var max_hang_rise_ratio: float = 0.0
 var reach_ups: int = 0
@@ -393,13 +392,9 @@ func _track_climb(_delta: float) -> void:
 	var root_y: float = walker.global_position.y
 	if walker.teleport_count == _teleports_seen and ticks > 1:
 		max_root_rise_tick_m = maxf(max_root_rise_tick_m, root_y - _last_root_y)
-		if pad_log and root_y - _last_root_y > 0.026:
-			print("RISE tick=%d d=%.4f %s" % [ticks, root_y - _last_root_y, walker.debug_state().substr(0, 200)])
 	_last_root_y = root_y
 	var margin: float = walker.support_margin_ratio()
 	if margin < INF:
-		if pad_log and margin < 0.05:
-			print("MARGIN tick=%d m=%.3f %s" % [ticks, margin, walker.debug_state().substr(0, 140)])
 		min_support_margin_ratio = minf(min_support_margin_ratio, margin)
 	if _pad_shape == null:
 		_pad_shape = BoxShape3D.new()
@@ -416,8 +411,6 @@ func _track_climb(_delta: float) -> void:
 		_pad_query.transform = Transform3D(basis, foot + Vector3.UP * (PAD_CHECK_LIFT + 0.06))
 		if not space.intersect_shape(_pad_query, 1).is_empty():
 			inside = true
-			if pad_log and pad_inside_ticks < 6:
-				print("PADIN leg=%d state=%d foot=%s" % [i, gait.state_of(i), str(foot.snapped(Vector3.ONE * 0.01))])
 		if walker.is_leg_hanging(i):
 			_gap_ray.from = foot + Vector3.UP * 0.5
 			_gap_ray.to = foot + Vector3.DOWN * 3.0

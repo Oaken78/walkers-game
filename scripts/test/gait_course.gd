@@ -120,6 +120,9 @@ var b_speed: float = 0.0
 var b_step_up: float = 0.0
 var contrast_speed: float = 0.0
 var contrast_step_up: float = 0.0
+## (strider - crawler) / strider of the tallest block each climbed (record_climb).
+var contrast_climb: float = 0.0
+var _climb_by_build: Dictionary = {}
 var autopilot_amplitude_deg: float = 35.0
 var yaw_overshoot_deg: float = 0.0
 ## Straight-line distance the walker has travelled since mark().
@@ -398,7 +401,10 @@ func _physics_process(delta: float) -> void:
 	if _tick == 5:
 		_nominal_root_y = _walker.global_position.y
 	# Walking into the end of a lane (no ground ahead) is not a stall of the controller.
-	_telemetry.stall_exempt = _walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS
+	_telemetry.stall_exempt = (
+		(_walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS)
+		or (_lane == LANE_LEDGES and _stopped_before_face())
+	)
 	if _walker.gait() != null:
 		foot_rise_max = maxf(foot_rise_max, foot_rise_above_apron)
 		if _tick > 5:
@@ -504,6 +510,13 @@ func use_build(build_name: String) -> void:
 			build = WalkerBuild.new()
 			for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
 				build.place(socket, PartCatalog.LEG_MEDIUM)
+			build.place(&"top_0", PartCatalog.PULSE_CANNON)
+		"scout_long_pair":
+			build = WalkerBuild.new()
+			for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
+				build.place(socket, PartCatalog.LEG_MEDIUM)
+			for socket: StringName in [&"leg_l2", &"leg_r2"]:
+				build.place(socket, PartCatalog.LEG_LONG)
 			build.place(&"top_0", PartCatalog.PULSE_CANNON)
 		"scout_short_pair":
 			build = WalkerBuild.new()
@@ -1648,6 +1661,20 @@ func set_climb_height(height: float) -> void:
 		_block_material
 	)
 	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+
+
+## Remembers the tallest block the current run climbed for a build ("strider" and "crawler" feed the contrast).
+func record_climb(build_name: String) -> void:
+	_climb_by_build[build_name] = _telemetry.max_climb_m
+	if _climb_by_build.has("strider") and _climb_by_build.has("crawler") and _climb_by_build["strider"] > 0.0:
+		contrast_climb = (_climb_by_build["strider"] - _climb_by_build["crawler"]) / _climb_by_build["strider"]
+	print("CLIMBREC %s %.3f contrast=%.3f" % [build_name, _telemetry.max_climb_m, contrast_climb])
+
+
+## Prints the build's stats that the climb checks compare with (`STAT build step_up climb`).
+func log_stat(label: String) -> void:
+	var stats: Dictionary = _walker.stats()
+	print("STAT %s reach=%.3f step_up=%.3f climb=%.3f" % [label, stats["reach"], stats["step_up"], stats["climb"]])
 
 
 ## Prints the walker's climb state (position, pitch, hauling, every leg: state, foothold kind and foot height).

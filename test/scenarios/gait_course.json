@@ -92,6 +92,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": 0.335
@@ -459,6 +475,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": 0.137
@@ -588,6 +620,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": 0.49
@@ -696,6 +744,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
     "value": -0.104
@@ -798,6 +862,22 @@
     "args": [
      "gait_course crawler bumps 20s (stat top 3.807)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -1009,6 +1089,22 @@
     "args": [
      "gait_course quad bumps 20s (stat top 3.124)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -1599,6 +1695,22 @@
     "args": [
      "gait_course scout_short_pair bumps 20s (stat top 4.423)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
    }
   },
   {
