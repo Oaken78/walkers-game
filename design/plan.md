@@ -95,6 +95,16 @@ Status: ready, in-progress, review-passed, done.
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
 - Walker API (after T16 merges, one small task owning walker_body.gd): the read-only hooks T06 and T09 ask for (top-socket and
   leg-socket transforms, a flag to skip drawing cannons, a switch that stops field input on the workshop stand).
+- T08 follow-ups (playtest-critic, optional, after the merge):
+  - node value reads by ring: the crystal cluster grows with `amount` (a new GDD 10 rule, game-designer first);
+  - a findable wreck cache: a brighter beam and a crate that splits from the sand by luma. The orange "your stuff"
+    cache colour needs a GDD 10 entry;
+  - the "node every 15-25 s" pacing row needs a measurable definition (game-designer);
+  - straight-line from the workshop to the first drone site is about 31 s against the 45-75 s target, so T07/T12
+    measure it with real walking;
+  - T12 adds a shot of the talus pocket beam from the wash at about 100 m.
+- T11: the valley ledge face and the cliff wall share one luma (0.277 vs 0.284), and the pocket floor matches the
+  valley floor, so the 1.2 m gate reads only by its silhouette. Add a lit band on the ledge lip (T16 critique).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
