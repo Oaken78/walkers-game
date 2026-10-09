@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/test/gait_course.gd" id="1_course"]
 [ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="2_walker"]
 [ext_resource type="Script" path="res://scripts/walker/walker_telemetry.gd" id="3_telemetry"]
+[ext_resource type="PackedScene" path="res://scenes/camera/orbit_camera.tscn" id="4_orbit"]
 
 [node name="GaitCourse" type="Node3D"]
 script = ExtResource("1_course")
@@ -17,3 +18,7 @@ script = ExtResource("3_telemetry")
 [node name="Camera" type="Camera3D" parent="."]
 current = true
 fov = 60.0
+
+[node name="OrbitCamera" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4_orbit")]
+target = NodePath("../Walker")
+capture_mouse = false

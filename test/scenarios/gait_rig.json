@@ -1,0 +1,1115 @@
+{
+ "scene": "res://scenes/test/gait_course.tscn",
+ "seed": 1234,
+ "timeout_frames": 7200,
+ "steps": [
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     50.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     33.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 560
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_deg",
+    "op": ">=",
+    "value": 30.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_deg",
+    "op": "<=",
+    "value": 39.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "arm_length",
+    "op": ">=",
+    "value": 7.9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "crawler tilted pitch 50"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "crawler tilted pitch 50"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "feet_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_min_height_px",
+    "op": ">=",
+    "value": 12.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     -10.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_camera",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "camera_bob_p2p_m",
+    "op": "<=",
+    "value": 0.01
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     -10.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_camera",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "camera_bob_p2p_m",
+    "op": "<=",
+    "value": 0.01
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     -10.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_camera",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "camera_bob_p2p_m",
+    "op": "<=",
+    "value": 0.01
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "track_camera_bob",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "steer_mode_name",
+    "op": "==",
+    "value": "TANK"
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "toggle_steer_mode",
+    "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "steer_mode_name",
+    "op": "==",
+    "value": "CAMERA_YAW"
+   }
+  },
+  {
+   "call": {
+    "node": "OrbitCamera",
+    "method": "orbit",
+    "args": [
+     600.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "yaw_error_deg",
+    "op": ">=",
+    "value": -5.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "yaw_error_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "toggle_steer_mode",
+    "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "steer_mode_name",
+    "op": "==",
+    "value": "TANK"
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p20"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V1 crawler descending behind pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V1 crawler descending behind pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     35.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p35"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V1 crawler descending behind pitch 35"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V1 crawler descending behind pitch 35"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "screenshot": "crawler_abeam_flat"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V2 crawler flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V2 crawler flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "screenshot": "scout_abeam_flat"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V2 scout flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V2 scout flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     33.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 560
+  },
+  {
+   "screenshot": "crawler_climb_abeam"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V3 crawler climbing abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V3 crawler climbing abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     45.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p45"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V4 crawler descending behind pitch 45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V4 crawler descending behind pitch 45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "assert_no_errors": true
+  }
+ ]
+}
