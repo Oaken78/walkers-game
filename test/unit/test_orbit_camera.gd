@@ -221,3 +221,165 @@ func test_rig_exposes_its_camera_after_ready() -> void:
 	add_child_autofree(rig)
 	assert_not_null(rig.camera(), "camera() hands out the Camera3D at the end of the arm")
 	assert_true(rig.camera() is Camera3D)
+
+
+
+func _rig() -> OrbitCamera:
+	var rig: OrbitCamera = load("res://scenes/camera/orbit_camera.tscn").instantiate()
+	rig.capture_mouse = false
+	add_child_autofree(rig)
+	rig.set_angles(0.0, 20.0)
+	return rig
+
+
+func _ramp(deg: float, count: int, spacing: float = 0.75) -> PackedFloat32Array:
+	var h := PackedFloat32Array()
+	for i in range(1, count + 1):
+		h.append(tan(deg_to_rad(deg)) * spacing * float(i))
+	return h
+
+
+func test_descent_floor_is_off_at_or_below_25_deg() -> void:
+	assert_eq(OrbitCamera.floor_pitch(25.0, 25.0, 5.0, 60.0), -INF, "25 deg: no floor")
+	assert_eq(OrbitCamera.floor_pitch(0.0, 25.0, 5.0, 60.0), -INF, "flat: no floor")
+
+
+func test_descent_floor_is_slope_minus_5_above_25_deg_and_capped() -> void:
+	assert_almost_eq(OrbitCamera.floor_pitch(40.0, 25.0, 5.0, 60.0), 35.0, 0.0001)
+	assert_eq(OrbitCamera.floor_pitch(80.0, 25.0, 5.0, 60.0), 60.0, "capped at pitch_max")
+
+
+func test_a_40_deg_ramp_gives_40() -> void:
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, _ramp(40.0, 6), 0.75), 40.0, 0.001)
+
+
+func test_one_steep_step_between_flat_samples_gives_no_floor() -> void:
+	var step := PackedFloat32Array([0.0, 0.0, 1.5, 1.5, 1.5, 1.5])
+	assert_eq(OrbitCamera.slope_from_heights(0.0, step, 0.75), 0.0, "a 1.5 m block is one steep segment")
+	var big := PackedFloat32Array([1.5, 1.5, 1.5])
+	assert_eq(OrbitCamera.slope_from_heights(0.0, big, 0.75), 0.0, "a wall right behind: one segment")
+
+
+func test_two_steep_segments_that_rise_under_1_2_m_give_no_floor() -> void:
+	var low := PackedFloat32Array([0.4, 0.8, 0.8])
+	assert_eq(OrbitCamera.slope_from_heights(0.0, low, 0.75), 0.0, "0.8 m total is a step-up, not a slope")
+
+
+func test_the_steepest_qualifying_run_wins_and_downhill_is_zero() -> void:
+	var h := PackedFloat32Array([0.0, 0.5, 1.0, 1.5, 1.5, 3.0, 4.5])
+	# first run: 3 segments of 33.7 deg (rise 1.5); second run: 2 segments of 63.4 deg (rise 3.0)
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, h, 0.75), 63.43, 0.05)
+	assert_eq(OrbitCamera.slope_from_heights(0.0, _ramp(-40.0, 6), 0.75), 0.0)
+
+
+func test_a_drop_ahead_counts_like_a_rise_behind() -> void:
+	var drop := PackedFloat32Array([0.0, -0.63, -1.26])
+	var negated := PackedFloat32Array()
+	for y in drop:
+		negated.append(-y)
+	assert_gt(OrbitCamera.slope_from_heights(-0.0, negated, 0.75), 25.0)
+
+
+func test_ease_floor_runs_in_over_about_0_45_s_per_20_deg_and_out_over_0_8_s() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(14):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	rig._apply_rotation()
+	assert_gt(rig.shown_pitch_deg, 20.0, "easing in")
+	assert_lt(rig.shown_pitch_deg, 35.0, "not there after 0.23 s")
+	for i in range(40):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	rig._apply_rotation()
+	assert_almost_eq(rig.shown_pitch_deg, 35.0, 0.0001, "held at slope - 5")
+	assert_eq(rig.pitch_deg, 20.0, "player pitch untouched")
+	for i in range(30):
+		rig._ease_floor(1.0 / 60.0, 0.0)
+	rig._apply_rotation()
+	assert_gt(rig.shown_pitch_deg, 20.0, "out is slower: still lifted after 0.5 s")
+	for i in range(40):
+		rig._ease_floor(1.0 / 60.0, 0.0)
+	rig._apply_rotation()
+	assert_almost_eq(rig.shown_pitch_deg, 20.0, 0.0001, "back to the player's pitch")
+
+
+func test_mouse_flick_above_the_floor_shows_at_once_without_overshoot() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	rig._apply_rotation()
+	rig.orbit(0.0, 133.4)
+	assert_almost_eq(rig.pitch_deg, 40.0, 0.01)
+	assert_almost_eq(rig.shown_pitch_deg, 40.0, 0.01, "above the floor: the player's pitch, immediately")
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+		rig._apply_rotation()
+		assert_lt(rig.shown_pitch_deg, 40.5, "never overshoots")
+
+
+func test_floor_lets_go_while_aim_is_held() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	Input.action_press("aim")
+	for i in range(120):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	Input.action_release("aim")
+	rig._apply_rotation()
+	assert_almost_eq(rig.shown_pitch_deg, 20.0, 0.0001)
+
+
+func test_snap_without_ground_clears_a_stale_floor() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	var holder := Node3D.new()
+	add_child_autofree(holder)
+	rig.target = holder
+	rig.snap()
+	assert_almost_eq(rig.shown_pitch_deg, 20.0, 0.0001, "no ground under the target: no floor")
+
+
+func test_sample_spacing_is_clamped_so_the_measure_cannot_hang() -> void:
+	var rig: OrbitCamera = _rig()
+	rig.slope_sample_spacing = 0.0
+	var holder := Node3D.new()
+	add_child_autofree(holder)
+	rig.target = holder
+	rig._measure_slopes()
+	assert_eq(rig.slope_behind_deg, 0.0)
+
+
+func test_the_steepest_full_segment_is_used_not_the_mean() -> void:
+	# a partial segment at the corner (0.4 m rise, 28 deg) followed by two full 40 deg segments
+	var h := PackedFloat32Array([0.4, 1.029, 1.658])
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, h, 0.75), 40.0, 0.05)
+
+
+func test_a_slope_below_the_sight_line_gives_no_floor() -> void:
+	var ramp: PackedFloat32Array = _ramp(30.0, 4)
+	assert_almost_eq(OrbitCamera.slope_from_heights(0.0, ramp, 0.75, 25.0, 2, 1.2, 0.4), 30.0, 0.001, "above")
+	assert_eq(OrbitCamera.slope_from_heights(0.0, ramp, 0.75, 25.0, 2, 1.2, 0.8), 0.0, "below the line: feet seen")
+
+
+func test_a_missed_ahead_ray_falls_back_to_minus_base() -> void:
+	assert_eq(OrbitCamera.sample_or_base(NAN, 2.0), 2.0)
+	assert_eq(OrbitCamera.sample_or_base(1.0, 2.0), 1.0)
+	var base: float = 3.0
+	var ahead := PackedFloat32Array([-OrbitCamera.sample_or_base(NAN, base), -OrbitCamera.sample_or_base(NAN, base)])
+	assert_eq(OrbitCamera.slope_from_heights(-base, ahead, 0.75), 0.0, "a missed ray is level, not a cliff")
+
+
+func test_a_wobbling_measurement_moves_the_shown_pitch_under_half_a_degree_per_frame() -> void:
+	var rig: OrbitCamera = _rig()
+	for i in range(60):
+		rig._ease_floor(1.0 / 60.0, 40.0)
+	rig._apply_rotation()
+	var last: float = rig.shown_pitch_deg
+	var worst: float = 0.0
+	for slope: float in [37.9, 40.0, 37.9, 40.0]:
+		for i in range(45):
+			rig._ease_floor(1.0 / 60.0, slope)
+			rig._apply_rotation()
+			worst = maxf(worst, absf(rig.shown_pitch_deg - last))
+			last = rig.shown_pitch_deg
+	assert_lt(worst, 0.5, "target eases at 20 deg/s = 0.33 deg per frame")
