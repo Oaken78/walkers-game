@@ -22,12 +22,20 @@ var max_drift_m: float = 0.0
 var airborne_violations: int = 0
 var max_airborne: int = 0
 var min_steps_per_leg: int = 0
+var total_steps: int = 0
 var held_ticks: int = 0
+## Longest run of consecutive held ticks, in seconds.
+var longest_hold_s: float = 0.0
 var max_tilt_deg: float = 0.0
 var body_height_m: float = 0.0
 var bob_amplitude_m: float = 0.0
 var max_step_up_m: float = 0.0
 var current_speed_mps: float = 0.0
+## Horizontal distance travelled since reset.
+var distance_m: float = 0.0
+## Largest gap between a planted foot and the ground straight below it, measured when the foot plants.
+var max_plant_gap_m: float = 0.0
+var max_rays_per_tick: int = 0
 var ticks: int = 0
 
 var walker: WalkerBody
@@ -37,6 +45,7 @@ var _was_input: bool = false
 var _move_start_tick: int = -1
 var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
+var _hold_run: int = 0
 var _plant_pos: PackedVector3Array = PackedVector3Array()
 var _plant_known: PackedByteArray = PackedByteArray()
 var _steps: PackedInt32Array = PackedInt32Array()
@@ -47,6 +56,7 @@ var _bob_ring: PackedFloat32Array = PackedFloat32Array()
 var _bob_index: int = 0
 var _bob_count: int = 0
 var _teleports_seen: int = 0
+var _gap_ray: PhysicsRayQueryParameters3D
 
 
 func _ready() -> void:
@@ -54,6 +64,9 @@ func _ready() -> void:
 	process_physics_priority = 100
 	_height_ring.resize(HEIGHT_WINDOW_TICKS)
 	_bob_ring.resize(BOB_WINDOW_TICKS)
+	_gap_ray = PhysicsRayQueryParameters3D.new()
+	_gap_ray.collision_mask = 1
+	_gap_ray.hit_from_inside = false
 
 
 func observe(target: WalkerBody) -> void:
@@ -78,17 +91,23 @@ func reset() -> void:
 	airborne_violations = 0
 	max_airborne = 0
 	min_steps_per_leg = 0
+	total_steps = 0
 	held_ticks = 0
+	longest_hold_s = 0.0
 	max_tilt_deg = 0.0
 	body_height_m = 0.0
 	bob_amplitude_m = 0.0
 	max_step_up_m = 0.0
 	current_speed_mps = 0.0
+	distance_m = 0.0
+	max_plant_gap_m = 0.0
+	max_rays_per_tick = 0
 	ticks = 0
 	_was_input = false
 	_move_start_tick = -1
 	_turn_start_tick = -1
 	_stop_ticks = -1
+	_hold_run = 0
 	_height_index = 0
 	_height_count = 0
 	_bob_index = 0
@@ -96,6 +115,12 @@ func reset() -> void:
 	_size_leg_buffers()
 	if walker != null:
 		_teleports_seen = walker.teleport_count
+		walker.max_rays_per_tick = 0
+
+
+## Fraction of ticks the body was held by rule 5 (0..1).
+func held_fraction() -> float:
+	return float(held_ticks) / float(maxi(ticks, 1))
 
 
 func report(label: String = "") -> void:
@@ -114,19 +139,29 @@ func report(label: String = "") -> void:
 		"airborne_violations": airborne_violations,
 		"max_airborne": max_airborne,
 		"min_steps_per_leg": min_steps_per_leg,
+		"total_steps": total_steps,
 		"held_ticks": held_ticks,
+		"held_fraction": snappedf(held_fraction(), 0.001),
+		"longest_hold_s": snappedf(longest_hold_s, 0.01),
 		"max_tilt_deg": snappedf(max_tilt_deg, 0.01),
 		"body_height_m": snappedf(body_height_m, 0.001),
 		"bob_amplitude_m": snappedf(bob_amplitude_m, 0.0001),
 		"max_step_up_m": snappedf(max_step_up_m, 0.001),
+		"distance_m": snappedf(distance_m, 0.01),
+		"max_plant_gap_m": snappedf(max_plant_gap_m, 0.0001),
+		"max_rays_per_tick": max_rays_per_tick,
 		"ticks": ticks,
 	}
 	if walker != null:
 		data["yaw_deg"] = snappedf(rad_to_deg(walker.yaw_radians()), 0.1)
-		data["pos"] = [snappedf(walker.global_position.x, 0.01), snappedf(walker.global_position.y, 0.01), snappedf(walker.global_position.z, 0.01)]
+		var at: Vector3 = walker.global_position
+		data["pos"] = [snappedf(at.x, 0.01), snappedf(at.y, 0.01), snappedf(at.z, 0.01)]
 		var stats: Dictionary = walker.stats()
 		data["stat_step_up"] = snappedf(stats["step_up"], 0.001)
 		data["stat_turn_rate"] = snappedf(stats["turn_rate"], 0.01)
+		var times: Vector2 = walker.step_times()
+		data["step_time_top"] = snappedf(times.x, 0.001)
+		data["step_time_idle"] = snappedf(times.y, 0.001)
 	print("TELEMETRY " + JSON.stringify(data))
 
 
@@ -140,14 +175,19 @@ func _physics_process(delta: float) -> void:
 	var speed: float = walker.velocity.length()
 	current_speed_mps = speed
 	top_speed_mps = maxf(top_speed_mps, speed)
+	distance_m += speed * delta
 	max_yaw_rate_dps = maxf(max_yaw_rate_dps, absf(walker.yaw_rate_dps))
 	var input_now: bool = walker.move_input_active
 	_track_timings(delta, speed, input_now)
 	_track_gait()
 	if walker.held_this_tick:
 		held_ticks += 1
-	var tilt: float = rad_to_deg(walker.global_transform.basis.y.angle_to(Vector3.UP))
-	max_tilt_deg = maxf(max_tilt_deg, tilt)
+		_hold_run += 1
+		longest_hold_s = maxf(longest_hold_s, float(_hold_run) * delta)
+	else:
+		_hold_run = 0
+	max_tilt_deg = maxf(max_tilt_deg, walker.tilt_degrees())
+	max_rays_per_tick = maxi(max_rays_per_tick, walker.max_rays_per_tick)
 	_track_height(walker.height_above_plane())
 
 
@@ -197,10 +237,23 @@ func _track_gait() -> void:
 			if _plant_known[i] == 0:
 				_plant_pos[i] = foot
 				_plant_known[i] = 1
+				_measure_plant_gap(foot)
 			else:
 				max_drift_m = maxf(max_drift_m, foot.distance_to(_plant_pos[i]))
 		fewest = mini(fewest, _steps[i])
 	min_steps_per_leg = 0 if fewest == (1 << 30) else fewest
+
+
+## Planted foot against the ground straight below it.
+func _measure_plant_gap(foot: Vector3) -> void:
+	var space: PhysicsDirectSpaceState3D = walker.get_world_3d().direct_space_state
+	_gap_ray.from = foot + Vector3.UP * 1.0
+	_gap_ray.to = foot + Vector3.DOWN * 3.0
+	var hit: Dictionary = space.intersect_ray(_gap_ray)
+	if hit.is_empty():
+		return
+	var ground: Vector3 = hit["position"]
+	max_plant_gap_m = maxf(max_plant_gap_m, absf(foot.y - ground.y))
 
 
 func _track_height(height: float) -> void:
@@ -237,5 +290,6 @@ func _on_build_applied() -> void:
 
 
 func _on_foot_planted(leg: int, _position: Vector3, _normal: Vector3) -> void:
+	total_steps += 1
 	if leg < _steps.size():
 		_steps[leg] += 1

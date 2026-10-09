@@ -4,8 +4,13 @@ extends CharacterBody3D
 ## GaitSolver says so and are posed by TwoBoneIK. The body has no gravity: its height and tilt come from the
 ## plane of the planted feet, and it never moves so far that a planted foot would be dragged (rule 5).
 ## Everything that moves runs in _physics_process at 60 Hz; the maths lives in static helpers (unit-tested).
+##
+## The node itself is the collision body: it follows the body's yaw and tilt at the hip height (no bob), with two
+## cylinders (a low one the size of the chassis, a wide one for the stance that stops the body at tall walls).
+## The bobbing chassis, the tops and the legs are drawn from `_pose` in world space.
 
 signal foot_planted(leg: int, position: Vector3, normal: Vector3)
+signal step_started(leg: int)
 signal build_applied
 
 enum SteerMode { TANK, CAMERA_YAW }
@@ -16,12 +21,28 @@ const REACH_LIMIT: float = 0.99
 const BISECT_STEPS: int = 9
 ## Mean of sin(PI * t) over a swing is 2 / PI: the bob offset is shifted by 2 x this so it averages out.
 const BOB_MEAN_SHIFT: float = 1.2732395
-const CAMERA_YAW_TURN_BAND_DEG: float = 8.0
+## CAMERA_YAW: proportional band and dead band of the turn toward the yaw source (a mouse nudge must not step).
+const CAMERA_YAW_TURN_BAND_DEG: float = 6.0
+const CAMERA_YAW_DEAD_BAND_DEG: float = 1.0
 const MOVE_INPUT_EPSILON: float = 0.01
-## Collider radius = widest rest foot distance + this (a foot pad and a little air).
-const COLLIDER_MARGIN: float = 0.25
-## Fractions of the target lead tried in turn when the ground at the full lead is out of reach.
+## Low collider: bottom this far above the hip plane (blocks above step-up stop the body).
+const COLLIDER_BOTTOM: float = 0.02
+## Stance guard: bottom this far above the hip plane, radius = widest rest foot + margin. Stops at tall walls
+## without catching rolling terrain.
+const GUARD_BOTTOM: float = 0.7
+const GUARD_MARGIN: float = 0.25
+## Fractions of the target lead tried in turn (legs about to lift only) when the ground at the full lead is out
+## of reach and cannot be reached by lowering the body.
 const LEAD_SCALES: Array[float] = [1.0, 0.5, 0.0]
+const SINGLE_LEAD: Array[float] = [1.0]
+## When the body lowers for a step down, the hip stays this x leg reach above the plane of the planted feet.
+const MIN_HIP_CLEAR: float = 0.2
+## Reach used when asking "can the hip reach this lower foothold" so the landing has slack.
+const LOWER_REACH_SLACK: float = 0.95
+## A foot only lifts toward ground within this x of the reach limit, so it still lands in reach after the body moves.
+const LIFT_REACH_SLACK: float = 1.0
+## While the body lowers toward a footing it settles this x faster than the normal height spring.
+const LOWER_SETTLE_SCALE: float = 1.0
 
 @export var steer_mode: SteerMode = SteerMode.TANK
 @export var accel_time: float = 0.25
@@ -37,23 +58,26 @@ const LEAD_SCALES: Array[float] = [1.0, 0.5, 0.0]
 @export var bob_gain_time: float = 0.1
 @export_group("Gait (copied into GaitSolver)")
 @export var trigger_ratio: float = 0.5
+## Step times at mean leg reach 1.0 m; scaled by sqrt(mean reach) (Strider slower, Crawler quicker).
 @export var step_time_idle: float = 0.30
 @export var step_time_top: float = 0.18
 @export var handover_progress: float = 0.85
 @export var hover_delay: float = 0.5
 @export var lift_ratio: float = 0.25
+## Extra step-time factor for gaits with 3+ groups (the 4-5 leg wave): short steps keep the long stance in reach.
+@export var wave_step_scale: float = 0.6
 @export_group("Stance")
 ## Rest foot distance out from the hip, x leg reach (0.3-0.45 keeps the stride inside the 0.99 reach sphere).
-@export var rest_out_ratio: float = 0.38
+@export var rest_out_ratio: float = 0.30
 ## The front legs fan forward and the rear legs back by up to this x reach.
-@export var rest_fan_ratio: float = 0.12
+@export var rest_fan_ratio: float = 0.10
 ## Hip spacing along a side = base + per_reach x mean reach.
 @export var hip_spacing_base: float = 0.5
 @export var hip_spacing_per_reach: float = 0.3
 @export var hip_lateral_base: float = 0.45
 @export var hip_lateral_per_reach: float = 0.15
-@export var ray_up_ratio: float = 0.5
-@export var ray_length_ratio: float = 3.0
+@export var ray_up_ratio: float = 2.0
+@export var ray_length_ratio: float = 4.0
 
 var input_enabled: bool = true
 var yaw_source: Node3D
@@ -65,6 +89,8 @@ var move_input_active: bool = false
 var turn_input: float = 0.0
 var held_this_tick: bool = false
 var teleport_count: int = 0
+var rays_this_tick: int = 0
+var max_rays_per_tick: int = 0
 
 var _build: WalkerBuild
 var _stats: Dictionary = {}
@@ -72,22 +98,30 @@ var _solver: GaitSolver
 var _legs: Array[WalkerLeg] = []
 var _needs_plant: bool = false
 var _ray: PhysicsRayQueryParameters3D
+var _shape_query: PhysicsShapeQueryParameters3D
 var _top_speed: float = 4.5
 var _turn_rate: float = 120.0
 var _step_up: float = 0.6
 var _max_slope: float = 35.0
 var _mean_reach: float = 1.0
 var _yaw: float = 0.0
+var _yaw_rate_cmd: float = 0.0
 var _tilt_n: Vector3 = Vector3.UP
 var _base_y: float = 0.0
+## The drawn body origin: x, z of the node, y = eased base + bob.
+var _origin: Vector3 = Vector3.ZERO
+var _pose: Transform3D = Transform3D.IDENTITY
+var _chassis_center: Vector3 = Vector3.ZERO
 var _velocity_h: Vector3 = Vector3.ZERO
 var _target_velocity: Vector3 = Vector3.ZERO
 var _bob_gain: float = 0.0
 var _height_above_plane: float = 0.0
+var _lower_to_y: float = INF
 var _in_forward: float = 0.0
 var _in_strafe: float = 0.0
 var _in_turn: float = 0.0
 var _aim: bool = false
+var _was_input: bool = false
 # Per-leg buffers (sized in _rebuild, reused every tick).
 var _hips_local: PackedVector3Array = PackedVector3Array()
 var _limits: PackedFloat32Array = PackedFloat32Array()
@@ -105,7 +139,9 @@ var _fit: PackedVector3Array = PackedVector3Array()
 
 
 func _ready() -> void:
-	_make_ray()
+	_make_queries()
+	_origin = global_position
+	_base_y = global_position.y
 	if _build == null:
 		apply_build(WalkerBuild.scout())
 
@@ -137,12 +173,15 @@ func stats() -> Dictionary:
 func teleport(xform: Transform3D) -> void:
 	var forward: Vector3 = -xform.basis.z
 	_yaw = atan2(-forward.x, -forward.z)
-	global_position = xform.origin
+	_origin = xform.origin
 	_base_y = xform.origin.y
+	if is_inside_tree():
+		global_transform = Transform3D(Basis(Vector3.UP, _yaw), xform.origin)
 	_tilt_n = Vector3.UP
 	_velocity_h = Vector3.ZERO
 	velocity = Vector3.ZERO
 	yaw_rate_dps = 0.0
+	_yaw_rate_cmd = 0.0
 	teleport_count += 1
 	_needs_plant = true
 	if is_inside_tree():
@@ -168,6 +207,26 @@ func height_above_plane() -> float:
 
 func yaw_radians() -> float:
 	return _yaw
+
+
+## Angle between the drawn body's up axis and world up (telemetry).
+func tilt_degrees() -> float:
+	return rad_to_deg(_tilt_n.angle_to(Vector3.UP))
+
+
+## The drawn body pose (tilted, with bob), world space.
+func body_pose() -> Transform3D:
+	return _pose
+
+
+## A point just above the highest part of the drawn body (screen-extent checks).
+func top_point() -> Vector3:
+	return _pose * Vector3(0.0, _chassis_center.y * 2.0 + 0.3, 0.0)
+
+
+## Step times after the cadence scaling, as the solver uses them: [top, idle].
+func step_times() -> Vector2:
+	return Vector2(_solver.step_time_top, _solver.step_time_idle)
 
 
 # --- Pure helpers (unit-tested) --------------------------------------------------------------------------------
@@ -337,6 +396,30 @@ static func hip_z_positions(count: int, spacing: float) -> PackedFloat32Array:
 	return zs
 
 
+## Cadence scales with the square root of the mean leg reach (Scout 1.0, Strider ~1.26, Crawler ~0.77).
+static func cadence_scale(mean_reach: float) -> float:
+	return sqrt(maxf(mean_reach, 0.01) / 1.0)
+
+
+## Step time for a base time (defined at 1.0 m reach) and a mean reach.
+static func scaled_step_time(base_time: float, mean_reach: float) -> float:
+	return base_time * cadence_scale(mean_reach)
+
+
+## CAMERA_YAW turn input from the yaw error in degrees: nothing inside the dead band, proportional to the band.
+static func yaw_turn_input(error_deg: float, band_deg: float, dead_deg: float) -> float:
+	if absf(error_deg) < dead_deg:
+		return 0.0
+	return clampf(error_deg / band_deg, -1.0, 1.0)
+
+
+## Highest hip y that still reaches a foothold: ground + sqrt(reach^2 - horizontal^2); -INF when too far.
+static func hip_height_for_reach(ground_y: float, horizontal: float, reach_limit: float) -> float:
+	if horizontal >= reach_limit:
+		return -INF
+	return ground_y + sqrt(reach_limit * reach_limit - horizontal * horizontal)
+
+
 static func _top_spot(index: int, count: int, width: float, length: float) -> Vector3:
 	if count == 1:
 		return Vector3(0.0, 0.0, -length * 0.05)
@@ -350,17 +433,19 @@ static func _top_spot(index: int, count: int, width: float, length: float) -> Ve
 # --- Build ---------------------------------------------------------------------------------------------------------
 
 
-func _make_ray() -> void:
+func _make_queries() -> void:
 	if _ray != null:
 		return
 	_ray = PhysicsRayQueryParameters3D.new()
 	_ray.collision_mask = 1
 	_ray.hit_from_inside = true
 	_ray.collide_with_areas = false
+	_shape_query = PhysicsShapeQueryParameters3D.new()
+	_shape_query.collision_mask = 1
 
 
 func _rebuild() -> void:
-	_make_ray()
+	_make_queries()
 	var legs_root: Node3D = get_node("Legs")
 	for child in legs_root.get_children():
 		legs_root.remove_child(child)
@@ -418,13 +503,17 @@ func _rebuild() -> void:
 	_target.resize(count)
 	_target_normal.resize(count)
 	_errors.resize(count)
+	_errors.fill(0.0)
 	_valid.resize(count)
 	_planted.resize(count)
 	_fit.resize(count)
 	_solver = GaitSolver.new(sides, reaches)
+	var cadence: float = cadence_scale(_mean_reach)
+	if _solver.group_count() > 2:
+		cadence *= wave_step_scale
 	_solver.trigger_ratio = trigger_ratio
-	_solver.step_time_idle = step_time_idle
-	_solver.step_time_top = step_time_top
+	_solver.step_time_idle = step_time_idle * cadence
+	_solver.step_time_top = step_time_top * cadence
 	_solver.handover_progress = handover_progress
 	_solver.hover_delay = hover_delay
 	_solver.lift_ratio = lift_ratio
@@ -441,22 +530,33 @@ func _build_body_meshes(
 	var width: float = 2.0 * lateral - 0.15
 	var height: float = 0.2 + 0.12 * _mean_reach
 	var bottom: float = 0.05
-	var center := Vector3(0.0, bottom + height * 0.5, 0.0)
-	# A round collider as wide as the stance (plus a foot pad): turning in place against a wall never swings a
-	# corner into it, and a wall stops the body before any rest foot can end up inside the wall.
+	_chassis_center = Vector3(0.0, bottom + height * 0.5, 0.0)
+	# Low collider: round, as long as the chassis, so turning in place never swings a corner into a wall.
 	var shape := CylinderShape3D.new()
-	shape.radius = stance_radius + COLLIDER_MARGIN
+	shape.radius = maxf(width, length) * 0.5
 	shape.height = height
 	var collider: CollisionShape3D = get_node("Collider")
 	collider.shape = shape
-	collider.position = center
+	collider.position = Vector3(0.0, COLLIDER_BOTTOM + height * 0.5, 0.0)
+	# Stance guard: as wide as the stance, high enough to pass over rolling ground.
+	var guard_node: CollisionShape3D = get_node_or_null("Guard")
+	if guard_node == null:
+		guard_node = CollisionShape3D.new()
+		guard_node.name = "Guard"
+		add_child(guard_node)
+	var guard := CylinderShape3D.new()
+	guard.radius = stance_radius + GUARD_MARGIN
+	guard.height = 1.5
+	guard_node.shape = guard
+	guard_node.position = Vector3(0.0, GUARD_BOTTOM + 0.75, 0.0)
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(width, height, length)
 	var chassis: MeshInstance3D = get_node("Chassis")
+	chassis.top_level = true
 	chassis.mesh = mesh
 	chassis.material_override = WalkerLeg.body_material()
-	chassis.position = center
 	var tops: Node3D = get_node("Tops")
+	tops.top_level = true
 	for child in tops.get_children():
 		tops.remove_child(child)
 		child.queue_free()
@@ -496,11 +596,11 @@ func _plant_all_at_rest() -> void:
 	_needs_plant = false
 	if _legs.is_empty() or not is_inside_tree():
 		return
-	_make_ray()
+	_make_queries()
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var flat := Transform3D(Basis(Vector3.UP, _yaw), global_position)
-	var start_y: float = global_position.y + 3.0 * _mean_reach
-	var fallback_y: float = global_position.y - body_height_ratio * _mean_reach
+	var flat := Transform3D(Basis(Vector3.UP, _yaw), _origin)
+	var start_y: float = _origin.y + 3.0 * _mean_reach
+	var fallback_y: float = _origin.y - body_height_ratio * _mean_reach
 	for i in _legs.size():
 		var rest: Vector3 = flat * _legs[i].rest_local
 		_ray.from = Vector3(rest.x, start_y, rest.z)
@@ -519,26 +619,37 @@ func _plant_all_at_rest() -> void:
 		_planted[i] = 1
 	var plane: Plane = fit_plane(_foot)
 	_tilt_n = clamp_tilt(plane.normal, tilt_max_deg)
-	var x: float = global_position.x
-	var z: float = global_position.z
+	var x: float = _origin.x
+	var z: float = _origin.z
 	_base_y = plane_height(plane, x, z) + body_height_ratio * _mean_reach / plane.normal.y
-	_height_above_plane = plane.distance_to(Vector3(x, _base_y, z))
+	_origin = Vector3(x, _base_y, z)
+	_height_above_plane = plane.distance_to(_origin)
 	_bob_gain = 0.0
 	_velocity_h = Vector3.ZERO
 	yaw_rate_dps = 0.0
-	global_transform = pose_transform(Vector3(x, _base_y, z), _yaw, _tilt_n)
+	_yaw_rate_cmd = 0.0
 	_solver.reset()
+	_apply_transforms()
 	_pose_legs()
 	reset_physics_interpolation()
 
 
+## Root = collision body (yaw only, at the base height); chassis and tops follow the drawn pose.
+func _apply_transforms() -> void:
+	_pose = pose_transform(_origin, _yaw, _tilt_n)
+	global_transform = pose_transform(Vector3(_origin.x, _base_y, _origin.z), _yaw, _tilt_n)
+	var chassis: MeshInstance3D = get_node("Chassis")
+	chassis.global_transform = _pose * Transform3D(Basis.IDENTITY, _chassis_center)
+	var tops: Node3D = get_node("Tops")
+	tops.global_transform = _pose
+
+
 func _pose_legs() -> void:
-	var t: Transform3D = global_transform
 	var pad_basis := Basis(Vector3.UP, _yaw)
 	for i in _legs.size():
 		var leg: WalkerLeg = _legs[i]
-		var hip: Vector3 = t * leg.hip_local
-		var pole: Vector3 = t.basis.x * (float(leg.side) * 0.7) + t.basis.y
+		var hip: Vector3 = _pose * leg.hip_local
+		var pole: Vector3 = _pose.basis.x * (float(leg.side) * 0.7) + _pose.basis.y
 		leg.pose(hip, _foot[i], pole, pad_basis)
 		_render[i] = leg.foot
 
@@ -558,8 +669,8 @@ func _physics_process(delta: float) -> void:
 	_velocity_h = approach_velocity(
 		_velocity_h, _target_velocity, _top_speed, accel_time, decel_time, delta
 	)
-	yaw_rate_dps = approach_yaw_rate(
-		yaw_rate_dps, _in_turn, _turn_rate, _aim, turn_ramp_time, aim_turn_factor, delta
+	_yaw_rate_cmd = approach_yaw_rate(
+		_yaw_rate_cmd, _in_turn, _turn_rate, _aim, turn_ramp_time, aim_turn_factor, delta
 	)
 	target_yaw_rate_dps = _in_turn * _turn_rate * (aim_turn_factor if _aim else 1.0)
 
@@ -569,6 +680,8 @@ func _physics_process(delta: float) -> void:
 	_apply_move(delta)
 	_update_swing_feet()
 	_pose_legs()
+	_was_input = move_input_active
+	max_rays_per_tick = maxi(max_rays_per_tick, rays_this_tick)
 
 
 func _read_input() -> void:
@@ -590,7 +703,7 @@ func _read_input() -> void:
 				var heading: Vector3 = -yaw_source.global_transform.basis.z
 				var wanted: float = atan2(-heading.x, -heading.z)
 				var error_deg: float = rad_to_deg(wrapf(wanted - _yaw, -PI, PI))
-				turn = clampf(error_deg / CAMERA_YAW_TURN_BAND_DEG, -1.0, 1.0)
+				turn = yaw_turn_input(error_deg, CAMERA_YAW_TURN_BAND_DEG, CAMERA_YAW_DEAD_BAND_DEG)
 	_in_forward = forward
 	_in_strafe = strafe
 	_in_turn = turn
@@ -602,39 +715,74 @@ func _read_input() -> void:
 	)
 
 
-## One ray per leg through rest point + lead. Fills targets, validity and foot errors; returns the speed ratio.
+## One ray per leg through rest + lead (more for legs about to lift whose lead ground is out of reach). Fills
+## targets, validity and foot errors, and the height the body should lower to for a step down. Returns the
+## speed ratio.
 func _update_targets() -> float:
-	var gt: Transform3D = global_transform
+	var gt: Transform3D = _pose
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var yaw_rad: float = deg_to_rad(target_yaw_rate_dps)
 	var ray_up: float = ray_up_ratio * _mean_reach
 	var ray_len: float = ray_length_ratio * _mean_reach + ray_up
 	var fastest: float = 0.0
+	var kick_pending: bool = move_input_active and not _was_input
+	var lead_groups: float = float(maxi(_solver.group_count() - 1, 1))
+	var planted_count: int = 0
+	for i in _legs.size():
+		if _solver.state_of(i) == GaitSolver.LegState.PLANTED:
+			_fit[planted_count] = _foot[i]
+			planted_count += 1
+	var plane: Plane = fit_plane(_fit, planted_count) if planted_count >= 3 else Plane(Vector3.UP, gt.origin.y - body_height_ratio * _mean_reach)
+	_lower_to_y = INF
+	rays_this_tick = 0
 	for i in _legs.size():
 		var leg: WalkerLeg = _legs[i]
+		var leg_state: int = _solver.state_of(i)
 		var rest: Vector3 = gt * leg.rest_local
 		var rest_velocity: Vector3 = _target_velocity + Vector3.UP.cross(rest - gt.origin) * yaw_rad
 		var rest_speed: float = rest_velocity.length()
 		fastest = maxf(fastest, rest_speed)
+		# Foot lands on a live target; the stance after landing lasts (groups - 1) swings, so the lead covers it.
 		var lead: Vector3 = GaitSolver.target_lead(
-			rest_velocity, _solver.step_duration(rest_speed / _top_speed)
+			rest_velocity, _solver.step_duration(rest_speed / _top_speed) * lead_groups
 		)
 		var hip_world: Vector3 = gt * leg.hip_local
+		var about_to_lift: bool = (
+			leg_state != GaitSolver.LegState.SWINGING
+			and (
+				kick_pending
+				or leg_state == GaitSolver.LegState.HOVERING
+				or _errors[i] > 0.7 * trigger_ratio * leg.reach
+			)
+		)
+		var scales: Array[float] = LEAD_SCALES if about_to_lift else SINGLE_LEAD
+		var limit: float = _limits[i]
+		var floor_y: float = plane_height(plane, hip_world.x, hip_world.z) + MIN_HIP_CLEAR * leg.reach
+		var hit: Dictionary = {}
 		var aim_x: float = rest.x + lead.x
 		var aim_z: float = rest.z + lead.z
-		var hit: Dictionary = {}
-		# Aim through rest + lead; if the ground there is out of the hip's reach (a step down, a ridge), shorten
-		# the lead so the foot lands closer instead of the leg blocking.
-		for lead_scale in LEAD_SCALES:
+		var needs_y: float = INF
+		for lead_scale in scales:
 			aim_x = rest.x + lead.x * lead_scale
 			aim_z = rest.z + lead.z * lead_scale
 			_ray.from = Vector3(aim_x, gt.origin.y + ray_up, aim_z)
 			_ray.to = Vector3(aim_x, gt.origin.y + ray_up - ray_len, aim_z)
 			hit = space.intersect_ray(_ray)
-			if not hit.is_empty():
-				var ground: Vector3 = hit["position"]
-				if hip_world.distance_to(ground) <= _limits[i]:
-					break
+			rays_this_tick += 1
+			if hit.is_empty():
+				continue
+			var ground: Vector3 = hit["position"]
+			if hip_world.distance_to(ground) <= limit:
+				needs_y = INF
+				break
+			# Out of reach: could the body lower toward it (a step down)?
+			var horizontal: float = Vector2(hip_world.x - ground.x, hip_world.z - ground.z).length()
+			var lowest_hip: float = hip_height_for_reach(
+				ground.y, horizontal, limit * LOWER_REACH_SLACK
+			)
+			if lowest_hip >= floor_y and lowest_hip < hip_world.y:
+				needs_y = lowest_hip + (gt.origin.y - hip_world.y)
+				break
 		if hit.is_empty():
 			_target[i] = Vector3(aim_x, rest.y, aim_z)
 			_target_normal[i] = Vector3.UP
@@ -646,16 +794,16 @@ func _update_targets() -> float:
 		_target[i] = position
 		_target_normal[i] = normal
 		_errors[i] = _foot[i].distance_to(position)
+		_lower_to_y = minf(_lower_to_y, needs_y)
 		# Rise is measured from the height the foot stands (or stood) on, not from the lifted swing arc.
 		var stand_y: float = _foot[i].y
-		var leg_state: int = _solver.state_of(i)
 		if leg_state == GaitSolver.LegState.SWINGING:
 			stand_y = _from[i].y
 		elif leg_state == GaitSolver.LegState.HOVERING:
 			stand_y = _foot[i].y - _solver.lift_height(leg.reach)
 		_valid[i] = (
 			GaitSolver.is_target_valid(position.y - stand_y, normal, _step_up, _max_slope)
-			and hip_world.distance_to(position) <= _limits[i]
+			and hip_world.distance_to(position) <= limit * LIFT_REACH_SLACK
 		)
 	return clampf(fastest / _top_speed, 0.0, 1.0)
 
@@ -666,6 +814,17 @@ func _homing_swings() -> void:
 		if _solver.state_of(i) == GaitSolver.LegState.SWINGING and _valid[i]:
 			_to[i] = _target[i]
 			_to_normal[i] = _target_normal[i]
+
+
+func _overlaps_world(root: Transform3D) -> bool:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	for node_name in ["Collider", "Guard"]:
+		var node: CollisionShape3D = get_node(node_name)
+		_shape_query.shape = node.shape
+		_shape_query.transform = root * Transform3D(Basis.IDENTITY, node.position)
+		if not space.intersect_shape(_shape_query, 1).is_empty():
+			return true
+	return false
 
 
 func _apply_move(delta: float) -> void:
@@ -684,8 +843,8 @@ func _apply_move(delta: float) -> void:
 		planted_count = count
 	var plane: Plane = fit_plane(_fit, planted_count)
 
-	var cur_pos: Vector3 = global_position
-	var des_yaw: float = _yaw + deg_to_rad(yaw_rate_dps) * delta
+	var cur_pos: Vector3 = _origin
+	var des_yaw: float = _yaw + deg_to_rad(_yaw_rate_cmd) * delta
 	var des_x: float = cur_pos.x + _velocity_h.x * delta
 	var des_z: float = cur_pos.z + _velocity_h.z * delta
 	var tilt_target: Vector3 = clamp_tilt(plane.normal, tilt_max_deg)
@@ -696,16 +855,46 @@ func _apply_move(delta: float) -> void:
 	var base_target: float = (
 		plane_height(plane, des_x, des_z) + body_height_ratio * _mean_reach / plane.normal.y
 	)
-	var des_base: float = ease_toward(_base_y, base_target, delta, height_settle_time)
+	# A foothold below the reach of the hip: lower the body toward it before the foot goes for it.
+	base_target = minf(base_target, _lower_to_y)
+	var settle: float = height_settle_time
+	if _lower_to_y < _base_y:
+		settle = height_settle_time * LOWER_SETTLE_SCALE
+	var des_base: float = ease_toward(_base_y, base_target, delta, settle)
 	var des_origin := Vector3(des_x, des_base + _bob_offset(delta), des_z)
 
 	var fraction: float = safe_fraction(
 		cur_pos, _yaw, _tilt_n, des_origin, des_yaw, des_n, _hips_local, _foot, _planted, _limits
 	)
 	held_this_tick = fraction < 0.9999
-	var origin: Vector3 = cur_pos.lerp(des_origin, fraction)
+	# Height and tilt keep their own fraction: a held translation must not stop the body lowering toward a foothold.
+	var vertical_fraction: float = fraction
+	if fraction < 1.0:
+		var still := Vector3(cur_pos.x, des_origin.y, cur_pos.z)
+		vertical_fraction = maxf(
+			fraction,
+			safe_fraction(
+				cur_pos, _yaw, _tilt_n, still, _yaw, des_n, _hips_local, _foot, _planted, _limits
+			)
+		)
+	var origin: Vector3 = Vector3(
+		lerpf(cur_pos.x, des_origin.x, fraction),
+		lerpf(cur_pos.y, des_origin.y, vertical_fraction),
+		lerpf(cur_pos.z, des_origin.z, fraction)
+	)
 	var yaw: float = lerpf(_yaw, des_yaw, fraction)
-	var tilt: Vector3 = des_n if fraction >= 1.0 else _tilt_n.slerp(des_n, fraction)
+	var tilt: Vector3 = des_n if vertical_fraction >= 1.0 else _tilt_n.slerp(des_n, vertical_fraction)
+	var base_y: float = lerpf(_base_y, des_base, vertical_fraction)
+	if vertical_fraction > fraction:
+		var composed: Transform3D = pose_transform(origin, yaw, tilt)
+		var start: Transform3D = pose_transform(cur_pos, _yaw, _tilt_n)
+		if not feet_in_reach(composed, start, _hips_local, _foot, _planted, _limits):
+			vertical_fraction = fraction
+			origin.y = lerpf(cur_pos.y, des_origin.y, fraction)
+			tilt = des_n if fraction >= 1.0 else _tilt_n.slerp(des_n, fraction)
+			base_y = lerpf(_base_y, des_base, fraction)
+	var cur_root: Transform3D = pose_transform(Vector3(cur_pos.x, _base_y, cur_pos.z), _yaw, _tilt_n)
+	global_transform = cur_root
 	if fraction > 0.0:
 		var motion := Vector3(origin.x - cur_pos.x, 0.0, origin.z - cur_pos.z)
 		if motion.length_squared() > 0.000000000001:
@@ -717,6 +906,18 @@ func _apply_move(delta: float) -> void:
 					move_and_collide(slide)
 		origin.x = global_position.x
 		origin.z = global_position.z
+	# The chassis must never end a tick inside static geometry (vertical and tilt moves are not swept).
+	var new_root: Transform3D = pose_transform(Vector3(origin.x, base_y, origin.z), yaw, tilt)
+	if _overlaps_world(new_root) and not _overlaps_world(cur_root):
+		new_root = pose_transform(Vector3(origin.x, _base_y, origin.z), yaw, tilt)
+		base_y = _base_y
+		origin.y = cur_pos.y
+		if _overlaps_world(new_root):
+			origin = cur_pos
+			yaw = _yaw
+			tilt = _tilt_n
+			base_y = _base_y
+			held_this_tick = true
 	var current: Transform3D = pose_transform(cur_pos, _yaw, _tilt_n)
 	var final_pose: Transform3D = pose_transform(origin, yaw, tilt)
 	if not feet_in_reach(final_pose, current, _hips_local, _foot, _planted, _limits):
@@ -724,21 +925,29 @@ func _apply_move(delta: float) -> void:
 		origin = cur_pos
 		yaw = _yaw
 		tilt = _tilt_n
-		final_pose = current
+		base_y = _base_y
 		held_this_tick = true
-	_velocity_h = Vector3((origin.x - cur_pos.x) / delta, 0.0, (origin.z - cur_pos.z) / delta)
-	velocity = _velocity_h
-	yaw_rate_dps = rad_to_deg(yaw - _yaw) / delta
-	_base_y = lerpf(_base_y, des_base, fraction)
+	var actual := Vector3((origin.x - cur_pos.x) / delta, 0.0, (origin.z - cur_pos.z) / delta)
+	var commanded_len: float = _velocity_h.length()
+	# A small hold keeps the commanded speed (no climb back up the ramp); a big stop (wall) resets it.
+	if commanded_len > 0.0001 and actual.length() < 0.5 * commanded_len:
+		_velocity_h = actual
+	velocity = actual
+	var actual_rate: float = rad_to_deg(yaw - _yaw) / delta
+	if absf(_yaw_rate_cmd) > 0.0001 and absf(actual_rate) < 0.5 * absf(_yaw_rate_cmd):
+		_yaw_rate_cmd = actual_rate
+	yaw_rate_dps = actual_rate
+	_base_y = base_y
 	_yaw = yaw
 	_tilt_n = tilt
-	global_transform = final_pose
+	_origin = origin
+	_apply_transforms()
 	_height_above_plane = plane.distance_to(origin)
 
 
 ## Gait-synced bob: lowest as a group plants, highest mid-swing; fades in with speed.
 func _bob_offset(delta: float) -> float:
-	var speed_ratio: float = clampf(_velocity_h.length() / _top_speed, 0.0, 1.0)
+	var speed_ratio: float = clampf(velocity.length() / _top_speed, 0.0, 1.0)
 	_bob_gain = ease_toward(_bob_gain, speed_ratio, delta, bob_gain_time)
 	var air: float = 0.0
 	for i in _legs.size():
@@ -748,7 +957,7 @@ func _bob_offset(delta: float) -> float:
 
 
 func _update_swing_feet() -> void:
-	var t: Transform3D = global_transform
+	var t: Transform3D = _pose
 	for i in _legs.size():
 		var leg: WalkerLeg = _legs[i]
 		var state: int = _solver.state_of(i)
@@ -764,15 +973,35 @@ func _on_step_started(leg: int) -> void:
 	_from[leg] = _foot[leg]
 	_to[leg] = _target[leg]
 	_to_normal[leg] = _target_normal[leg]
+	step_started.emit(leg)
 
 
 func _on_foot_planted(leg: int) -> void:
-	# A target that went invalid mid-swing leaves a stale landing point: never plant out of reach, because
-	# the IK clamp would then drag the rendered foot.
-	var hip: Vector3 = global_transform * _legs[leg].hip_local
-	var span: Vector3 = _to[leg] - hip
+	# A target that went invalid mid-swing leaves a stale landing point: never plant out of reach (the IK clamp
+	# would drag the rendered foot). Slide the landing in toward the hip and re-find the ground there.
+	var hip: Vector3 = _pose * _legs[leg].hip_local
 	var limit: float = _limits[leg] * 0.995
-	if span.length() > limit:
-		_to[leg] = hip + span.normalized() * limit
+	if hip.distance_to(_to[leg]) > limit:
+		var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+		var span := Vector2(_to[leg].x - hip.x, _to[leg].z - hip.z)
+		var landed: bool = false
+		for fraction in [0.8, 0.6, 0.4, 0.2, 0.0]:
+			var x: float = hip.x + span.x * fraction
+			var z: float = hip.z + span.y * fraction
+			_ray.from = Vector3(x, hip.y + ray_up_ratio * _mean_reach, z)
+			_ray.to = Vector3(x, hip.y - ray_length_ratio * _mean_reach, z)
+			var hit: Dictionary = space.intersect_ray(_ray)
+			if hit.is_empty():
+				continue
+			var ground: Vector3 = hit["position"]
+			if hip.distance_to(ground) <= limit:
+				_to[leg] = ground
+				_to_normal[leg] = hit["normal"]
+				landed = true
+				break
+		if not landed:
+			var offset: Vector3 = _to[leg] - hip
+			_to[leg] = hip + offset.normalized() * limit
 	_foot[leg] = _to[leg]
 	foot_planted.emit(leg, _to[leg], _to_normal[leg])
+

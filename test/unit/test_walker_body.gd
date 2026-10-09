@@ -210,3 +210,41 @@ func test_six_legs_spread_evenly_without_a_gap_at_the_empty_socket() -> void:
 	assert_lt(zs[0], zs[2], "front (-Z) first")
 	var eight: PackedFloat32Array = WalkerBody.hip_z_positions(4, 0.8)
 	assert_almost_eq(eight[3] - eight[2], eight[1] - eight[0], 0.0001)
+
+
+func test_step_times_scale_with_the_square_root_of_mean_leg_reach() -> void:
+	# Scout keeps 0.18 / 0.30 s; Strider (1.6 m) about 0.23 / 0.38 s; Crawler (0.6 m) about 0.14 / 0.23 s.
+	assert_almost_eq(WalkerBody.scaled_step_time(0.18, 1.0), 0.18, 0.0001)
+	assert_almost_eq(WalkerBody.scaled_step_time(0.30, 1.0), 0.30, 0.0001)
+	assert_almost_eq(WalkerBody.scaled_step_time(0.18, 1.6), 0.2277, 0.001)
+	assert_almost_eq(WalkerBody.scaled_step_time(0.30, 1.6), 0.3795, 0.001)
+	assert_almost_eq(WalkerBody.scaled_step_time(0.18, 0.6), 0.1394, 0.001)
+	assert_almost_eq(WalkerBody.scaled_step_time(0.30, 0.6), 0.2324, 0.001)
+
+
+func test_camera_yaw_dead_band_ignores_a_small_nudge() -> void:
+	assert_eq(WalkerBody.yaw_turn_input(0.5, 6.0, 1.0), 0.0)
+	assert_eq(WalkerBody.yaw_turn_input(-0.99, 6.0, 1.0), 0.0)
+	assert_almost_eq(WalkerBody.yaw_turn_input(3.0, 6.0, 1.0), 0.5, 0.0001)
+	assert_eq(WalkerBody.yaw_turn_input(-20.0, 6.0, 1.0), -1.0)
+
+
+func test_yaw_source_half_a_degree_off_while_idle_produces_no_step_started() -> void:
+	var sides := PackedInt32Array([-1, -1, -1, 1, 1, 1])
+	var reaches := PackedFloat32Array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+	var solver := GaitSolver.new(sides, reaches)
+	var started: Array[int] = []
+	solver.step_started.connect(func(leg: int) -> void: started.append(leg))
+	var errors := PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+	var valid: Array[bool] = [true, true, true, true, true, true]
+	for i in 120:
+		# The walker feeds `moving` from the turn input toward the yaw source: 0.5 degrees is inside the dead band.
+		var turn: float = WalkerBody.yaw_turn_input(0.5, 6.0, 1.0)
+		solver.update(1.0 / 60.0, absf(turn) > 0.01, 0.0, errors, valid)
+	assert_eq(started.size(), 0)
+
+
+func test_hip_height_for_reach_gives_the_highest_hip_that_still_reaches() -> void:
+	# 1.0 m reach, foothold 0.6 m away horizontally and 0.5 m below the origin: hip may be 0.8 m above it.
+	assert_almost_eq(WalkerBody.hip_height_for_reach(-0.5, 0.6, 1.0), 0.3, 0.0001)
+	assert_eq(WalkerBody.hip_height_for_reach(0.0, 1.2, 1.0), -INF)

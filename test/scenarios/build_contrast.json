@@ -92,7 +92,30 @@
    }
   },
   {
-   "wait_frames": 2700
+   "wait_frames": 2900
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "current_speed_mps",
+    "op": "<",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "stopped_before_face",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
   },
   {
    "call": {
@@ -105,14 +128,69 @@
    }
   },
   {
-   "wait_frames": 40
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 180
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 1.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_plant_gap_m",
+    "op": "<=",
+    "value": 0.02
+   }
   },
   {
    "call": {
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "build_contrast strider ledges"
+     "build_contrast strider ledges (climb, step down, stop at the first block it cannot climb)"
     ]
    }
   },
@@ -211,7 +289,30 @@
    }
   },
   {
-   "wait_frames": 900
+   "wait_frames": 1000
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "current_speed_mps",
+    "op": "<",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "stopped_before_face",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
   },
   {
    "call": {
@@ -224,14 +325,69 @@
    }
   },
   {
-   "wait_frames": 40
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 180
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 1.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_plant_gap_m",
+    "op": "<=",
+    "value": 0.02
+   }
   },
   {
    "call": {
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "build_contrast crawler ledges"
+     "build_contrast crawler ledges (climb, step down, stop at the first block it cannot climb)"
     ]
    }
   },
@@ -277,6 +433,22 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "a_step_up",
+    "op": "<=",
+    "value": 0.96
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "b_step_up",
+    "op": "<=",
+    "value": 0.36
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "show_pair",
@@ -284,7 +456,7 @@
    }
   },
   {
-   "wait_frames": 30
+   "wait_frames": 1
   },
   {
    "call": {
@@ -297,10 +469,17 @@
    }
   },
   {
-   "wait_frames": 120
+   "wait_frames": 29
   },
   {
    "screenshot": "a_vs_b"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_pair_extents",
+    "args": []
+   }
   },
   {
    "call": {
