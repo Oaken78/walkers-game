@@ -13,8 +13,10 @@ const BOB_WINDOW_TICKS: int = 120
 const STALL_FRACTION: float = 0.1
 ## A stall longer than this is logged as a STALL line.
 const STALL_LOG_S: float = 0.4
-## A pad box is checked this far above its foot point, so the ground it stands on is not an overlap.
-const PAD_CHECK_LIFT: float = 0.03
+## The drawn pad (foot to foot + PAD_SIZE.y) is checked from this far above its foot point, so the ground it stands on is not an overlap.
+const PAD_CHECK_LIFT: float = 0.01
+## The body stands on the floor this long (s) before the sway left over counts as a residual.
+const LATERAL_SETTLE_S: float = 1.5
 ## Stands for "no gap on this axis" in `box_gap` (the vertical axis is left out of the pad separation).
 const PAD_SEP_NO_AXIS: float = 1000.0
 ## Two same-side pads overlap this much fore-aft (m) or more: stacked on one spot (a whole pad length is 0.34).
@@ -69,6 +71,7 @@ var min_hip_clearance_m: float = INF
 var max_push_rise_m: float = 0.0
 var max_landing_snap_m: float = 0.0
 var max_landing_slide_m: float = 0.0
+var landings_moved: int = 0
 ## Largest tick-to-tick tilt change, and the slowest physics tick (ms) since the last reset.
 var max_tilt_step_deg: float = 0.0
 var max_physics_ms: float = 0.0
@@ -88,6 +91,19 @@ var min_pad_gap_m: float = INF
 var min_pad_sep_m: float = INF
 ## Ticks in which two planted pads of one side stand (almost) on one spot (their fore-aft overlap is at least STACKED_OVERLAP_M).
 var stacked_pad_ticks: int = 0
+## Sway off the line the walker was walking (fed by a test course that knows the line; 0 elsewhere): the widest offset (m), the
+## widest offset once the body is back on the floor and settled, the longest time (s) from an offset over 0.1 m to back within
+## 0.05 m, and the most direction reversals of the sideways motion during one hang.
+var max_lateral_offset_m: float = 0.0
+var lateral_residual_m: float = 0.0
+var lateral_return_s: float = 0.0
+var sway_reversals_per_hang: int = 0
+var _lat_prev: float = 0.0
+var _lat_dir: float = 0.0
+var _lat_out_since: float = -1.0
+var _lat_reversals: int = 0
+var _lat_was_hanging: bool = false
+var _lat_settle: float = 0.0
 ## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
 ## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
 var longest_input_stall_s: float = 0.0
@@ -212,12 +228,14 @@ func reset() -> void:
 	max_push_rise_m = 0.0
 	max_landing_snap_m = 0.0
 	max_landing_slide_m = 0.0
+	landings_moved = 0
 	max_tilt_step_deg = 0.0
 	max_physics_ms = 0.0
 	if walker != null:
 		walker.max_push_rise = 0.0
 		walker.max_landing_snap = 0.0
 		walker.max_landing_slide = 0.0
+		walker.landings_moved = 0
 		walker.max_tilt_step_deg = 0.0
 		walker.max_resolve_pitch_deg = 0.0
 	velocity_resets = 0
@@ -226,6 +244,13 @@ func reset() -> void:
 	min_pad_gap_m = INF
 	min_pad_sep_m = INF
 	stacked_pad_ticks = 0
+	max_lateral_offset_m = 0.0
+	lateral_residual_m = 0.0
+	lateral_return_s = 0.0
+	sway_reversals_per_hang = 0
+	_lat_out_since = -1.0
+	_lat_reversals = 0
+	_lat_settle = 0.0
 	longest_input_stall_s = 0.0
 	_input_stall_run = 0
 	max_test_motions_per_tick = 0
@@ -328,6 +353,7 @@ func report(label: String = "") -> void:
 		"max_push_rise_m": snappedf(max_push_rise_m, 0.001),
 		"max_landing_snap_m": snappedf(max_landing_snap_m, 0.001),
 		"max_landing_slide_m": snappedf(max_landing_slide_m, 0.001),
+		"landings_moved": walker.landings_moved if walker != null else 0,
 		"max_tilt_step_deg": snappedf(max_tilt_step_deg, 0.01),
 		"max_physics_ms": snappedf(max_physics_ms, 0.01),
 		"velocity_resets": velocity_resets,
@@ -336,6 +362,10 @@ func report(label: String = "") -> void:
 		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
 		"min_pad_sep_m": snappedf(minf(min_pad_sep_m, 9.0), 0.001),
 		"stacked_pad_ticks": stacked_pad_ticks,
+		"max_lateral_offset_m": snappedf(max_lateral_offset_m, 0.001),
+		"lateral_residual_m": snappedf(lateral_residual_m, 0.001),
+		"lateral_return_s": snappedf(lateral_return_s, 0.01),
+		"sway_reversals_per_hang": sway_reversals_per_hang,
 		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
 		"max_pitch_deg": snappedf(max_pitch_deg, 0.01),
 		"min_pitch_deg": snappedf(min_pitch_deg, 0.01),
@@ -431,7 +461,7 @@ func _track_climb(_delta: float) -> void:
 		min_support_margin_ratio = minf(min_support_margin_ratio, margin)
 	if _pad_shape == null:
 		_pad_shape = BoxShape3D.new()
-		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, 0.12, WalkerLeg.PAD_SIZE.z)
+		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, WalkerLeg.PAD_SIZE.y - PAD_CHECK_LIFT, WalkerLeg.PAD_SIZE.z)
 		_pad_query = PhysicsShapeQueryParameters3D.new()
 		_pad_query.shape = _pad_shape
 		_pad_query.collision_mask = 1
@@ -442,13 +472,14 @@ func _track_climb(_delta: float) -> void:
 	for i in walker.leg_count():
 		var foot: Vector3 = walker.foot_position(i)
 		var near_face: bool = walker.is_leg_hanging(i)
-		if (near_face or walker.is_leg_climbing(i) or walker.leg_reached_up(i)) and not _teleported_now:
-			# Only the pads that reach, step up, step down or hang (and the planted pads a reach-up put down) are checked, with the whole
+		var flying: bool = gait.state_of(i) == GaitSolver.LegState.SWINGING
+		if (near_face or walker.is_leg_climbing(i) or walker.leg_reached_up(i)) and not flying and not _teleported_now:
+			# Only the pads that reach, step up, step down or hang (and the planted pads a reach-up put down) are checked while they stand or hover (a pad in mid-swing may graze a corner on its way), with the whole
 			# pad's footprint (corners included) tilted to the pad's ground normal (a pad on a slope lies on it; a stride pad may touch a
 			# rock it is stepping onto).
 			var up: Vector3 = walker.foot_normal(i)
 			var tilt: Basis = Basis(Quaternion(Vector3.UP, up)) * basis
-			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + 0.06))
+			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + _pad_shape.size.y * 0.5))
 			if not space.intersect_shape(_pad_query, 1).is_empty():
 				inside = true
 		if near_face:
@@ -704,3 +735,31 @@ func _on_foot_planted(leg: int, _position: Vector3, normal: Vector3) -> void:
 	max_foot_slope_deg = maxf(max_foot_slope_deg, rad_to_deg(normal.angle_to(Vector3.UP)))
 	if leg < _steps.size():
 		_steps[leg] += 1
+
+
+## One tick of sideways offset (m) from the line the walker follows; `on_floor` when the body stands on the ground between blocks.
+func observe_lateral(offset: float, on_floor: bool, delta: float) -> void:
+	var off: float = absf(offset)
+	max_lateral_offset_m = maxf(max_lateral_offset_m, off)
+	_lat_settle = 0.0 if not on_floor else _lat_settle + delta
+	if on_floor and _lat_settle > LATERAL_SETTLE_S:
+		lateral_residual_m = maxf(lateral_residual_m, off)
+	var clock: float = float(ticks) * delta
+	if off > 0.1 and _lat_out_since < 0.0:
+		_lat_out_since = clock
+	elif off < 0.05 and _lat_out_since >= 0.0:
+		lateral_return_s = maxf(lateral_return_s, clock - _lat_out_since)
+		_lat_out_since = -1.0
+	var hanging: bool = walker != null and walker.is_hanging()
+	if hanging and not _lat_was_hanging:
+		_lat_reversals = 0
+		_lat_dir = 0.0
+	if hanging:
+		var step: float = offset - _lat_prev
+		if absf(step) > 0.0005:
+			if _lat_dir != 0.0 and signf(step) != _lat_dir:
+				_lat_reversals += 1
+				sway_reversals_per_hang = maxi(sway_reversals_per_hang, _lat_reversals)
+			_lat_dir = signf(step)
+	_lat_was_hanging = hanging
+	_lat_prev = offset

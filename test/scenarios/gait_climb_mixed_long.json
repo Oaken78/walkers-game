@@ -168,10 +168,18 @@
   },
   {
    "assert_prop": {
-    "node": ".",
-    "prop": "lateral_offset_max",
+    "node": "%Telemetry",
+    "prop": "max_lateral_offset_m",
     "op": "<=",
     "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "lateral_residual_m",
+    "op": "<=",
+    "value": 0.15
    }
   },
   {

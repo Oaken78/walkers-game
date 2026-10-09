@@ -760,7 +760,10 @@ var _spawn_heading: float = 0.0
 
 func _track_lateral_offset() -> void:
 	var right := Vector3(cos(_spawn_heading), 0.0, -sin(_spawn_heading))
-	lateral_offset_max = maxf(lateral_offset_max, absf((_walker.global_position - _spawn_origin).dot(right)))
+	var offset: float = (_walker.global_position - _spawn_origin).dot(right)
+	lateral_offset_max = maxf(lateral_offset_max, absf(offset))
+	var on_floor: bool = _walker.global_position.y < 0.6 * _walker.leg_reach(0) + 0.15
+	_telemetry.observe_lateral(offset, on_floor, get_physics_process_delta_time())
 
 
 func _run_backoff_probe() -> void:
@@ -1317,6 +1320,22 @@ func _track_lateral_flips() -> void:
 	_lateral_flips_max = maxi(_lateral_flips_max, _lateral_flip_ticks.size())
 
 
+## Logs, a frame after the reach freeze, each leg's drawn pad mesh centre next to the telemetry's pad box and the block's box (the
+## pad mesh and the metric must agree: the mesh centre is the foot + 0.10 up, the metric box runs foot + 0.01 to foot + 0.20).
+func _log_pad_boxes() -> void:
+	await get_tree().process_frame
+	var block: Dictionary = _blocks[LANE_CLIMB][0]
+	print("PADBOX block top=%.3f z_front=%.3f z_back=%.3f" % [block["h"], block["z_front"], block["z_back"]])
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		var mesh: Vector3 = _walker.pad_mesh_center(i)
+		var box_center: Vector3 = foot + _walker.foot_normal(i) * (0.01 + 0.095)
+		print(
+			"PADBOX leg %d state %d foot %s mesh_centre %s metric_box_centre %s mesh_minus_foot_y %.3f past_lip_m %.3f"
+			% [i, _walker.gait().state_of(i), str(foot), str(mesh), str(box_center), mesh.y - foot.y, block["z_front"] - foot.z]
+		)
+
+
 ## True for a leg whose hip is in the front half of the body.
 func _is_front_leg(leg: int) -> bool:
 	var forward := Vector3(-sin(_walker.yaw_radians()), 0.0, -cos(_walker.yaw_radians()))
@@ -1335,6 +1354,7 @@ func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
 		# The first foot a reach-up puts down on a top: the still of "front foot on the lip, knee above the hip".
 		get_tree().paused = true
 		_freeze_reach = false
+		get_tree().process_frame.connect(_log_pad_boxes, CONNECT_ONE_SHOT)
 
 
 ## "Every foot planted on the block's top": each leg's most recent plant point lies on the deck. (A walking

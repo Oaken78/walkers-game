@@ -127,6 +127,9 @@ const PAW_FACE_WINDOW_RATIO: float = 0.5
 const HANG_IDLE_RATIO: float = 0.25
 const PAW_TOP_RATIO: float = 0.7
 const HANG_CLEARANCE: float = 0.05
+## The pad box a hovering pad is kept clear with is the drawn pad: from this far above the foot to the pad's top (the same box the
+## telemetry's pad_inside test uses).
+const PAD_BOX_LIFT: float = 0.01
 const HANG_LIFT_TRIES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 const HANG_LIFT_STEP: float = 0.05
 const HANG_PULL_STEP: float = 0.05
@@ -136,6 +139,8 @@ const FOLD_SAFETY: float = 1.05
 const FOLD_SLACK: float = 1.02
 ## A swing whose landing is this far (m) above or below its start counts as a ledge swing.
 const LEDGE_SWING_RISE: float = 0.3
+## A landing that moved more than this (m) at touchdown counts in `landings_moved`.
+const LANDING_MOVED_M: float = 0.05
 ## How far beyond its target (m) a landing inside the fold distance looks for ground outside it.
 const FOLD_LANDING_STEPS: Array[float] = [0.04, 0.08, 0.12, 0.18, 0.25, 0.32, 0.4, 0.5, 0.6]
 ## A planted foot whose hip is nearer than this many fold distances steps first (1.03 left a 2 cm band that a hip crosses in under
@@ -530,6 +535,11 @@ func teleport(xform: Transform3D) -> void:
 
 func leg_count() -> int:
 	return _legs.size()
+
+
+## The world position of the centre of leg `leg`'s drawn pad mesh (0.10 m above the drawn foot).
+func pad_mesh_center(leg: int) -> Vector3:
+	return _legs[leg].pad_mesh_center()
 
 
 func foot_position(leg: int) -> Vector3:
@@ -1109,7 +1119,7 @@ func _make_queries() -> void:
 	if _ray != null:
 		return
 	_pad_shape = BoxShape3D.new()
-	_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, 0.12, WalkerLeg.PAD_SIZE.z)
+	_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, WalkerLeg.PAD_SIZE.y - PAD_BOX_LIFT, WalkerLeg.PAD_SIZE.z)
 	_pad_params = PhysicsShapeQueryParameters3D.new()
 	_pad_params.shape = _pad_shape
 	_pad_params.collision_mask = 1
@@ -2943,6 +2953,8 @@ var max_push_rise: float = 0.0
 ## `max_landing_slide` the others (ordinary strides, which slide in from the edge of the reach).
 var max_landing_snap: float = 0.0
 var max_landing_slide: float = 0.0
+## Landings (ledge or not) that moved their landing point more than LANDING_MOVED_M at touchdown, since the last reset.
+var landings_moved: int = 0
 ## Largest tick-to-tick change of the body tilt (degrees).
 var max_tilt_step_deg: float = 0.0
 ## Largest pitch the contact resolve added in one tick (degrees), apart from the smoothed tilt.
@@ -3157,7 +3169,8 @@ func _support_shift(without: int, target_margin: float) -> Vector3:
 	return Vector3(toward.x, 0.0, toward.y)
 
 
-## The sideways speed that brings the body back to the line it left for a support shift, once no leg waits or hangs. Zero when
+## The sideways speed that brings the body back to the line it left for a support shift, once no leg waits (it runs while a leg
+## hangs too: the margin shortening of the move keeps the 0.1 floor; gated on not hanging the return took 4.7 s and left 0.24 m). Zero when
 ## the line is gone (the player turned or strafed) or the body is back on it.
 func _line_return(delta: float) -> Vector3:
 	if not _line_set:
@@ -3422,7 +3435,7 @@ func _update_swing_feet() -> void:
 						var out: Vector3 = flat.normalized() if flat.length() > 0.01 else Vector3(-sin(_yaw), 0.0, -cos(_yaw))
 						var need: float = sqrt(maxf(_min_foot_distance(leg) * _min_foot_distance(leg) - to_foot.y * to_foot.y, 0.0))
 						hover = Vector3(hip.x + out.x * need, hover.y, hip.z + out.z * need)
-					_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (HANG_CLEARANCE * 0.5 + 0.06))
+					_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (PAD_BOX_LIFT + (WalkerLeg.PAD_SIZE.y - PAD_BOX_LIFT) * 0.5))
 					shape_queries_this_tick += 1
 					if get_world_3d().direct_space_state.intersect_shape(_pad_params, 1).is_empty():
 						break
@@ -3432,7 +3445,7 @@ func _update_swing_feet() -> void:
 				if inward.length() > 0.01:
 					inward = inward.normalized() * HANG_PULL_STEP
 					for pull_try in HANG_PULL_TRIES:
-						_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (HANG_CLEARANCE * 0.5 + 0.06))
+						_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (PAD_BOX_LIFT + (WalkerLeg.PAD_SIZE.y - PAD_BOX_LIFT) * 0.5))
 						shape_queries_this_tick += 1
 						if get_world_3d().direct_space_state.intersect_shape(_pad_params, 1).is_empty():
 							break
@@ -3452,12 +3465,12 @@ func _update_swing_feet() -> void:
 			if hanging or _climbing or _climb_linger > 0.0:
 				# And once more after the pull-back and the face push: a lift that still leaves the pad in a corner.
 				for final_try in HANG_LIFT_TRIES:
-					_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (HANG_CLEARANCE * 0.5 + 0.06))
+					_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (PAD_BOX_LIFT + (WalkerLeg.PAD_SIZE.y - PAD_BOX_LIFT) * 0.5))
 					shape_queries_this_tick += 1
 					if get_world_3d().direct_space_state.intersect_shape(_pad_params, 1).is_empty():
 						break
 					hover.y += HANG_LIFT_STEP
-				_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (HANG_CLEARANCE * 0.5 + 0.06))
+				_pad_params.transform = Transform3D(Basis(Vector3.UP, _yaw), hover + Vector3.UP * (PAD_BOX_LIFT + (WalkerLeg.PAD_SIZE.y - PAD_BOX_LIFT) * 0.5))
 				shape_queries_this_tick += 1
 				if hanging and not get_world_3d().direct_space_state.intersect_shape(_pad_params, 1).is_empty():
 					# Still inside rock (a pad hanging in the corner of a wedge): it hangs straight below its hip instead, where
@@ -3663,6 +3676,8 @@ func _on_foot_planted(leg: int) -> void:
 	_swing_kind[leg] = Kind.STRIDE
 	_fit_landing(leg, _climbed[leg] != 0)
 	var snapped: float = touchdown_from.distance_to(_to[leg])
+	if snapped > LANDING_MOVED_M:
+		landings_moved += 1
 	if ledge_landing:
 		max_landing_snap = maxf(max_landing_snap, snapped)
 	else:

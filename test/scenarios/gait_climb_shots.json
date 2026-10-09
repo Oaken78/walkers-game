@@ -82,6 +82,37 @@
   },
   {
    "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     15.0,
+     7.0,
+     55.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 4
+  },
+  {
+   "screenshot": "reach_p55"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     15.0,
+     7.0,
+     -55.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
     "node": "%Telemetry",
     "method": "report",
     "args": [

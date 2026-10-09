@@ -60,7 +60,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -90,6 +90,14 @@
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.664
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "descended_climb",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -202,7 +210,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -232,6 +240,14 @@
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.664
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "descended_climb",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -319,7 +335,7 @@
      "climb",
      -3.5,
      60.0,
-     3.4
+     4.3
     ]
    }
   },
@@ -344,7 +360,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -365,6 +381,15 @@
     "method": "report",
     "args": [
      "gait_climb_oblique scout 60 deg (left) over a 0.675 m block"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "oblique grazing"
     ]
    }
   },
@@ -453,7 +478,7 @@
      "climb",
      -3.5,
      -60.0,
-     -3.4
+     -4.3
     ]
    }
   },
@@ -478,7 +503,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -499,6 +524,15 @@
     "method": "report",
     "args": [
      "gait_climb_oblique scout 60 deg (right) over a 0.675 m block"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "oblique grazing"
     ]
    }
   },
@@ -612,7 +646,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -642,6 +676,14 @@
     "prop": "max_climb_m",
     "op": ">=",
     "value": 1.0690000000000002
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "descended_climb",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -754,7 +796,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -784,6 +826,14 @@
     "prop": "max_climb_m",
     "op": ">=",
     "value": 1.0690000000000002
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "descended_climb",
+    "op": "==",
+    "value": true
    }
   },
   {
@@ -871,7 +921,7 @@
      "climb",
      -3.5,
      60.0,
-     3.4
+     4.3
     ]
    }
   },
@@ -896,7 +946,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -917,6 +967,15 @@
     "method": "report",
     "args": [
      "gait_climb_oblique strider 60 deg (left) over a 1.080 m block"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "oblique grazing"
     ]
    }
   },
@@ -1005,7 +1064,7 @@
      "climb",
      -3.5,
      -60.0,
-     -3.4
+     -4.3
     ]
    }
   },
@@ -1030,7 +1089,7 @@
    }
   },
   {
-   "wait_frames": 500
+   "wait_frames": 700
   },
   {
    "call": {
@@ -1051,6 +1110,15 @@
     "method": "report",
     "args": [
      "gait_climb_oblique strider 60 deg (right) over a 1.080 m block"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "oblique grazing"
     ]
    }
   },
