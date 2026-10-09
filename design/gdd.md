@@ -204,9 +204,12 @@ already allow it.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
   foot of the active group is planted, or 85 % into the step, but a leg never lifts while that would put more legs
   in the air than the section 5 limit.
-- **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5. When the target is
-  higher than step_up or steeper than the max slope, it is invalid, the leg blocks, and the body stops on that
-  side.
+- **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5 (while rule 5 holds the
+  body, its actual velocity, so a held body does not lengthen its steps). A target more than step_up above the
+  leg's current foot, or steeper than the max slope, is invalid. The leg then takes the farthest valid foothold
+  between its current foot and the target, a shorter step. Only when none is valid does the leg block, and the
+  body stops on that side. On a steep slope inside its grip a walker takes short steps and slows; a vertical face
+  taller than step_up still blocks.
 - **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing up (bend plane vertical), and stretch
   clamped at 99 % of the bone length. The bones total 1.15 x leg reach, so at the 0.99 x reach planted-foot limit
   (section 5) the knee is still bent. There is no engine IK node, so the solve is unit-testable.
@@ -475,6 +478,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Amends the cadence row: step duration scales with the shortest mounted leg, x sqrt(shortest reach / 1.0 m); builds with one leg type are unchanged | Klas, from the game-designer's first-purchase check: a short pair on the Scout moved every felt stat by < 10 % (speed -2/+7 %, cadence -7/-5 %); now it steps 29 % more often. The gait must cycle as fast as its shortest leg's stride room allows, or rule 5 holds the body | Mean reach (a pair is diluted to 1/3); per-leg swing time (only a 2-3 tick flam); short-leg lift 110 -> 90 (still < 11 %, Crawler 2.95 m/s) |
 | 2026-10-09 | Pillar 1 bar: a leg purchase moves top speed, turn rate or step rate by >= 15 %; armor and top parts are judged in the first fight (45-75 s out) | Klas: the pillar says "moves and fights"; armor (+40 % HP) and a 2nd cannon (DPS x2) change walking by only about 10 % | Every part passes the 15 % walk bar (needs heavier mass costs); no numeric bar |
 | 2026-10-09 | A flatter chassis, so the knees peak above it as in the nimble-walker reference, waits for the M1 art pass; M0 keeps the greybox box | Klas: with arched legs the knees already read in greybox (Scout knee 0.69 m beside a 0.65-0.97 m chassis) | Flatten the greybox chassis in T03 now |
+| 2026-10-09 | An invalid foot target (too high or too steep) makes the leg take the farthest valid foothold toward it, a shorter step; the leg blocks only when none is valid. Step-up is measured from the leg's current foot | Lead, from the T03 round-2 code review: full-length steps (about 0.55 m) rise about 0.43 m on 38 deg ground, past the Crawler's 0.36 m step-up, so it stalled at the foot of the slope its 45 deg grip is meant to climb (9.1 talus pocket). Vertical faces still block, and the slope check still stops the Scout and Strider | Measure step-up from the planted-foot plane (all feet are still on flat ground at the slope's foot, so the entry stays blocked, and a raised plane lets a foot accept a deck above step_up) |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
