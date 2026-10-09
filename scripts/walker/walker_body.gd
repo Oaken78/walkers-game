@@ -69,6 +69,8 @@ const HAUL_SPEED_RATIO: float = 0.4
 ## A step down to ground at least a stride lower must go at least this far along the travel direction (m).
 const STEP_DOWN_MIN_AHEAD: float = 0.05
 ## A haul rises in place first while the body is this much below its target height (m).
+## A haul never rises this far (m) above the plane the feet stand on in one go: the nose comes up first.
+const HAUL_RISE_SLACK: float = 1.0
 const HAUL_RISE_EPSILON: float = 0.002
 ## A contact whose normal is flatter than this (y) is a face, not ground.
 const FACE_NORMAL_Y: float = 0.35
@@ -2415,6 +2417,32 @@ func _apply_move(delta: float) -> void:
 		# they do ("it slows its advance to climb, it never hops", GDD 8.2). It rises in place when it cannot clear in one
 		# tick, and it never rises out of reach of a planted foot.
 		var need: float = _clear_rise(origin, base_y, yaw, tilt)
+		if need > HAUL_RISE_EPSILON and base_y + need > base_target + HAUL_RISE_SLACK:
+			# Rising that far above the plane the feet stand on is the pitch's job: the body stays where it is and the
+			# nose comes up first.
+			need = 0.0
+			var stay: Transform3D = pose_transform(cur_pos, _yaw, tilt)
+			var from_pose: Transform3D = pose_transform(cur_pos, _yaw, _tilt_n)
+			if feet_in_reach(stay, from_pose, _hips_local, _check_feet, _check_flags, _limits):
+				origin = cur_pos
+				base_y = _base_y
+				yaw = _yaw
+				_g_origin = origin
+				_g_base = base_y
+				_g_yaw = yaw
+				_r_origin = origin
+				_r_base = base_y
+				_r_tilt = tilt
+				_r_yaw = yaw
+				_r_rise = 0.0
+				_r_need = 0.0
+				_r_pitch = 0.0
+				state = 0
+			else:
+				state = 4
+				_r_rise = 0.0
+				_r_need = 0.0
+			held_this_tick = true
 		if need > HAUL_RISE_EPSILON:
 			var in_place: bool = base_y + need - _base_y > rise_cap + 0.0001
 			var lift: float = rise_cap if in_place else need
