@@ -78,6 +78,15 @@ const SUN_AZIMUTH_DEG: float = 25.0
 const CAMERA_PITCH_DEG: float = 25.0
 const CAMERA_AZIMUTH_DEG: float = 20.0
 const TERRAIN_SEED: int = 99
+## Two tall rocks side by side with a gap too narrow for any body: the V-notch test (beside the flat lane's line).
+const NOTCH_X: float = 12.0
+const NOTCH_Z: float = -14.0
+const NOTCH_RADIUS: float = 0.9
+const NOTCH_GAP: float = 0.1
+const WEDGE_HEIGHT: float = 2.0
+const WEDGE_LENGTH: float = 5.0
+const LATERAL_MIN_MPS: float = 0.2
+const LATERAL_WINDOW_TICKS: int = 120
 const AUTOPILOT_PERIOD_S: float = 8.0
 const AUTOPILOT_CENTERING: float = 0.12
 const AUTOPILOT_DEAD_DEG: float = 3.0
@@ -202,6 +211,15 @@ var camera_bob_p2p_m: float:
 var camera_height_m: float:
 	get:
 		return _camera_height()
+## The commanded speed of the walker (m/s): what the ramp asks of it after walls took their part.
+var commanded_speed_mps: float:
+	get:
+		return _walker.commanded_speed() if _walker != null else 0.0
+## Most sign changes of the lateral velocity (across the spawn heading, beyond 0.2 m/s) in any 2 s window since
+## track_lateral(true): a walker in a V between two rocks must not shuffle left and right.
+var max_lateral_flips_2s: int:
+	get:
+		return _lateral_flips_max
 ## Tilt of the walker body from level (degrees).
 var tilt_deg: float:
 	get:
@@ -273,6 +291,12 @@ var _pocket_back_z: float = 0.0
 var _tallest_boulder_radius: float = 0.0
 var _tallest_boulder_top: Vector3 = Vector3.ZERO
 var _track_frames: bool = false
+var _notch: Node3D
+var _lateral_track: bool = false
+var _lateral_right: Vector3 = Vector3.RIGHT
+var _lateral_sign: float = 0.0
+var _lateral_flip_ticks: Array[int] = []
+var _lateral_flips_max: int = 0
 var _frame_last_usec: int = 0
 var _frame_ms: PackedFloat32Array = PackedFloat32Array()
 var _frame_ms_max: float = 0.0
@@ -357,6 +381,7 @@ func _physics_process(delta: float) -> void:
 	if _autopilot:
 		_run_autopilot(delta)
 	_track_step_up()
+	_track_lateral_flips()
 	_track_yaw_overshoot()
 	_track_hover_inside()
 	_tick += 1
@@ -487,6 +512,9 @@ func use_build(build_name: String) -> void:
 ## Teleports the walker to the start of a lane, facing -Z (turned `heading_deg` to the left, and `offset_x` m to the
 ## right of the lane's start). Telemetry keeps its numbers (call reset() on it).
 func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, offset_x: float = 0.0) -> void:
+	if lane == "notch" and _notch == null:
+		# The rocks only exist once a scenario asks for them (they would show in the other lanes' shots).
+		_build_notch()
 	var origin: Vector3 = _spawn_point(lane) + Vector3(offset_x, 0.0, offset_z)
 	if origin.y < -100.0:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
@@ -540,6 +568,28 @@ func spawn_on_boulder_crest() -> void:
 
 func mark() -> void:
 	_mark = _walker.global_position
+
+
+## Starts (or stops) counting sign changes of the lateral velocity across the walker's current heading.
+func track_lateral(enabled: bool) -> void:
+	_lateral_track = enabled
+	_lateral_right = Basis(Vector3.UP, _walker.yaw_radians()) * Vector3.RIGHT
+	_lateral_sign = 0.0
+	_lateral_flip_ticks.clear()
+	_lateral_flips_max = 0
+
+
+## Prints the lateral-flip count (report numbers: `LATERAL label flips_2s=N lateral_m=x`).
+func log_lateral(label: String) -> void:
+	var lateral: float = (_walker.global_position - _mark).dot(_lateral_right)
+	print("LATERAL %s flips_2s=%d lateral_m=%.2f along_m=%.2f" % [label, _lateral_flips_max, lateral, moved_since_mark])
+
+
+## Forgets the running rise maxima (call after a spawn has settled, so the start pose does not count).
+func reset_rise_max() -> void:
+	foot_rise_max = -INF
+	root_rise_max = -INF
+	_nominal_root_y = _walker.global_position.y
 
 
 func hold_action(action: String, pressed: bool, strength: float = 1.0) -> void:
@@ -983,6 +1033,8 @@ func _spawn_point(lane: String) -> Vector3:
 			return Vector3(LANE_X[LANE_BUMPS] - 8.0, SPAWN_Y, -CREST_ALONG)
 		"boulders":
 			return Vector3(LANE_X[LANE_BUMPS] + (BOULDER_X_MIN + BOULDER_X_MAX) * 0.5, SPAWN_Y, -6.0)
+		"notch":
+			return Vector3(NOTCH_X, SPAWN_Y, SPAWN_Z)
 	if not LANE_X.has(lane):
 		return Vector3(0.0, -1000.0, 0.0)
 	return Vector3(LANE_X[lane], SPAWN_Y, SPAWN_Z)
@@ -1044,6 +1096,8 @@ func _on_patch() -> bool:
 
 
 func _lane_key() -> String:
+	if _lane == "notch":
+		return LANE_FLAT
 	if _lane == "talus_top":
 		return LANE_TALUS
 	if _lane == LANE_PATCH_A or _lane == "boulders" or _lane == "crest":
@@ -1084,6 +1138,20 @@ func _stopped_before_face() -> bool:
 		if _walker.foot_position(i).z < face:
 			return false
 	return true
+
+
+func _track_lateral_flips() -> void:
+	if not _lateral_track or _walker == null:
+		return
+	var lateral: float = _walker.velocity.dot(_lateral_right)
+	if absf(lateral) > LATERAL_MIN_MPS:
+		var sign_now: float = signf(lateral)
+		if _lateral_sign != 0.0 and sign_now != _lateral_sign:
+			_lateral_flip_ticks.append(_tick)
+		_lateral_sign = sign_now
+	while not _lateral_flip_ticks.is_empty() and _lateral_flip_ticks[0] <= _tick - LATERAL_WINDOW_TICKS:
+		_lateral_flip_ticks.pop_front()
+	_lateral_flips_max = maxi(_lateral_flips_max, _lateral_flip_ticks.size())
 
 
 func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
@@ -1510,6 +1578,69 @@ func _build_talus() -> void:
 	instance.material_override = _ground_material
 	body.add_child(instance)
 	add_child(body)
+
+
+## Replaces the notch rocks by two wall arms forming a V that opens toward the walker (half angle in degrees).
+func set_wedge(half_angle_deg: float) -> void:
+	if _notch != null:
+		_notch.queue_free()
+	_notch = Node3D.new()
+	_notch.name = "Notch"
+	add_child(_notch)
+	var a: float = deg_to_rad(half_angle_deg)
+	for side in [-1.0, 1.0]:
+		var direction := Vector3(side * sin(a), 0.0, cos(a))
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = Vector3(NOTCH_X, WEDGE_HEIGHT * 0.5, NOTCH_Z) + direction * (WEDGE_LENGTH * 0.5)
+		body.rotation.y = side * a
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.5, WEDGE_HEIGHT, WEDGE_LENGTH)
+		var collider := CollisionShape3D.new()
+		collider.shape = shape
+		body.add_child(collider)
+		var mesh := BoxMesh.new()
+		mesh.size = shape.size
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = _block_material
+		body.add_child(instance)
+		_notch.add_child(body)
+
+
+## Moves the two notch rocks apart or together (the clear gap between them, m) and rebuilds them.
+func set_notch_gap(gap: float) -> void:
+	_build_notch(gap)
+
+
+## Two rocks with a gap between them, ahead of the notch spawn: a walker driven at the gap meets both.
+func _build_notch(gap: float = NOTCH_GAP) -> void:
+	if _notch != null:
+		_notch.queue_free()
+	_notch = Node3D.new()
+	_notch.name = "Notch"
+	add_child(_notch)
+	for side in [-1.0, 1.0]:
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = Vector3(NOTCH_X + side * (NOTCH_RADIUS + gap * 0.5), NOTCH_RADIUS, NOTCH_Z)
+		var shape := SphereShape3D.new()
+		shape.radius = NOTCH_RADIUS
+		var collider := CollisionShape3D.new()
+		collider.shape = shape
+		body.add_child(collider)
+		var mesh := SphereMesh.new()
+		mesh.radius = NOTCH_RADIUS
+		mesh.height = NOTCH_RADIUS * 2.0
+		mesh.radial_segments = 16
+		mesh.rings = 8
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = _boulder_material
+		body.add_child(instance)
+		_notch.add_child(body)
 
 
 func _build_wall() -> void:

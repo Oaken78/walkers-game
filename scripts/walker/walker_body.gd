@@ -77,6 +77,9 @@ const FACE_PROBE_BACK: float = 0.2
 const FACE_PROBE_SLACK: float = 0.1
 ## A move whose part toward a face is below this (m per tick) does not bring the walker closer to it.
 const FACE_APPROACH_EPSILON: float = 0.001
+## A go-round sidestep around a rock is at most this x top speed, and its side flips at most once per lock (ticks).
+const GO_ROUND_MAX_RATIO: float = 0.5
+const SIDE_FLIP_LOCK_TICKS: int = 120
 ## Steep ground must reach this far to both sides of a rest foot for the stance to count it as a face.
 const STANCE_FACE_HALF_WIDTH: float = 0.7
 ## A slide takes the into-face part of the move out x this (more than 1 backs the body off the face a little, so
@@ -173,7 +176,8 @@ var target_yaw_rate_dps: float = 0.0
 var move_input_active: bool = false
 var turn_input: float = 0.0
 var held_this_tick: bool = false
-## Why the last tick did not move as commanded: "" free, "wall", "ground-left", "rise-cap", "reach", "legs".
+## Why the last tick did not move as commanded: "" free, "wall", "face" (steep ground under the stance), "ground-left",
+## "rise-cap", "reach", "legs".
 var block_cause: String = ""
 var teleport_count: int = 0
 ## Ticks on which a real collision zeroed the commanded velocity.
@@ -305,6 +309,8 @@ func teleport(xform: Transform3D) -> void:
 	_yaw_rate_cmd = 0.0
 	_slide_ticks = 0
 	_held_state = 0
+	_slide_side = 1.0
+	_flip_lock = 0
 	teleport_count += 1
 	_needs_plant = true
 	if is_inside_tree():
@@ -342,6 +348,12 @@ func is_overlapping_world() -> bool:
 ## The speed the held input asks for (the target of the acceleration ramp), m/s.
 func input_speed() -> float:
 	return _target_velocity.length()
+
+
+## The horizontal unit direction the held input asks for (ZERO without move input).
+func input_direction() -> Vector3:
+	var flat := Vector3(_target_velocity.x, 0.0, _target_velocity.z)
+	return flat.normalized() if flat.length() > 0.0001 else Vector3.ZERO
 
 
 ## The speed the body is being driven at (commanded), m/s.
@@ -900,6 +912,7 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 	_origin = Vector3(x, _base_y, z)
 	_ref_plane = plane
 	_wall_cache.clear()
+	_surface_cache.clear()
 	_ahead_n = _tilt_n
 	_ahead_weight = PITCH_AHEAD_WEIGHT
 	_slide_ticks = 0
@@ -977,6 +990,7 @@ func _physics_process(delta: float) -> void:
 	test_motions_this_tick = 0
 	shape_queries_this_tick = 0
 	_wall_cache.clear()
+	_surface_cache.clear()
 	var spawn_tick: bool = _needs_plant
 	if _needs_plant:
 		_plant_all_at_rest()
@@ -1157,8 +1171,8 @@ func _update_targets() -> float:
 			if not valid_now:
 				# A rock in the way of the whole line (a steep or too tall flank): step around it. Footholds to the
 				# sides of the target, then to the sides of the halfway point, nearest to the line first.
-				var across: Vector3 = (gt.basis * Vector3.RIGHT).normalized()
-				across.y = 0.0
+				var across: Vector3 = gt.basis * Vector3.RIGHT
+				across = Vector3(across.x, 0.0, across.z).normalized()
 				for side_scale in SIDESTEP_LINE_FRACTIONS:
 					var line_x: float = lerpf(_foot[i].x, position.x, side_scale)
 					var line_z: float = lerpf(_foot[i].z, position.z, side_scale)
@@ -1337,9 +1351,11 @@ func _clearance_rise(pose: Transform3D) -> float:
 		if not hit.is_empty():
 			var need: float = hit["position"].y + HIP_CLEARANCE - hip.y
 			if need > 0.0 and _is_wall(hit["normal"]):
-				# Ground steeper than the grip is a wall: the body does not ride up it.
-				_clear_wall = true
-				_wall_n = _horizontal(hit["normal"], _wall_n)
+				# Ground steeper than the grip is a wall: the body does not ride up it (a free move away from it may).
+				var flat: Vector3 = _horizontal(hit["normal"], _wall_n)
+				if not _free_active or _free_motion.dot(flat) < -FACE_APPROACH_EPSILON:
+					_clear_wall = true
+					_wall_n = flat
 			rise = maxf(rise, need)
 	return rise
 
@@ -1360,6 +1376,9 @@ func _stance_on_wall(pose: Transform3D) -> void:
 			# A face, not a rock: steep ground a stance-width to both sides of the foot too (the stance guard
 			# and the collider walls deal with boulders).
 			var flat: Vector3 = _horizontal(hit["normal"], Vector3.ZERO)
+			if _free_active and _free_motion.dot(flat) >= -FACE_APPROACH_EPSILON:
+				# A move that does not bring the walker closer to this face may leave it; any other face still counts.
+				continue
 			var along := Vector3(flat.z, 0.0, -flat.x) * STANCE_FACE_HALF_WIDTH
 			if _steep_ground_at(hit["position"] + along, ray_up) and _steep_ground_at(hit["position"] - along, ray_up):
 				_clear_wall = true
@@ -1399,6 +1418,30 @@ func _contact_is_wall(normal: Vector3, point: Vector3, probe_length: float = WAL
 	var flat: Vector3 = _horizontal(normal, Vector3.ZERO)
 	if flat == Vector3.ZERO:
 		return true
+	# The push-out direction of an edge or corner penetration is not the surface's normal: read the surface itself
+	# at the contact, and let ground that is inside the grip stay ground. That answer depends on the contact's height
+	# and normal, so its cache key holds both; the height probe below depends on the cell and direction only.
+	var surface_key := Vector3i(
+		roundi(point.x * WALL_CACHE_CELLS_PER_M),
+		roundi(point.z * WALL_CACHE_CELLS_PER_M),
+		(
+			roundi(point.y * WALL_CACHE_CELLS_PER_M) * 4096
+			+ (roundi(atan2(flat.x, flat.z) * WALL_CACHE_ANGLES_PER_RAD) + 16) * 32
+			+ roundi((normal.y + 1.0) * 8.0)
+		)
+	)
+	var ground: bool
+	if _surface_cache.has(surface_key):
+		ground = _surface_cache[surface_key]
+	else:
+		_sight.from = point + normal * SURFACE_PROBE
+		_sight.to = point - normal * SURFACE_PROBE
+		var surface: Dictionary = get_world_3d().direct_space_state.intersect_ray(_sight)
+		rays_this_tick += 1
+		ground = not surface.is_empty() and not _is_wall(surface["normal"])
+		_surface_cache[surface_key] = ground
+	if ground:
+		return false
 	var key := Vector3i(
 		roundi(point.x * WALL_CACHE_CELLS_PER_M),
 		roundi(point.z * WALL_CACHE_CELLS_PER_M),
@@ -1406,15 +1449,6 @@ func _contact_is_wall(normal: Vector3, point: Vector3, probe_length: float = WAL
 	)
 	if _wall_cache.has(key):
 		return _wall_cache[key]
-	# The push-out direction of an edge or corner penetration is not the surface's normal: read the surface itself
-	# at the contact, and let ground that is inside the grip stay ground.
-	_sight.from = point + normal * SURFACE_PROBE
-	_sight.to = point - normal * SURFACE_PROBE
-	var surface: Dictionary = get_world_3d().direct_space_state.intersect_ray(_sight)
-	rays_this_tick += 1
-	if not surface.is_empty() and not _is_wall(surface["normal"]):
-		_wall_cache[key] = false
-		return false
 	var height: float = _wall_probe_height(point.x, point.z)
 	_sight.from = Vector3(point.x + flat.x * WALL_PROBE_BACK, height, point.z + flat.z * WALL_PROBE_BACK)
 	_sight.to = Vector3(
@@ -1544,7 +1578,10 @@ func _apply_move(delta: float) -> void:
 	_g_tilt = tilt
 	var rise_cap: float = MAX_PUSH_RATE * delta
 	var wall_hit: bool = false
+	var face_blocked: bool = false
 	var slid: bool = false
+	_tick_delta = delta
+	_flip_lock = maxi(_flip_lock - 1, 0)
 	var state: int = _try_fraction(1.0, rise_cap)
 	if state == 2:
 		# A wall at the new pose: try the new position with the old tilt and height before sliding.
@@ -1554,24 +1591,43 @@ func _apply_move(delta: float) -> void:
 		state = _try_fraction(1.0, rise_cap)
 		var face: bool = state == 2 and _clear_wall
 		if face and motion.dot(_wall_n) >= -FACE_APPROACH_EPSILON:
-			# Not closer to the face (backing off, turning, strafing along it): always allowed, whatever the
-			# stance stands on. A walker that starts on a face must be able to walk off it.
-			state = _try_fraction(1.0, rise_cap, false)
+			# Not closer to the face (backing off, turning, strafing along it): allowed, whatever the stance stands
+			# on. A walker that starts on a face must be able to walk off it. A second face the move enters (a
+			# concave corner, two over-grip faces meeting) still blocks it: only faces the move approaches count.
+			_free_motion = motion
+			_free_active = true
+			state = _try_fraction(1.0, rise_cap)
+			_free_active = false
+			face = state == 2 and _clear_wall
+		_went_round = false
 		if state == 2:
 			state = _slide_along_wall(cur_pos, motion, rise_cap, face)
 			if state == 2 and not face and motion.length_squared() > 0.0000001:
-				# The slide is blocked too (a corner, another rock): step sideways, the side last used first.
+				# The slide is blocked too (a corner, another rock): step sideways, the side last used first. The
+				# other side only after the lock ran out (a V between two rocks must not shuffle left and right).
 				var tangent := Vector3(-_wall_n.z, 0.0, _wall_n.x)
-				for sign_try in [_slide_side, -_slide_side]:
-					var sidestep: Vector3 = tangent * sign_try * motion.length() * SLIDE_AROUND_SHARE
-					_g_origin = Vector3(cur_pos.x + sidestep.x, cur_pos.y, cur_pos.z + sidestep.z)
+				var step_length: float = minf(
+					motion.length() * SLIDE_AROUND_SHARE, _top_speed * GO_ROUND_MAX_RATIO * delta
+				)
+				for attempt in 2:
+					if attempt == 1 and _flip_lock > 0:
+						break
+					var sign_try: float = _slide_side if attempt == 0 else -_slide_side
+					_g_origin = Vector3(
+						cur_pos.x + tangent.x * sign_try * step_length,
+						cur_pos.y,
+						cur_pos.z + tangent.z * sign_try * step_length
+					)
 					state = _try_fraction(1.0, rise_cap)
 					if state != 2:
+						if attempt == 1:
+							_flip_lock = SIDE_FLIP_LOCK_TICKS
 						_slide_side = sign_try
-						slid = state == 0
+						_went_round = true
 						break
 			slid = state == 0
 			wall_hit = state == 2
+			face_blocked = wall_hit and face
 	_push_rise = 0.0
 	var pitch_added: float = 0.0
 	if state == 0:
@@ -1606,7 +1662,7 @@ func _apply_move(delta: float) -> void:
 			yaw = _yaw
 	block_cause = ""
 	if wall_hit:
-		block_cause = "wall"
+		block_cause = "face" if face_blocked else "wall"
 	elif held_this_tick:
 		match state:
 			1:
@@ -1628,6 +1684,11 @@ func _apply_move(delta: float) -> void:
 	if slid:
 		_slide_n = _wall_n
 		_slide_ticks = SLIDE_MEMORY_TICKS
+		var into_wall: float = _velocity_h.dot(_wall_n)
+		if not _went_round and into_wall < 0.0:
+			# Pressed into a wall that goes on: the commanded speed keeps only its along-face part (a rock is gone
+			# round at the commanded speed, so that one is kept whole).
+			_velocity_h -= _wall_n * into_wall
 	else:
 		_slide_ticks = maxi(_slide_ticks - 1, 0)
 	velocity = actual
@@ -1656,8 +1717,17 @@ var _wall_pt: Vector3 = Vector3.ZERO
 var _slide_side: float = 1.0
 ## The plane of the planted feet this tick (the reference for 'how tall is this obstacle').
 var _ref_plane: Plane = Plane(Vector3.UP, 0.0)
-## Wall answers of this tick, by contact cell and direction (cleared every tick).
+## Height-probe answers of this tick, by contact cell and direction (cleared every tick).
 var _wall_cache: Dictionary = {}
+## Surface-read answers of this tick, by contact cell, height and normal (cleared every tick).
+var _surface_cache: Dictionary = {}
+## While a move that leaves a face is resolved (`_free_active`): that move. Faces it does not approach do not block it.
+var _free_motion: Vector3 = Vector3.ZERO
+var _free_active: bool = false
+## True when this tick's slide went round a rock (a sidestep), and ticks left before the go-round side may flip again.
+var _went_round: bool = false
+var _flip_lock: int = 0
+var _tick_delta: float = 1.0 / 60.0
 ## Collider shapes of the body and their transforms relative to the node (cached when the build changes).
 var _shape_nodes: Array[CollisionShape3D] = []
 var _shape_local: Array[Transform3D] = []
@@ -1803,6 +1873,9 @@ func _resolve(
 		# The last pass moved the pose after the hip rays were read: read them again, and make sure a pitch did not
 		# carry a rest foot onto a face.
 		var again: float = _clearance_rise(pose_transform(origin, yaw, tilt))
+		if block_on_faces and _clear_wall:
+			_store_resolved(origin, base_y, tilt, tilt_in, applied)
+			return 2
 		if again > HIP_RISE_EPSILON:
 			origin.y += again
 			base_y += again
@@ -1926,13 +1999,19 @@ func _slide_along_wall(cur_pos: Vector3, motion: Vector3, rise_cap: float, face:
 			# Head-on into a rock (not a wall that goes on): go round it, to the side its contact lies on.
 			var tangent := Vector3(-_wall_n.z, 0.0, _wall_n.x)
 			var side: float = signf(tangent.dot(_wall_pt - cur_pos))
-			if is_zero_approx(side) or _slide_ticks > 0:
+			if is_zero_approx(side) or _slide_ticks > 0 or _flip_lock > 0:
 				# Keep going round the same way while the slide lasts (the contact's side flips as the rock passes).
 				side = _slide_side
 			_slide_side = side
-			moved += tangent * side * (-into) * SLIDE_AROUND_SHARE
+			var round_speed: float = minf(-into * SLIDE_AROUND_SHARE, _top_speed * GO_ROUND_MAX_RATIO * _tick_delta)
+			moved += tangent * side * round_speed
+			_went_round = true
 		_g_origin = Vector3(cur_pos.x + moved.x, cur_pos.y, cur_pos.z + moved.z)
-		state = _try_fraction(1.0, rise_cap, not face)
+		# Along a face the stance is still checked for any other face the slid move enters.
+		_free_motion = moved
+		_free_active = face
+		state = _try_fraction(1.0, rise_cap)
+		_free_active = false
 		if state != 2:
 			break
 	return state

@@ -13,6 +13,9 @@ const BOB_WINDOW_TICKS: int = 120
 const STALL_FRACTION: float = 0.1
 ## A stall longer than this is logged as a STALL line.
 const STALL_LOG_S: float = 0.4
+## `ahead_rise` scans heights from AHEAD_STEP to AHEAD_MAX in these steps (m).
+const AHEAD_STEP: float = 0.1
+const AHEAD_MAX: float = 3.0
 
 var top_speed_mps: float = 0.0
 var time_to_top_s: float = UNSET
@@ -65,6 +68,12 @@ var max_resolve_pitch_deg: float = 0.0
 var stall_exempt: bool = false
 ## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
 var min_pad_gap_m: float = INF
+## Smallest separation of two planted pad boxes on one side in 3D (m): positive = apart, negative = the boxes overlap
+## (how deep). Unlike `min_pad_gap_m` it counts the sideways and vertical offsets, so it does not sit at a -0.34 floor.
+var min_pad_sep_m: float = INF
+## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
+## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
+var longest_input_stall_s: float = 0.0
 ## `min_pad_gap_m` as it stood at the last report() (an assert one frame later would see another tick).
 var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
@@ -86,10 +95,12 @@ var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
 var _hold_run: int = 0
 var _stall_run: int = 0
+var _input_stall_run: int = 0
 var _stall_delta: float = 1.0 / 60.0
 var _stall_start: Vector3 = Vector3.ZERO
 var _stall_causes: Dictionary = {}
 var _stall_last: Vector3 = Vector3.ZERO
+var _stall_step: Vector3 = Vector3.ZERO
 var _stall_known: bool = false
 var _stall_teleports: int = 0
 var _tick_ms: PackedFloat32Array = PackedFloat32Array()
@@ -166,6 +177,9 @@ func reset() -> void:
 	longest_stall_s = 0.0
 	max_resolve_pitch_deg = 0.0
 	min_pad_gap_m = INF
+	min_pad_sep_m = INF
+	longest_input_stall_s = 0.0
+	_input_stall_run = 0
 	max_test_motions_per_tick = 0
 	max_shape_queries_per_tick = 0
 	max_rays_cast_per_tick = 0
@@ -256,6 +270,8 @@ func report(label: String = "") -> void:
 		"longest_stall_s": snappedf(longest_stall_s, 0.01),
 		"max_resolve_pitch_deg": snappedf(max_resolve_pitch_deg, 0.01),
 		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
+		"min_pad_sep_m": snappedf(minf(min_pad_sep_m, 9.0), 0.001),
+		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
 		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
 		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
 		"tick_max_ms": snappedf(tick_max_ms, 0.001),
@@ -326,6 +342,7 @@ func _track_stall(delta: float) -> void:
 	var wanted: float = walker.input_speed()
 	var here: Vector3 = walker.global_position
 	var progress: float = here.distance_to(_stall_last) / delta if _stall_known else 0.0
+	_stall_step = Vector3(here.x - _stall_last.x, 0.0, here.z - _stall_last.z) if _stall_known else Vector3.ZERO
 	_stall_last = here
 	_stall_known = true
 	if walker.teleport_count != _stall_teleports:
@@ -346,6 +363,19 @@ func _track_stall(delta: float) -> void:
 		longest_stall_s = maxf(longest_stall_s, float(_stall_run) * delta)
 	else:
 		_end_stall()
+	var direction: Vector3 = walker.input_direction()
+	var along: float = _stall_step.dot(direction) / delta if direction != Vector3.ZERO else 0.0
+	if (
+		not stall_exempt
+		and walker.move_input_active
+		and wanted > MOTION_EPSILON_MPS
+		and walker.teleport_count == _stall_teleports
+		and along < STALL_FRACTION * wanted
+	):
+		_input_stall_run += 1
+		longest_input_stall_s = maxf(longest_input_stall_s, float(_input_stall_run) * delta)
+	else:
+		_input_stall_run = 0
 
 
 ## Logs a finished stall over STALL_LOG_S: `STALL dur=.. pos=.. ahead_rise=.. causes=..` (ahead_rise: the tallest
@@ -373,11 +403,21 @@ func _ahead_rise(from: Vector3) -> float:
 	var tallest: float = 0.0
 	for distance in [0.5, 1.0, 1.5]:
 		tallest = maxf(tallest, _ground_y(space, from + forward * distance) - under)
+	# A vertical face (or an overhang above the body, as in an alcove) hides from the downward rays: horizontal
+	# rays 0.1 m apart in height, 1.5 m ahead, give the tallest height that is blocked.
+	var height: float = AHEAD_STEP
+	while height <= AHEAD_MAX:
+		_gap_ray.from = Vector3(from.x, under + height, from.z)
+		_gap_ray.to = _gap_ray.from + forward * 1.5
+		if not space.intersect_ray(_gap_ray).is_empty():
+			tallest = maxf(tallest, height)
+		height += AHEAD_STEP
 	return tallest
 
 
+## Ground height under `at`: a ray from just above the walker root (not from 3 m up: an alcove roof would be hit).
 func _ground_y(space: PhysicsDirectSpaceState3D, at: Vector3) -> float:
-	_gap_ray.from = at + Vector3.UP * 3.0
+	_gap_ray.from = at + Vector3.UP * 0.3
 	_gap_ray.to = at + Vector3.DOWN * 3.0
 	var hit: Dictionary = space.intersect_ray(_gap_ray)
 	return hit["position"].y if not hit.is_empty() else at.y
@@ -393,6 +433,7 @@ var current_stall_s: float:
 func _track_pad_gap() -> void:
 	var gait: GaitSolver = walker.gait()
 	var forward: Vector3 = Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
+	var right: Vector3 = Vector3(cos(walker.yaw_radians()), 0.0, -sin(walker.yaw_radians()))
 	var count: int = walker.leg_count()
 	for i in count:
 		if gait.state_of(i) != GaitSolver.LegState.PLANTED:
@@ -400,8 +441,28 @@ func _track_pad_gap() -> void:
 		for j in range(i + 1, count):
 			if gait.state_of(j) != GaitSolver.LegState.PLANTED or walker.leg_side(i) != walker.leg_side(j):
 				continue
-			var apart: float = absf((walker.foot_position(i) - walker.foot_position(j)).dot(forward))
+			var offset: Vector3 = walker.foot_position(i) - walker.foot_position(j)
+			var apart: float = absf(offset.dot(forward))
 			min_pad_gap_m = minf(min_pad_gap_m, apart - WalkerLeg.PAD_SIZE.z)
+			min_pad_sep_m = minf(
+				min_pad_sep_m,
+				box_gap(
+					absf(offset.dot(right)) - WalkerLeg.PAD_SIZE.x,
+					absf(offset.y) - WalkerLeg.PAD_SIZE.y,
+					apart - WalkerLeg.PAD_SIZE.z
+				)
+			)
+
+
+## Separation of two boxes from their per-axis gaps (centre distance less the summed half sizes): the length of the
+## positive gaps when apart, else the shallowest overlap (negative).
+static func box_gap(gap_x: float, gap_y: float, gap_z: float) -> float:
+	var px: float = maxf(gap_x, 0.0)
+	var py: float = maxf(gap_y, 0.0)
+	var pz: float = maxf(gap_z, 0.0)
+	if px > 0.0 or py > 0.0 or pz > 0.0:
+		return sqrt(px * px + py * py + pz * pz)
+	return maxf(gap_x, maxf(gap_y, gap_z))
 
 
 func _track_cost() -> void:

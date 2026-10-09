@@ -165,3 +165,27 @@ func test_overlap_state_is_a_wall_for_a_block_the_body_stands_inside() -> void:
 	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.8, -4.0)))
 	walker.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 0.8, -5.0))
 	assert_true(walker.is_overlapping_world())
+
+
+func test_a_vertical_side_reads_as_a_wall_after_a_box_edge_contact_in_the_same_tick() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	_add_block(walker, 1.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	# First an edge-like contact 4 cm inboard of the front face whose normal is 45 degrees (the surface it touches is the
+	# top face, which is ground), then the vertical side in the same cell and direction: the second must be a wall.
+	assert_false(walker._contact_is_wall(Vector3(0.0, 0.7071, 0.7071), Vector3(0.0, 1.0, -5.04)), "top face is ground")
+	assert_true(walker._contact_is_wall(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.5, -5.0)), "the side is a wall")
+
+
+func test_pressed_into_a_wall_the_commanded_speed_collapses() -> void:
+	var root := _world()
+	_add_wall(root, -12.0)
+	add_child_autofree(root)
+	var walker: WalkerBody = WALKER_SCENE.instantiate()
+	root.add_child(walker)
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 1.5, -2.0)))
+	Input.action_press("move_forward")
+	simulate(walker, 300, 1.0 / 60.0)
+	assert_lt(walker.commanded_speed(), 0.5, "the ramp does not stay at top speed against the wall")
+	Input.action_release("move_forward")

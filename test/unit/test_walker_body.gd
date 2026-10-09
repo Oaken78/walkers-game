@@ -366,3 +366,14 @@ func test_telemetry_percentile_is_zero_without_samples() -> void:
 	var telemetry := WalkerTelemetry.new()
 	assert_eq(telemetry.tick_p99_ms, 0.0)
 	telemetry.free()
+
+
+func test_pad_box_gap_is_the_length_of_the_positive_gaps_when_apart() -> void:
+	assert_almost_eq(WalkerTelemetry.box_gap(0.3, 0.4, -0.1), 0.5, 0.0001)
+	assert_almost_eq(WalkerTelemetry.box_gap(-0.2, -0.1, 0.25), 0.25, 0.0001)
+
+
+func test_pad_box_gap_is_the_shallowest_overlap_when_the_boxes_intersect() -> void:
+	assert_almost_eq(WalkerTelemetry.box_gap(-0.3, -0.2, -0.34), -0.2, 0.0001)
+	# Pads one above the other do not overlap: the vertical gap is positive.
+	assert_gt(WalkerTelemetry.box_gap(-0.3, 0.5, -0.34), 0.0)
