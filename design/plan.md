@@ -70,6 +70,11 @@ Status: ready, in-progress, review-passed, done.
   floor's 0.50; GDD 10 rule 4): a lighting fix in scenes/world/ for visuals-dev, with pad luma >= floor + 0.1 in
   `valley_pockets__scout_blocked_at_ledge`. Klas decides whether the slide keeps 100 % of the along-face speed (the
   critic recommends it) after the next playtest build.
+- T17 finding (Klas, 2026-10-09, confirmed): the view stutter was Windows composing windowed apps at the main
+  display's refresh. On a secondary 60 Hz screen next to a 59.99 Hz main display the whole picture judders, and
+  making the playing screen the main display removes it. T17 measured the camera and walker smooth at 60-240 Hz
+  and with uneven pacing. Mitigation: F11 exclusive fullscreen (T17). A display settings menu (window mode,
+  vsync) belongs to M2's menu work.
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
   Body tilt now follows the slope up to the build's grip (a Crawler climbs the talus at 39 deg), so decide whether the
   turret's pitch limits are body- or world-relative; body-relative -10..45 deg cannot aim level on the talus.
