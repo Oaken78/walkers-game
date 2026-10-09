@@ -42,6 +42,7 @@ var current_fov: float = 70.0
 var _shown_distance: float = 8.0
 var _idle_s: float = 0.0
 var _target_speed: float = 0.0
+var _snap_frame: int = -1
 var _last_target_pos: Vector3 = Vector3.ZERO
 var _has_last_pos: bool = false
 var _shake_elapsed: float = 0.0
@@ -184,23 +185,24 @@ func add_shake(duration: float = 0.15, amplitude: float = 0.15) -> void:
 		_shake_amplitude = amplitude
 
 
-## Jump to the target with no lag (spawn, teleport).
+## Jump to the target with no lag (spawn, teleport). Reads the target's real transform: outside a physics
+## tick the interpolated one still shows the target where it was drawn last frame, before the teleport.
 func snap() -> void:
 	if not is_instance_valid(target):
 		return
-	global_position = _target_goal()
-	_last_target_pos = target.get_global_transform_interpolated().origin
+	global_position = target.global_position + target_offset
+	_last_target_pos = target.global_position
 	_has_last_pos = true
 	_target_speed = 0.0
+	_snap_frame = Engine.get_process_frames()
 	_apply_rotation()
-
-
-func _target_goal() -> Vector3:
-	return target.get_global_transform_interpolated().origin + target_offset
 
 
 func _follow(delta: float) -> void:
 	if not is_instance_valid(target) or delta <= 0.0:
+		return
+	# In the frame of a snap the interpolated transform still holds the pre-teleport position.
+	if Engine.get_process_frames() == _snap_frame:
 		return
 	var pos: Vector3 = target.get_global_transform_interpolated().origin
 	if _has_last_pos:

@@ -118,6 +118,10 @@ pause={
 3d_physics/layer_6="pickups"
 3d_physics/layer_7="triggers"
 
+[physics]
+
+common/physics_interpolation=true
+
 [rendering]
 
 renderer/rendering_method="forward_plus"
