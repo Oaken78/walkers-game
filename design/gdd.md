@@ -24,7 +24,7 @@ Numbers, not adjectives. References in `design/refs/`. Defaults below are for th
   then decide: push further for richer nodes, or walk back and bank. Bank in the workshop, buy one part, re-socket,
   and leave again with a different feel.
 - **One session (30-60 min):** 6-10 expeditions; 3-5 new parts bought; one new zone reached that needs a build
-  change (M1+: terrain gates such as a 1.5 m ledge or a 4 m gap). The player leaves with a machine that looks and moves
+  change (M1+: terrain gates such as a 2.0 m ledge or a 4 m gap). The player leaves with a machine that looks and moves
   differently from the one they started with, and a plan for the next part.
 
 ## 4. Why it is fun (the risk hypothesis)
@@ -36,8 +36,8 @@ game becomes a mediocre shooter on legs.
 
 **How M0 tests it:**
 - Scenario `build_contrast`: Strider A (6 long legs) and Crawler B (8 short legs, 2 cannons, armor) from section
-  8.1 differ by >= 40 % in measured top speed and max step-up height, computed as (A - B) / A, on the same course,
-  and neither stat is clamped. Speed, turn and step-up are logged.
+  8.1 differ by >= 40 % in measured top speed and max climb height, computed as (A - B) / A, on the same course,
+  and neither stat is clamped. Speed, turn and climb are logged.
 - Unit test: B's DPS x HP >= 1.8x A's, so the contrast is a choice and not one optimal build.
 - Screenshots of A and B mid-stride side by side: an outsider can tell them apart from silhouette alone.
 - Playtest question, answered by Klas and playtest-critic: "After swapping legs, did the walker feel different
@@ -59,14 +59,18 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Felt change per leg purchase | >= 15 % in top speed, turn rate or step rate (telemetry `steps_per_s`); armor and top parts are judged in the first fight instead | Pillar 1 check |
 | Foot lift height | 0.25 x leg reach | fixed ratio |
 | Planted foot drift (sliding) | <= 2 cm per step | hard limit (Pillar 2) |
-| Legs airborne at once | <= half (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
+| Legs airborne at once | <= half, hanging legs included (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
 | Body height above foot plane | 0.6 x mean leg reach (chassis underside), spring settle 0.15 s | |
 | Leg stance (arched legs) | Each hip 0.5 x its own leg reach above the foot plane, on a strut under the chassis side; rest foot 0.43 x own reach out from the hip, end legs fanned up to 0.05 x reach fore-aft; bones 0.46 + 0.69 x reach (1.15 x reach, so the leg never straightens); bend plane vertical (pole up); planted feet stay within 0.99 x reach | same ratios for every leg, in any mix |
 | Knee height | On level ground walking straight, in the body frame: above the hip by >= 0.15 x reach at rest (geometry 0.19) and >= 0.10 x reach for planted feet within 0.5 x reach fore-aft of rest. On any ground, and when turning or strafing, a leg may reach down with its knee below the hip, but the knee stays on the pole side of the hip-foot line by >= 0.05 x reach (the 0.99 x reach clamp leaves about 0.08): never straight, never flipped. Upper bone >= 15 deg above horizontal; shin 0-15 deg outward of vertical; fore-aft room from the rest foot to the 0.99 x reach limit >= 0.65 x reach | Crawler knee 0.41 m, Scout 0.69 m, Strider 1.10 m |
 | Body tilt follows terrain | <= the build's slope grip (`max_slope`: Strider 30, Scout 35, Crawler 45 deg), smoothing 0.12 s | |
 | Body bob amplitude while walking | 4 cm x mean leg reach, on flat ground (Crawler 2.4, Scout 4, Strider 6.4 cm) | |
 | Max walkable slope | 35 deg | 25 - 45 deg |
-| Max step-up height | 0.6 x leg reach (Scout: 0.6 m); step-down at least as far: feet reach about 0.35 x reach below the foot plane unaided, and the body lowers up to 0.25 x reach toward a lower foothold first | 0.35 - 1.0 m |
+| Stride step-up | 0.6 x leg reach above the leg's current foot (Scout 0.6 m), taken in a normal step with no climb | Crawler 0.36 - Strider 0.96 m |
+| Max climb height (`climb`) | 0.9 x mean leg reach (Scout 0.90 m). A front foot reaches up onto a top at most 0.4 x reach above its own hip, then the body hauls (8.2). Step-down mirrors it to the same depth | Crawler 0.54 - Strider 1.44 m |
+| Reach-up swing | 1.5 x the build's step time (Strider 0.35 s, Scout 0.27 s, Crawler 0.21 s at top speed). The foot rises to the edge + 0.15 x reach before it moves over the lip; a reaching or hanging pad is inside geometry on 0 ticks | scales with the step time |
+| Haul | Advance <= 0.4 x top speed from the first front foot on top to the last foot up; rise or lower <= 1.5 m/s (2.5 cm per tick). Body pitch peaks at 10-25 deg, never above min(grip - 5, 25) deg. Climb time from the first reach to the last foot on top: 1.0-2.0 s on a ledge 0.75 x climb tall (Strider 1.08 m, Crawler 0.40 m), Klas tunes it at the next playtest. No stretch longer than 0.4 s without horizontal or vertical progress while input is held. A rise within stride step-up costs <= 0.3 s extra | |
+| Hanging legs | A leg with no valid foothold lifts within 1 tick and hangs at its lift height (0.25 x reach), >= 0.05 m clear of geometry, pawing toward the face or edge on a 0.6 s cycle. It counts as airborne. While any leg hangs, the centre of mass stays inside the planted feet's polygon by >= 0.1 x mean reach (Strider 0.16, Scout 0.10, Crawler 0.06 m). On ground with no rise or drop beyond stride step-up, no leg hangs | |
 | Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
@@ -178,18 +182,19 @@ already allow it.
 | `reach` | mean leg reach (m) |
 | `top_speed` | clamp(4.5 x sqrt(reach) x gait_factor x (1.7 - load), 2.5, 7.0) m/s. gait_factor = 1.0 for 6-8 legs, 0.85 for 4 legs. The clamp is a safety rail only; no armed build of 6+ legs may reach it |
 | `turn_rate` | clamp(250 - 100 x load - 10 x legs, 60, 180) deg/s |
-| `step_up` | 0.6 x reach |
+| `step_up` | 0.6 x reach (the stride step-up, 8.2) |
+| `climb` | 0.9 x reach (the max climb and step-down, 8.2; shown on the stat panel). Mixed builds use the mean reach like every other stat; T16 measures Scout + short pair and Scout + long pair, and the formula switches to the shortest leg if a measured climb falls more than 10 % below its stat |
 | `max_slope` | lowest slope grip among the mounted legs |
 | `spread` | 1.0 deg x mean leg spread factor (body sway) |
 | `hp` | chassis hp + armor parts |
 
 **Reference builds** (the unit test fixtures):
 
-| Build | Parts | Load | Speed | Turn | Step-up | Slope | HP | DPS | Spread |
-|---|---|---|---|---|---|---|---|---|---|
-| Scout | 6 medium legs, 1 cannon | 0.70 | 4.50 | 120 | 0.60 | 35 | 100 | 60 | 1.0 |
-| Strider (A) | 6 long legs, 1 cannon | 0.56 | 6.49 | 134 | 0.96 | 30 | 100 | 60 | 1.5 |
-| Crawler (B) | 8 short legs, 2 cannons, armor | 0.61 | 3.80 | 109 | 0.36 | 45 | 140 | 120 | 0.5 |
+| Build | Parts | Load | Speed | Turn | Step-up | Climb | Slope | HP | DPS | Spread |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Scout | 6 medium legs, 1 cannon | 0.70 | 4.50 | 120 | 0.60 | 0.90 | 35 | 100 | 60 | 1.0 |
+| Strider (A) | 6 long legs, 1 cannon | 0.56 | 6.49 | 134 | 0.96 | 1.44 | 30 | 100 | 60 | 1.5 |
+| Crawler (B) | 8 short legs, 2 cannons, armor | 0.61 | 3.80 | 109 | 0.36 | 0.54 | 45 | 140 | 120 | 0.5 |
 
 - **Niche:** the Strider reaches ledges and escapes. The Crawler grips steep slopes and wins fights:
   DPS x HP is 2.8x the Strider's, and its spread is tight. Neither build dominates (Pillar 1).
@@ -197,7 +202,8 @@ already allow it.
   with a reason string ("Overloaded: 412/380 kg", "Needs 4, 6 or 8 legs", "Legs unbalanced").
 - **Tests:**
   - Each reference build matches its table row within 0.01.
-  - Contrast, computed as (A - B) / A: >= 40 % in speed and in step-up, and neither A nor B is clamped.
+  - Contrast, computed as (A - B) / A: >= 40 % in speed and in climb (expected 0.625), and neither A nor B is
+    clamped.
   - B's DPS x HP >= 1.8x A's.
   - Validity reason strings.
 
@@ -207,26 +213,52 @@ already allow it.
   chassis and the hips never sink into the ground: where that plane runs below the terrain (over a crest or a
   ledge edge) the body rises until they clear it, at most 1.5 m/s (it slows its advance to climb, it never hops),
   and waits if the legs cannot reach that far. Ground steeper than the build's grip that stands taller than its
-  step-up stops the body like a wall; it never rises over it (a lower steep obstacle is stepped onto). Where the ground ahead rises or falls (a slope's foot, a ledge or shelf edge), the body
+  climb stops the body like a wall; it never rises over it (a lower steep obstacle is climbed: stepped onto in
+  stride up to step_up, reached and hauled up to climb). Where the ground ahead rises or falls (a slope's foot, a ledge or shelf edge), the body
   pitches toward the next footholds it can stand on before its feet get there, as a climber leans into a slope;
   tilt still follows the planted feet on even ground.
+- **Climb (reach and haul):** climbing looks like effort, never a teleport.
+  - *Reach:* a front-row leg (the first mounted leg on each side) whose stride target is blocked by a rise may plant
+    on the top up to `climb` (0.9 x mean reach) above its current foot. The foothold must lie at most 0.4 x its own
+    reach above its hip, within 0.95 x reach of the hip with the knee bend >= 0.05 x reach, on ground inside grip,
+    and >= 0.15 m past the edge. A short-legged build whose chassis nose meets the face pitches its nose up first
+    (pitch-ahead), then reaches. The reach swing follows section 5.
+  - *Haul:* once both front feet are on top, the body pitches nose-up toward the top, up to min(grip - 5, 25) deg,
+    rises at most 1.5 m/s and advances at most 0.4 x top speed until the last foot is up (section 5).
+  - *Follow-on:* every other leg may step up to `climb` above its current foot once its hip has passed over the edge
+    of the higher ground. Until then a leg with no valid foothold hangs.
+  - *Step-down mirrors it:* at an edge the body lowers by up to 0.25 x reach and pitches nose-down, up to
+    min(grip - 5, 25) deg. A front leg may plant up to `climb` below its current foot, within 0.95 x reach of its
+    hip. The body lowers at most 1.5 m/s and advances at most 0.4 x top speed, and following legs step down as their
+    hips pass the edge. At a drop deeper than `climb` the front legs hang over the edge and the body stops; it never
+    walks off.
 - **Gait (`GaitSolver`, pure):** legs split into alternating groups: two tripods for 6+ legs; for 4-5 legs a wave
   gait with one leg per group.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
   foot of the active group is planted, or 85 % into the step, but a leg never lifts while that would put more legs
-  in the air than the section 5 limit.
+  in the air than the section 5 limit. A hanging leg counts as airborne, so planted legs never number fewer than
+  the leg count minus the gait limit (4 legs: 3, 6 legs: 3, 8 legs: 4). While any leg hangs, the centre of mass
+  (the chassis centre, projected along gravity) stays inside the polygon of the planted feet by >= 0.1 x mean
+  reach; a body move that would break this is shortened like a move that would break reach.
 - **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5. A target more than
-  step_up above the leg's current foot, or steeper than the max slope, is invalid. The leg then takes the farthest valid foothold
-  between its current foot and the target, a shorter step. Only when none is valid does the leg block, and the
-  body stops on that side. On a steep slope inside its grip a walker takes short steps and slows; a vertical face
-  taller than step_up still blocks.
+  step_up above the leg's current foot is invalid unless the climb rules above allow it, and a target steeper than
+  the max slope is always invalid. The leg then takes the farthest valid foothold
+  between its current foot and the target, a shorter step. When none is valid, the leg hangs and paws toward the
+  face or edge (section 5) if the airborne limit and the centre-of-mass margin allow it, and the body keeps moving
+  while both hold; otherwise the leg stays planted and the body stops on that side. On a steep slope inside its
+  grip a walker takes short steps and slows; a vertical face taller than `climb` still blocks, with the front legs
+  pawing at it.
 - **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing up (bend plane vertical), and stretch
   clamped at 99 % of the bone length. The bones total 1.15 x leg reach, so at the 0.99 x reach planted-foot limit
   (section 5) the knee is still bent. There is no engine IK node, so the solve is unit-testable.
 - **Edge cases:** a foot target that is unreachable for more than 0.5 s makes the leg hover at its rest pose.
   Moving the walker by an external push (M1) replants every foot within 0.3 s.
-- **Tests:** IK end effector within 1 mm of the target for reachable targets; airborne count never above the
-  gait limit; zero planted foot drift over a 10 s straight walk (scenario); step-up blocked at 0.61 x reach.
+- **Tests:** IK end effector within 1 mm of the target for reachable targets; airborne count, hanging legs
+  included, never above the gait limit; zero planted foot drift over a 10 s straight walk (scenario); a following
+  leg whose hip has not passed an edge rejects a foothold 0.61 x reach above its foot; every build climbs a ledge of
+  0.89 x reach and descends it again, and is blocked at 0.91 x reach with its front feet pawing and no foot planted
+  above 0.9 x reach; the centre-of-mass margin stays >= 0.1 x mean reach whenever a leg hangs; no leg hangs and no
+  leg reaches up on the 30 deg bumps.
 
 ### 8.3 Weapons - top socket parts
 - **State:** cooldown, heat (M1).
@@ -296,11 +328,11 @@ can see, with no minimap.
 | Element | Spec |
 |---|---|
 | Footprint | 400 x 400 m area; the valley runs 400 m north to south. Walkable floor about 200 m wide (minimum 150 m anywhere) |
-| Cliff walls | >= 30 m tall and >= 60 deg along the whole floor edge, so no build can leave (max step-up 1.0 m, max slope grip 45 deg). These are the map bounds; there are no invisible walls |
-| Floor | Gentle 0-10 deg overall. Bumpy patches up to 30 deg (the gait show). Boulders 0.3-1.0 m high as step-up content: the Crawler (0.36 m) goes around them, the Strider (0.96 m) steps over |
+| Cliff walls | >= 30 m tall and >= 60 deg along the whole floor edge, so no build can leave (max climb 1.44 m, max slope grip 45 deg). These are the map bounds; there are no invisible walls |
+| Floor | Gentle 0-10 deg overall. Bumpy patches up to 30 deg (the gait show). Boulders 0.3-1.0 m high (0.5-0.8 m in the M0 valley) as climb content: the Crawler (climb 0.54 m) hauls over only the smallest and goes around the rest, the Scout (0.90 m) and the Strider (1.44 m) haul over all of them; a boulder within stride step-up is stepped onto in stride |
 | Workshop | On a bench at the north end, 20-40 m from the head wall. Ring distances are measured from it |
 | Dry wash | A winding riverbed from the workshop down to the far end. It is the main path and the route the test scenarios walk |
-| Ledge pocket | West wall, ring 2, 160-240 m from the workshop. A 0.8 m ledge leads up to it; one 60-scrap node. The Scout can't climb it; the Strider can |
+| Ledge pocket | West wall, ring 2, 160-240 m from the workshop. A 1.2 m ledge leads up to it; one 60-scrap node. The Scout (climb 0.90 m) can't climb it, and its front legs paw at the face; the Strider (1.44 m) reaches and hauls up |
 | Talus pocket | East wall, ring 2, 150-220 m from the workshop. A 40 deg talus slope leads up to it; one 60-scrap node. Only the Crawler (45 deg grip) can climb it; the Scout (35 deg) and Strider (30 deg) can't |
 | Far end | Ruins half buried in a dune bank close the valley at 270-300 m, the gate to the M1 zone. The smoke column behind them, at about 350 m, is the down-valley landmark and is visible from the workshop |
 | Scrap nodes | Ring 0: 2 nodes (5 scrap each, no respawn). Ring 1: 3 nodes (10 each). Ring 2: 3 nodes (20 each) plus the two pockets (60 each). Wash nodes are 70-110 m apart, and side nodes fill the gaps, so a node comes into view every 15-25 s of walking (section 5) |
@@ -444,6 +476,11 @@ World palette, from the 50 % style mix (look-test mockup):
 5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T00 (section 13).
 6. **The valley feels like a corridor.** The floor stays at least 150 m wide, the wash winds, and there are side
    nodes and two pockets off the path. Playtest-critic checks this at the M0 review.
+7. **Climb pose feasibility** (Pillars 1 and 2). Reach and haul (8.2) at 0.9 x reach, up and down, may not fit the
+   real chassis, hips and bones within pitch <= min(grip - 5, 25) deg, knee bend >= 0.05 x reach and a
+   centre-of-mass margin >= 0.1 x mean reach. Spike: a side-view pose search per build (Scout, Strider, Crawler) with
+   the real chassis box, hip positions and bones, before any controller work. Fallback: climb 0.8 x reach and the
+   ledge pocket at 1.07 m.
 
 ## 17. Decisions log (append-only)
 | Date | Decision | Why | Rejected alternatives |
@@ -505,6 +542,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | The 4-leg gait_factor stays 0.85 | Lead, measured on main after the T03 merge: with the faster 4-leg wave the quad sustains 31.58 m in 10.2 s on flat ground (0.99 of its 3.124 m/s stat) with no leg holds, so the stat panel already tells the truth | Raise the factor (untested above 0.85) |
 | 2026-10-09 | Readability rule 1: side-on, the far row of feet may hide behind the chassis; seen from behind, every foot stays clear of the chassis and the ground | Klas at the gate ("it is acceptable"), from the T14 playtest review: at pitch 20 abeam the chassis hides the whole far row (Crawler 4 pads, Scout 3), as in the approved midstride view, while the near row carries the whole gait. Showing it would need pitch >= 42-47 deg or a lower chassis (M1) | Raise the camera side-on; lower the chassis now |
 | 2026-10-09 | On descents steeper than about 25 deg the camera holds a pitch floor of the slope minus 5 deg (about 35 on the talus), easing in and out | Klas at the gate ("yes"), from the T14 playtest review: walking down the talus at pitch 20 the shelf edge cuts the line of sight, and recentring puts the camera there on every trip back from the talus pocket (Pillar 3). At pitch 35 every foot is clear. Numbers to confirm with mid-face and foot shots | Global minimum pitch of 35 (loses the look-out range); leave it to the player |
+| 2026-10-09 | Walkers reach and haul (8.2): stride step-up stays 0.6 x reach; a new `climb` stat of 0.9 x mean reach (Scout 0.90, Strider 1.44, Crawler 0.54 m, contrast 0.625) lets the front legs plant up to 0.4 x reach above their hips. The body then pitches up to min(grip - 5, 25) deg and hauls at <= 0.4 x top speed, and the other legs follow as their hips pass the edge; step-down mirrors it. A leg with no foothold hangs and paws at too-tall faces and too-deep drops; it counts as airborne, and the centre of mass stays inside the planted feet by >= 0.1 x mean reach. Ledge pocket 0.8 -> 1.2 m, boulders stay 0.5-0.8 m, M1 gate ledge 1.5 -> 2.0 m. Defaults until measured: mixed builds take climb from the mean reach (T16 measures Scout + short pair and Scout + long pair; the lead switches to the shortest leg if a measured climb falls more than 10 % below its stat); haul time 1.0-2.0 s on a ledge 0.75 x climb tall, which Klas tunes at the next playtest | Klas, from the game-designer's proposal (T03 gate feedback): "the front legs should have been able to reach the ledges and climb. Not every leg has to touch ground. Make them more agile." Raising the pocket by the same 1.5x as climb keeps every M0 build's pocket access as before (Pillars 1 and 3) | Taller step only (step-up 0.8 x reach, nothing reaches or hangs); a free per-tick pose solver (frame cost on a controller already at 40-75 ms ticks, climb height not repeatable so the pocket gates blur; kept for the M1 climber leg); pocket kept at 0.8 m (the Scout would reach it, so the session goal no longer needs a part); legs hang only during a haul (the build's limit would not show); boulders scaled 1.5x so the Crawler still goes around |
 | 2026-10-09 | Descent floor refined: only sustained slopes (>= 1.5 m of ground steeper than 25 deg, more than a step-up tall) trigger it, it also looks ahead for a drop, it eases in over about 0.45 s and out over about 0.8 s, it lets go while aiming, and it stays slope minus 5 | Lead, from the T15 reviews (code-reviewer and playtest-critic): the steepest-single-sample measure lifted the camera to 45-50 deg at every boulder and ledge, where nothing can hide the walker; the lift started 0.4 s after the edge and snapped in 0.23 s. A 12 m zoom needs slope minus 5 (slope minus 10 hides the feet). Aiming is deliberate, as with recentring. Klas can overrule the aim rule | Steepest single sample; slope minus 10; floor while aiming |
 
 ## 18. Open questions
