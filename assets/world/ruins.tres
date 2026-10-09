@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "world_ruins"
+albedo_color = Color(0.57647, 0.50196, 0.43137, 1)
+roughness = 1.0
