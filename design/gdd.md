@@ -61,7 +61,7 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Planted foot drift (sliding) | <= 2 cm per step | hard limit (Pillar 2) |
 | Legs airborne at once | <= half (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
 | Body height above foot plane | 0.6 x mean leg reach (chassis underside), spring settle 0.15 s | |
-| Leg stance (arched legs) | Each hip 0.5 x its own leg reach above the foot plane, on a strut under the chassis side; rest foot 0.42 x own reach out from the hip; bones 0.46 + 0.69 x reach (1.15 x reach, so the leg never straightens); bend plane vertical (pole up); planted feet stay within 0.99 x reach | same ratios for every leg, in any mix |
+| Leg stance (arched legs) | Each hip 0.5 x its own leg reach above the foot plane, on a strut under the chassis side; rest foot 0.43 x own reach out from the hip, end legs fanned up to 0.06 x reach fore-aft; bones 0.46 + 0.69 x reach (1.15 x reach, so the leg never straightens); bend plane vertical (pole up); planted feet stay within 0.99 x reach | same ratios for every leg, in any mix |
 | Knee height | On level ground walking straight, in the body frame: above the hip by >= 0.15 x reach at rest (geometry 0.19) and >= 0.10 x reach for planted feet within 0.5 x reach fore-aft of rest. On any ground, and when turning or strafing, a leg may reach down with its knee below the hip, but the knee stays on the pole side of the hip-foot line by >= 0.05 x reach (the 0.99 x reach clamp leaves about 0.08): never straight, never flipped. Upper bone >= 15 deg above horizontal; shin 0-15 deg outward of vertical; fore-aft room from the rest foot to the 0.99 x reach limit >= 0.65 x reach | Crawler knee 0.41 m, Scout 0.69 m, Strider 1.10 m |
 | Body tilt follows terrain | <= the build's slope grip (`max_slope`: Strider 30, Scout 35, Crawler 45 deg), smoothing 0.12 s | |
 | Body bob amplitude while walking | 4 cm x mean leg reach, on flat ground (Crawler 2.4, Scout 4, Strider 6.4 cm) | |
@@ -200,9 +200,11 @@ already allow it.
 - **Body:** CharacterBody3D, moved kinematically from input and build stats, with the accel and decel from
   section 5. Height and tilt are fitted to the plane of the planted feet (least-squares, then smoothed). The
   chassis and the hips never sink into the ground: where that plane runs below the terrain (over a crest or a
-  ledge edge) the body rises until they clear it, and waits if the legs cannot reach that far. Where the ground
-  ahead rises or falls (a slope's foot, a ledge or shelf edge), the body pitches toward the next footholds before
-  its feet get there, as a climber leans into a slope; tilt still follows the planted feet on even ground.
+  ledge edge) the body rises until they clear it, at most 1.5 m/s (it slows its advance to climb, it never hops),
+  and waits if the legs cannot reach that far. Ground steeper than the build's grip stops the body like a wall; it
+  never rises over it. Where the ground ahead rises or falls (a slope's foot, a ledge or shelf edge), the body
+  pitches toward the next footholds it can stand on before its feet get there, as a climber leans into a slope;
+  tilt still follows the planted feet on even ground.
 - **Gait (`GaitSolver`, pure):** legs split into alternating groups: two tripods for 6+ legs; for 4-5 legs a wave
   gait with one leg per group.
   A leg may step when its foot error is > 0.5 x reach and its group is active. The next group starts when every
@@ -489,6 +491,9 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Body bob scales with leg length: 4 cm x mean leg reach (Crawler 2.4 cm, Scout 4, Strider 6.4), replacing 3-5 cm for every build | Klas, from the T03 round-3 reviews: a full bob stretches short legs toward their reach limit, and round 3 had faded it to zero on short legs. Scaling keeps a step rhythm on every build: long legs lope, short legs patter | 3-5 cm for every build; no bob on short legs (the Crawler reads planted, but the short pair, the usual first purchase, only reads as smoother) |
 | 2026-10-09 | Knee rule: the above-the-hip bars hold on level ground walking straight, in the body frame. On any ground and when turning or strafing a knee may sit below its hip, but never straightens or flips (bend >= 0.05 x reach) | Klas, from the T03 round-3 playtest-critic: the downhill leg reaching down a slope with its knee below the hip reads as reaching (gait_slopes__steep), and 'never below the hip' cannot hold on a body tilted to its grip | Never below the hip anywhere (needs longer bones or higher hips, changing the approved arched legs) |
 | 2026-10-09 | The body pitches toward the next footholds ahead of a slope's foot or a shelf edge, instead of only following the planted feet | Lead, from the T03 round-4 code review: with hips held clear, a Crawler whose tilt lags its feet stalls at the foot of the 40 deg talus (its front rim meets the slope at 6.7 deg tilt). A side-view pose search shows the real talus profile (9.1) is climbable with 0.15 m of reach to spare, but only if the body leans 7-12 deg into the slope 0.6-0.9 m before the corner and levels before the shelf edge | Round the talus edges in the valley; let hips sink into the slope |
+| 2026-10-09 | Rest foot 0.43 x reach out from the hip (from 0.42); end legs fan 0.06 x reach fore-aft (from 0.08) | Lead, from the T03 round-5 playtest-critic: at 0.42 the shin sits only 0.1 deg outward, at the edge of the 0-15 deg target; 0.43 gives about 0.9 deg with no visible change (knee rise about 0.115, fore-aft room 0.68) | Keep 0.42 |
+| 2026-10-09 | The clearance rise is capped at 1.5 m/s (2.5 cm per 60 Hz tick); when the body needs more, the walker slows its advance until it catches up. Ground steeper than the build's grip blocks like a wall and is never risen over | Lead, from the T03 round-5 reviews: the push-up rose up to 0.12 m in one tick (a visible hop on the Strider in the boulders, four times the Crawler's whole bob), and the Strider's body rode 0.41 m up the 40 deg talus it cannot climb. Pillar 2: a build slows to climb, and its limits read. Klas can overrule the cap at the gate | No cap (judge at the gate); allow a hop above the cap |
+| 2026-10-09 | Pitch-ahead leans only toward footholds the build can stand on (rise <= step-up, slope <= grip) | Lead, from the T03 round-5 code review: leaning toward any ray hit tilted a blocked Scout 12.7 deg up a face it cannot climb and the Strider 10.6 deg at a wall, on flat ground | Lean toward any surface |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
