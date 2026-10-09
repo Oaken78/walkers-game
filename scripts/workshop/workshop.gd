@@ -230,6 +230,7 @@ func is_socket_pickable(socket_id: StringName) -> bool:
 
 
 func _start() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_ui.setup(_inventory, _economy)
 	_apply_build_to_walker()
 	_refresh_all()
