@@ -85,6 +85,9 @@
    }
   },
   {
+   "screenshot": "crawler_tilted"
+  },
+  {
    "call": {
     "node": ".",
     "method": "log_foot_boxes",
