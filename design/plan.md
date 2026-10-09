@@ -7,7 +7,7 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 | Id | Name | Acceptance criteria (measurable) | Proof (scenarios / screenshots) | Status |
 |---|---|---|---|---|
 | M0 | Playable loop | 1. Scout walks at 4.5 m/s +/- 0.1, reaching it in 0.25 s +/- 0.05 [5]. 2. Planted foot drift <= 2 cm per step and airborne legs never above the gait limit over 20 s on the 30 deg bumpy course [5, 8.2]. 3. Strider A vs Crawler B: (A - B) / A >= 40 % in top speed and step-up with neither stat clamped, and B's DPS x HP >= 1.8x A's [4, 8.1]. 4. Workshop: place and remove a part, see the stat delta, exit is blocked with a reason while the build is invalid [8.6]. 5. Drone telegraphs >= 0.6 s before every shot and dies in 3 hits; a strafing Scout takes <= 40 % of the damage an idle Scout takes [5, 8.4]. 6. Full loop: collect scrap, bank (full repair), buy a part, socket it, die, wreck cache dropped, reclaim it, with no scrap duplicated. The first purchase happens on expedition 1-2, and the Strider reaches the 0.8 m ledge pocket while the Scout cannot [7, 8.5, 9]. 7. Tier 3 green: 0 log errors, frame p95 <= 16.7 ms, draw calls <= 1000 with 4 drones on screen [13]. 8. At 8 m and pitch -10 to 60 deg, every foot is in frame and >= 12 px tall at 1080p; the drone wind-up reads in grayscale [10]. 9. Valley (GDD 9.1): every cliff sample >= 30 m and >= 60 deg; no build leaves the valley floor; only the Strider reaches the ledge pocket and only the Crawler the talus pocket [9.1]. | Scenarios: `walk_flat`, `gait_course`, `build_contrast`, `workshop_edit`, `drone_fight`, `loop_full`, `map_bounds`, `perf_4_drones`. Test: `test_valley_geometry.gd`. Screenshots: `gait_course__midstride`, `gait_course__pitch_low`, `gait_course__pitch_high`, `build_contrast__a_vs_b`, `workshop_edit__stats`, `drone_fight__windup`, `drone_fight__windup_gray`, `loop_full__hud` | planned |
-| M1 | Vertical slice | Defined after the M0 review: uneven leg builds, blueprints (2-3 per zone), 2nd zone and terrain gate, enemy walker sentinel, 5 legs and 5 top parts, footstep audio, final toon shading [9, 14] | tbd | planned |
+| M1 | Vertical slice | Defined after the M0 review: uneven leg builds, blueprints (2-3 per zone), 2nd zone and terrain gate, enemy walker sentinel, 5 legs and 5 top parts, footstep audio, final toon shading, a flatter chassis so the arched knees peak above it [9, 14] | tbd | planned |
 | M2 | Content | 3 zones, all parts, gamepad, menu, save/load [14] | tbd | planned |
 
 ## M0 order
@@ -45,13 +45,14 @@ Status: ready, in-progress, review-passed, done.
   camera sits 0.47 m off the ground at pitch -10; consider a per-build offset.
 - Lead follow-ups from the T03 review: set the 4-leg gait_factor in GDD 8.1 and walker_build.gd from T03's
   measured quad speed; TwoBoneIK.solve allocates a Solution per leg per tick (T02 code), so reuse one if the
-  perf budget needs it. Pending design: the game-designer proposes arched-knee proportions; Klas approves first.
+  perf budget needs it. Arched knees and the shortest-leg cadence are approved (GDD log 2026-10-09) and built in
+  T03 round 2.
 - T03: a 4-5 leg wave with one stuck leg stands still until the player steers off (the hovering leg holds the
   only airborne slot; accepted, judge it at the gate). Turning tripods can make a leg wait about 2.5 step
   durations. Check stop/start at top speed on a tripod with real 0.25 s acceleration: the fake walker dragged a
   planted foot to 1.28 x reach. `gait_course` should also run a 4-leg build into a blocked foot.
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
-- T06/T07: the walker's movement collider is a wide cylinder (about 4 m across on the Strider). Hits use a
+- T06/T07: the walker's movement collider is a wide cylinder (about 4.3 m across on the Strider with arched legs). Hits use a
   chassis-sized hurtbox instead, so shots between the legs miss (M0 criterion 5).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).

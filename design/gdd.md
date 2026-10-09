@@ -55,15 +55,18 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Body turn rate (A/D, tank controls) | 120 deg/s, reached in 0.1 s | 60 - 180 deg/s |
 | Strafe speed | 0.75 x top speed | fixed ratio |
 | Step trigger: foot error from rest target | > 0.5 x leg reach | fixed ratio |
-| Step duration | 0.18 s @ top speed, 0.30 s near idle, x sqrt(mean leg reach / 1.0 m) (Strider about 0.23 s, Crawler about 0.14 s); 4-leg wave steps shorter, tuned at T03 | scales with speed and leg reach |
+| Step duration | 0.18 s @ top speed, 0.30 s near idle, x sqrt(shortest mounted leg reach / 1.0 m) (Strider about 0.23 s; Crawler and any build with a short pair about 0.14 s); 4-leg wave steps shorter, tuned at T03 | scales with speed and the shortest leg |
+| Felt change per leg purchase | >= 15 % in top speed, turn rate or step rate (telemetry `steps_per_s`); armor and top parts are judged in the first fight instead | Pillar 1 check |
 | Foot lift height | 0.25 x leg reach | fixed ratio |
 | Planted foot drift (sliding) | <= 2 cm per step | hard limit (Pillar 2) |
 | Legs airborne at once | <= half (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
-| Body height above foot plane | 0.6 x leg reach, spring settle 0.15 s | |
+| Body height above foot plane | 0.6 x mean leg reach (chassis underside), spring settle 0.15 s | |
+| Leg stance (arched legs) | Each hip 0.5 x its own leg reach above the foot plane, on a strut under the chassis side; rest foot 0.5 x own reach out from the hip; bones 0.46 + 0.69 x reach (1.15 x reach, so the leg never straightens); bend plane vertical (pole up); planted feet stay within 0.99 x reach | same ratios for every leg, in any mix |
+| Knee height | Above the hip by >= 0.15 x reach at rest (geometry 0.19), >= 0.10 x reach within 0.5 x reach fore-aft of rest (0.14), never below the hip inside 0.99 x reach (0.06); upper bone >= 15 deg above horizontal; shin 0-15 deg outward of vertical; fore-aft room before the 0.99 x reach limit >= 0.65 x reach | Crawler knee 0.41 m, Scout 0.69 m, Strider 1.10 m |
 | Body tilt follows terrain | <= 25 deg, smoothing 0.12 s | |
 | Body bob amplitude while walking | 3-5 cm | |
 | Max walkable slope | 35 deg | 25 - 45 deg |
-| Max step-up height | 0.6 x leg reach (Scout: 0.6 m); step-down at least as far: the body lowers toward a lower foothold first | 0.35 - 1.0 m |
+| Max step-up height | 0.6 x leg reach (Scout: 0.6 m); step-down at least as far: feet reach about 0.35 x reach below the foot plane unaided, and the body lowers up to 0.25 x reach toward a lower foothold first | 0.35 - 1.0 m |
 | Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
@@ -204,8 +207,9 @@ already allow it.
 - **Foot targets:** a downward raycast from rest position + velocity x step duration x 0.5. When the target is
   higher than step_up or steeper than the max slope, it is invalid, the leg blocks, and the body stops on that
   side.
-- **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing outward-up, and stretch clamped
-  at 99 % of reach. There is no engine IK node, so the solve is unit-testable.
+- **IK (`TwoBoneIK`, pure):** analytic two-bone solve with a pole vector pointing up (bend plane vertical), and stretch
+  clamped at 99 % of the bone length. The bones total 1.15 x leg reach, so at the 0.99 x reach planted-foot limit
+  (section 5) the knee is still bent. There is no engine IK node, so the solve is unit-testable.
 - **Edge cases:** a foot target that is unreachable for more than 0.5 s makes the leg hover at its rest pose.
   Moving the walker by an external push (M1) replants every foot within 0.3 s.
 - **Tests:** IK end effector within 1 mm of the target for reachable targets; airborne count never above the
@@ -401,7 +405,7 @@ World palette, from the 50 % style mix (look-test mockup):
 - **M0 Playable loop (<= 2 weeks of agent work):** walk, build and fight on one map. Acceptance criteria are in
   `design/plan.md`.
 - **M1 Vertical slice:** second zone behind a terrain gate, enemy walker sentinel, 5 legs and 5 top parts, real
-  footstep audio, toon and outline shading at final quality.
+  footstep audio, toon and outline shading at final quality, and a flatter chassis so the arched knees peak above it.
 - **M2 Content:** 3 zones, all parts, gamepad, main menu, save/load.
 
 ## 15. Out of scope
@@ -467,6 +471,10 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Walkers descend what they climb: step-down >= step-up; the body lowers toward a lower foothold before the feet reach for it | Klas, from the T03 code review: with a step-down of about 0.3 x reach a Strider is trapped in the 0.8 m ledge pocket and a Crawler on any 0.3 m boulder | Walk off the edge and drop; keep the limit and give ledges ramps |
 | 2026-10-09 | Step duration scales with the build's mean leg reach: x sqrt(reach / 1.0 m) | Klas, from the T03 playtest review: every build stepped on the same beat; long legs should lope and short legs scuttle (Pillar 1) | One 0.18 s step for every build |
 | 2026-10-09 | The 4-leg wave steps faster, and the 4-leg gait_factor is then set from the measured sustained speed, so the stat panel tells the truth | Klas, from the T03 playtest review: the quad covered about 55 % of its 3.1 m/s stat and lurched at nearly every step | Keep the lurch and only fix the stat; trot (two diagonal pairs) |
+| 2026-10-09 | Arched legs: each hip 0.5 x its own reach above the foot plane on a strut (the chassis underside stays at 0.6 x mean reach), rest foot 0.5 x reach out, bones 1.15 x reach split 0.46/0.69, pole up. Knee +0.19 x reach above the hip at rest, +0.14 at stride end | Klas, from the game-designer's proposal: the playtest-critic saw the legs read as a table or a crab, and a 0.55 x reach shin can never lift the knee above a 0.6 x reach hip (Pillar 2). Keeps body height, step-up, camera and all 8.1 stats. Per-leg hip height also lets short legs on a medium body reach the ground (today about 0.92 x their reach at rest, so rule 5 holds the body) | Body down to 0.4 x reach with bones = reach (knee below the hip at the reach limit; the Strider loses height; step-up breaks); body 0.6 with bones 1.3 x reach (stride room -6 %, shin leans in; a short pair on a medium body cannot stand); pole change alone (<= 0.005 x reach) |
+| 2026-10-09 | Amends the cadence row: step duration scales with the shortest mounted leg, x sqrt(shortest reach / 1.0 m); builds with one leg type are unchanged | Klas, from the game-designer's first-purchase check: a short pair on the Scout moved every felt stat by < 10 % (speed -2/+7 %, cadence -7/-5 %); now it steps 29 % more often. The gait must cycle as fast as its shortest leg's stride room allows, or rule 5 holds the body | Mean reach (a pair is diluted to 1/3); per-leg swing time (only a 2-3 tick flam); short-leg lift 110 -> 90 (still < 11 %, Crawler 2.95 m/s) |
+| 2026-10-09 | Pillar 1 bar: a leg purchase moves top speed, turn rate or step rate by >= 15 %; armor and top parts are judged in the first fight (45-75 s out) | Klas: the pillar says "moves and fights"; armor (+40 % HP) and a 2nd cannon (DPS x2) change walking by only about 10 % | Every part passes the 15 % walk bar (needs heavier mass costs); no numeric bar |
+| 2026-10-09 | A flatter chassis, so the knees peak above it as in the nimble-walker reference, waits for the M1 art pass; M0 keeps the greybox box | Klas: with arched legs the knees already read in greybox (Scout knee 0.69 m beside a 0.65-0.97 m chassis) | Flatten the greybox chassis in T03 now |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
