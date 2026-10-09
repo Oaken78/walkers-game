@@ -399,6 +399,9 @@ func _physics_process(delta: float) -> void:
 		spawn_at(_lane, _spawn_offset)
 	if _autopilot:
 		_run_autopilot(delta)
+	if _hash_on:
+		# A rolling hash of the walker's state each tick (position, the leg that waits, contacts): two identical runs must agree.
+		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker._hang_wait * 7 + _walker._contact_count) & 0x3FFFFFFFFFFF
 	_track_step_up()
 	_track_lateral_flips()
 	_track_yaw_overshoot()
@@ -412,7 +415,7 @@ func _physics_process(delta: float) -> void:
 		or (_lane == LANE_LEDGES and _stopped_before_face())
 	)
 	if _walker.gait() != null:
-		foot_rise_max = maxf(foot_rise_max, foot_rise_above_apron)
+		foot_rise_max = maxf(foot_rise_max, foot_rise_from_start if _foot_start_y.size() == _walker.leg_count() else foot_rise_above_apron)
 		if _tick > 5:
 			root_rise_max = maxf(root_rise_max, root_rise_over_nominal)
 	if _track_clearance and _walker.gait() != null and _on_patch():
@@ -628,6 +631,9 @@ func log_lateral(label: String) -> void:
 
 ## Forgets the running rise maxima (call after a spawn has settled, so the start pose does not count).
 func reset_rise_max() -> void:
+	_foot_start_y.resize(_walker.leg_count())
+	for i in _walker.leg_count():
+		_foot_start_y[i] = _walker.foot_position(i).y
 	foot_rise_max = -INF
 	root_rise_max = -INF
 	_nominal_root_y = _walker.global_position.y
@@ -1126,6 +1132,16 @@ func _track_hover_inside() -> void:
 
 ## Planted-foot rise above the lane's apron, and the body root's rise over (apron + nominal body height): the
 ## blocked-at-the-talus numbers (a blocked walker stays level on the apron).
+## How far a planted foot is above the height it stood at when `reset_rise_max()` was called, the largest over the planted feet
+## (each foot from its own start: a walker that starts with its feet on a toe is not counted for the toe).
+var foot_rise_from_start: float:
+	get:
+		var rise: float = -INF
+		for i in _walker.leg_count():
+			if _walker.gait().state_of(i) == GaitSolver.LegState.PLANTED:
+				rise = maxf(rise, _walker.foot_position(i).y - _foot_start_y[i])
+		return rise
+var _foot_start_y: PackedFloat32Array = PackedFloat32Array()
 var foot_rise_above_apron: float:
 	get:
 		if _walker == null or _walker.gait() == null:
@@ -1705,6 +1721,43 @@ func set_climb_height(height: float) -> void:
 		_block_material
 	)
 	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+
+
+## Rolling hash of the run since `hash_start()`, and the one `hash_record()` kept for the run before.
+var run_hash: int = 0
+var hash_ref: int = -1
+var _hash_on: bool = false
+## True when the run since `hash_record()` reproduced the recorded hash.
+var hash_matches: bool:
+	get:
+		return run_hash == hash_ref
+
+
+func hash_start() -> void:
+	run_hash = 0
+	_hash_on = true
+
+
+func hash_stop() -> void:
+	_hash_on = false
+
+
+func hash_record() -> void:
+	hash_ref = run_hash
+	_hash_on = false
+
+
+## True when the walker is past the climb lane's block and back at the height it stands on the floor (it was climbed and
+## descended).
+var descended_climb: bool:
+	get:
+		if not _blocks.has(LANE_CLIMB):
+			return false
+		var block: Dictionary = _blocks[LANE_CLIMB][0]
+		return (
+			_walker.global_position.z < block["z_back"] - 0.3
+			and _walker.global_position.y < 0.6 * _walker.leg_reach(0) + 0.15
+		)
 
 
 ## Remembers the tallest block the current run climbed for a build ("strider" and "crawler" feed the contrast).

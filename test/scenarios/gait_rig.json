@@ -572,6 +572,14 @@
    "wait_frames": 20
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "use_orbit_camera",

@@ -240,3 +240,23 @@ func test_a_teleport_clears_the_climb_state_of_the_walker() -> void:
 	assert_false(walker._hauling, "the haul is over")
 	assert_lt(walker._climb_linger, 0.5, "no climb lingers")
 
+
+func test_a_rebuild_asked_for_inside_the_walkers_own_tick_waits_until_the_frame_is_over() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 1.5, 0.0)))
+	var asked: Array[bool] = [false]
+	walker.step_started.connect(
+		func(_leg: int) -> void:
+			if not asked[0]:
+				asked[0] = true
+				walker.apply_build(WalkerBuild.crawler())
+	)
+	Input.action_press("move_forward")
+	simulate(walker, 60, 1.0 / 60.0)
+	Input.action_release("move_forward")
+	assert_true(asked[0], "a step started")
+	assert_eq(walker.leg_count(), 6, "still the Scout inside the tick")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_eq(walker.leg_count(), 8, "the Crawler once the frame is over")
+

@@ -395,12 +395,16 @@ func test_strider_climbs_at_least_40_percent_higher_than_crawler_expected_0_625(
 	assert_almost_eq((a - c) / a, 0.625, 0.001)
 
 
-func test_climb_of_a_mixed_build_uses_the_mean_reach() -> void:
+func _scout_with_pair(pair: StringName) -> WalkerBuild:
 	var build := WalkerBuild.new()
 	for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
 		build.place(socket, PartCatalog.LEG_MEDIUM)
 	for socket: StringName in [&"leg_l2", &"leg_r2"]:
-		build.place(socket, PartCatalog.LEG_SHORT)
+		build.place(socket, pair)
 	build.place(&"top_0", PartCatalog.PULSE_CANNON)
-	var stats: Dictionary = build.stats()
-	assert_almost_eq(stats["climb"] as float, 0.9 * (4.0 * 1.0 + 2.0 * 0.6) / 6.0, 0.001)
+	return build
+
+
+func test_climb_of_a_mixed_build_uses_the_shortest_leg_reach() -> void:
+	assert_almost_eq(_scout_with_pair(PartCatalog.LEG_SHORT).stats()["climb"] as float, 0.54, 0.001, "short pair")
+	assert_almost_eq(_scout_with_pair(PartCatalog.LEG_LONG).stats()["climb"] as float, 0.90, 0.001, "long pair")

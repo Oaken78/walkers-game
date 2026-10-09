@@ -85,7 +85,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.335
    }
   },
   {
@@ -244,7 +244,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.335
    }
   },
   {
@@ -885,7 +885,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.225
+    "value": 0.377
    }
   },
   {

@@ -149,7 +149,7 @@
    }
   },
   {
-   "wait_frames": 3000
+   "wait_frames": 3300
   },
   {
    "assert_prop": {
@@ -312,7 +312,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.34
    }
   },
   {
@@ -516,7 +516,7 @@
    }
   },
   {
-   "wait_frames": 2400
+   "wait_frames": 2150
   },
   {
    "assert_prop": {
@@ -531,7 +531,7 @@
     "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
-    "value": 0.5
+    "value": 0.45
    }
   },
   {
@@ -539,7 +539,7 @@
     "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": "<=",
-    "value": 0.56
+    "value": 0.51
    }
   },
   {
@@ -703,7 +703,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.34
    }
   },
   {

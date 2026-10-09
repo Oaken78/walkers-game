@@ -372,7 +372,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -490,7 +490,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -608,7 +608,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -988,7 +988,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -1106,7 +1106,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -1224,7 +1224,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -1604,7 +1604,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -1722,7 +1722,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -1840,7 +1840,7 @@
     "node": ".",
     "prop": "foot_rise_max",
     "op": "<=",
-    "value": 0.17
+    "value": 0.05
    }
   },
   {
@@ -2189,6 +2189,9 @@
    }
   },
   {
+   "wait_frames": 60
+  },
+  {
    "call": {
     "node": ".",
     "method": "reset_rise_max",
@@ -2240,7 +2243,7 @@
     "node": ".",
     "prop": "root_rise_max",
     "op": "<=",
-    "value": 0.42
+    "value": 0.1
    }
   },
   {

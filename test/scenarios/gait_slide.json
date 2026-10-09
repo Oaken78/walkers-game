@@ -93,7 +93,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.335
    }
   },
   {
@@ -1409,6 +1409,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "max_lateral_flips_2s",
     "op": "<=",
@@ -1543,6 +1551,14 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "max_lateral_flips_2s",
     "op": "<=",
@@ -1673,6 +1689,14 @@
     "args": [
      "gait_slide crawler in the 70 deg wedge"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

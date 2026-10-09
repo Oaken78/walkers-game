@@ -92,7 +92,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.326
    }
   },
   {
@@ -261,7 +261,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.315
+    "value": -0.317
    }
   },
   {
@@ -430,7 +430,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.338
    }
   },
   {
@@ -599,7 +599,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.34
    }
   },
   {

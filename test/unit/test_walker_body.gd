@@ -428,3 +428,13 @@ func test_convex_hull_scratch_reuse_does_not_leak_points_between_calls() -> void
 	assert_eq(hull.size(), 3, "the second call sees only its own points")
 	assert_almost_eq(WalkerBody.polygon_margin(hull, Vector2(0.25, 0.25)), 0.25, 0.0001)
 
+
+func test_support_advance_keeps_the_back_off_input_while_a_leg_waits() -> void:
+	var facing := Vector3(0, 0, -1)
+	var back: Vector3 = WalkerBody.support_advance(Vector3(0, 0, 4.0), facing, Vector3.ZERO, 1.8)
+	assert_gt(back.z, 1.0, "S moves the body back even with no shift")
+	var forward: Vector3 = WalkerBody.support_advance(Vector3(0, 0, -4.0), facing, Vector3.ZERO, 1.8)
+	assert_almost_eq(forward.length(), 0.0, 0.0001, "forward input is not added to the shift")
+	var strafe: Vector3 = WalkerBody.support_advance(Vector3(3.0, 0, -4.0), facing, Vector3.ZERO, 1.8)
+	assert_gt(strafe.x, 1.0, "strafe input is kept")
+

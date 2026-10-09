@@ -29,6 +29,9 @@ var time_to_turn_rate_s: float = UNSET
 var input_to_motion_ticks: int = UNSET_TICKS
 var first_lift_ticks: int = UNSET_TICKS
 var max_drift_m: float = 0.0
+## Highest a planted pad was lifted above where it was planted (m): the IK folds a leg no tighter than its fold distance and
+## pushes the pad up when the hip comes down on it (a descent). Horizontal sliding is `max_drift_m`.
+var max_fold_lift_m: float = 0.0
 var airborne_violations: int = 0
 var max_airborne: int = 0
 var min_steps_per_leg: int = 0
@@ -94,8 +97,6 @@ var max_hang_rise_ratio: float = 0.0
 var reach_ups: int = 0
 var step_ups: int = 0
 var hang_ticks: int = 0
-## Ticks a leg went past the support-margin rule because the body could not make the margin (should be 0).
-var margin_breaks: int = 0
 ## `min_pad_sep_m` (2D: lateral and fore-aft, not the vertical axis) as it stood at the last report() (an assert one frame later would see another tick).
 var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
@@ -145,7 +146,6 @@ var _pad_query: PhysicsShapeQueryParameters3D
 var _reach_base: int = 0
 var _step_base: int = 0
 var _hang_base: int = 0
-var _break_base: int = 0
 var _gap_ray: PhysicsRayQueryParameters3D
 
 
@@ -178,6 +178,7 @@ func reset() -> void:
 	input_to_motion_ticks = UNSET_TICKS
 	first_lift_ticks = UNSET_TICKS
 	max_drift_m = 0.0
+	max_fold_lift_m = 0.0
 	airborne_violations = 0
 	max_airborne = 0
 	min_steps_per_leg = 0
@@ -238,11 +239,9 @@ func reset() -> void:
 		_reach_base = walker.reach_ups
 		_step_base = walker.step_ups
 		_hang_base = walker.hang_ticks
-		_break_base = walker.margin_breaks
 	reach_ups = 0
 	step_ups = 0
 	hang_ticks = 0
-	margin_breaks = 0
 	max_pitch_deg = 0.0
 	max_root_rise_tick_m = 0.0
 	min_support_margin_ratio = INF
@@ -276,7 +275,7 @@ var tick_max_ms: float:
 
 
 func report(label: String = "") -> void:
-	pad_gap_at_report_m = minf(min_pad_sep_m, 9.0)
+	pad_gap_at_report_m = snappedf(minf(min_pad_sep_m, 9.0), 0.0001)
 	var data: Dictionary = {
 		"label": label,
 		"legs": walker.leg_count() if walker != null else 0,
@@ -289,6 +288,7 @@ func report(label: String = "") -> void:
 		"input_to_motion_ticks": input_to_motion_ticks,
 		"first_lift_ticks": first_lift_ticks,
 		"max_drift_m": snappedf(max_drift_m, 0.00001),
+		"max_fold_lift_m": snappedf(max_fold_lift_m, 0.001),
 		"airborne_violations": airborne_violations,
 		"max_airborne": max_airborne,
 		"min_steps_per_leg": min_steps_per_leg,
@@ -326,7 +326,6 @@ func report(label: String = "") -> void:
 		"reach_ups": reach_ups,
 		"step_ups": step_ups,
 		"hang_ticks": hang_ticks,
-		"margin_breaks": margin_breaks,
 		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
 		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
 		"tick_max_ms": snappedf(tick_max_ms, 0.001),
@@ -384,7 +383,6 @@ func _physics_process(delta: float) -> void:
 	reach_ups = walker.reach_ups - _reach_base
 	step_ups = walker.step_ups - _step_base
 	hang_ticks = walker.hang_ticks - _hang_base
-	margin_breaks = walker.margin_breaks - _break_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
@@ -546,14 +544,11 @@ func _track_pad_gap() -> void:
 			var offset: Vector3 = walker.foot_position(i) - walker.foot_position(j)
 			var apart: float = absf(offset.dot(forward))
 			min_pad_gap_m = minf(min_pad_gap_m, apart - WalkerLeg.PAD_SIZE.z)
-			min_pad_sep_m = minf(
-				min_pad_sep_m,
-				box_gap(
-					absf(offset.dot(right)) - WalkerLeg.PAD_SIZE.x,
-					-PAD_SEP_NO_AXIS,
-					apart - WalkerLeg.PAD_SIZE.z
-				)
-			)
+			var lateral: float = absf(offset.dot(right)) - WalkerLeg.PAD_SIZE.x
+			# Pads that overlap sideways are measured by how far they overlap fore-aft (down to a whole pad length when they sit
+			# on one spot); pads beside each other by the length of their gaps.
+			var sep: float = apart - WalkerLeg.PAD_SIZE.z if lateral < 0.0 else box_gap(lateral, -PAD_SEP_NO_AXIS, apart - WalkerLeg.PAD_SIZE.z)
+			min_pad_sep_m = minf(min_pad_sep_m, sep)
 
 
 ## Separation of two boxes from their per-axis gaps (centre distance less the summed half sizes): the length of the
@@ -624,7 +619,8 @@ func _track_gait() -> void:
 				_plant_known[i] = 1
 				_measure_plant_gap(foot)
 			else:
-				max_drift_m = maxf(max_drift_m, foot.distance_to(_plant_pos[i]))
+				max_drift_m = maxf(max_drift_m, Vector2(foot.x - _plant_pos[i].x, foot.z - _plant_pos[i].z).length())
+				max_fold_lift_m = maxf(max_fold_lift_m, foot.y - _plant_pos[i].y)
 		fewest = mini(fewest, _steps[i])
 	min_steps_per_leg = 0 if fewest == (1 << 30) else fewest
 

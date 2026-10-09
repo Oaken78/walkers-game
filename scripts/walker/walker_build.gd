@@ -15,7 +15,7 @@ const TURN_PER_LEG := 10.0
 const TURN_MIN := 60.0
 const TURN_MAX := 180.0
 const STEP_UP_PER_REACH := 0.6
-## The highest ledge a front foot reaches up onto and the body hauls up (and the deepest drop it steps down): 0.9 x mean reach.
+## The highest ledge a front foot reaches up onto and the body hauls up (and the deepest drop it steps down): 0.9 x the shortest mounted leg's reach (a build climbs what its weakest leg can follow).
 const CLIMB_PER_REACH := 0.9
 const SPREAD_DEG_PER_FACTOR := 1.0
 const FOUR_LEGS := 4
@@ -153,7 +153,9 @@ func stats() -> Dictionary:
 	var reach_sum := 0.0
 	var spread_sum := 0.0
 	var slope := INF
+	var shortest := INF
 	for leg in legs:
+		shortest = minf(shortest, leg["reach"])
 		lift += leg["lift"]
 		reach_sum += leg["reach"]
 		spread_sum += leg["spread_factor"]
@@ -187,7 +189,7 @@ func stats() -> Dictionary:
 		TURN_BASE - TURN_LOAD_FACTOR * load_ratio - TURN_PER_LEG * count, TURN_MIN, TURN_MAX
 	)
 	result["step_up"] = STEP_UP_PER_REACH * reach
-	result["climb"] = CLIMB_PER_REACH * reach
+	result["climb"] = CLIMB_PER_REACH * (shortest if shortest < INF else 0.0)
 	result["max_slope"] = slope
 	result["spread"] = SPREAD_DEG_PER_FACTOR * spread_sum / count
 	return result

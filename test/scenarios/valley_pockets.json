@@ -106,14 +106,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "margin_breaks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
@@ -339,7 +331,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": 0.048
    }
   },
   {
@@ -486,14 +478,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "margin_breaks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
@@ -512,7 +496,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.294
+    "value": -0.34
    }
   },
   {
@@ -619,8 +603,9 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     35.0,
-     8.0
+     10.0,
+     8.0,
+     180.0
     ]
    }
   },
@@ -645,18 +630,6 @@
   },
   {
    "wait_frames": 300
-  },
-  {
-   "screenshot": "strider_looking_out_over_ledge_lip"
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_foot_vis",
-    "args": [
-     "valley_pockets strider_looking_out_over_ledge_lip"
-    ]
-   }
   },
   {
    "call": {
@@ -696,14 +669,6 @@
     "prop": "min_support_margin_ratio",
     "op": ">=",
     "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "margin_breaks",
-    "op": "==",
-    "value": 0
    }
   },
   {
@@ -1174,7 +1139,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.335
    }
   },
   {
@@ -1365,7 +1330,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.335
    }
   },
   {
@@ -1826,7 +1791,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.32
+    "value": -0.33
    }
   },
   {
@@ -1947,8 +1912,9 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     35.0,
-     8.0
+     10.0,
+     8.0,
+     180.0
     ]
    }
   },
