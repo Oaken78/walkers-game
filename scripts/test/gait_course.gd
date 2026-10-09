@@ -94,6 +94,9 @@ const AUTOPILOT_DEAD_DEG: float = 3.0
 ## Foot box limit (GDD 10 rule 1): every foot at least this tall at 1080p (checked by the pitch scenarios).
 @export var min_foot_px_1080: float = 12.0
 
+## The lowest visible-sight-line count (0..5) over all pads at the last log_foot_vis call (chassis and terrain only).
+var min_foot_vis: int = 5
+
 ## Mean slope of the two steep patches over a 2 m disc, in degrees (28-30 and 35-40).
 var patch_a_slope_deg: float = 0.0
 ## Slope of the talus lane between its corner and its edge (measured from the built heights).
@@ -167,6 +170,14 @@ var patch_gap: float:
 		if _lane == LANE_TALUS:
 			return _walker.global_position.z + TALUS_CORNER_ALONG
 		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK)
+## True while the orbit camera recentres behind the walker (a spawn restores it after an abeam view).
+var orbit_recentering: bool:
+	get:
+		return _orbit.recenter_enabled
+## True when the walker steers by the orbit camera (CAMERA_YAW with the rig as its yaw source).
+var steers_by_orbit: bool:
+	get:
+		return _walker.yaw_source == _orbit and _walker.steer_mode == WalkerBody.SteerMode.CAMERA_YAW
 ## True while the orbit camera is the play camera.
 var orbit_active: bool:
 	get:
@@ -340,6 +351,12 @@ func _physics_process(delta: float) -> void:
 	_tick += 1
 	if _tick == 5:
 		_nominal_root_y = _walker.global_position.y
+	# Walking into the end of a lane (no ground ahead) is not a stall of the controller.
+	_telemetry.stall_exempt = _walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS
+	if _walker.gait() != null:
+		foot_rise_max = maxf(foot_rise_max, foot_rise_above_apron)
+		if _tick > 5:
+			root_rise_max = maxf(root_rise_max, root_rise_over_nominal)
 	if _track_clearance and _walker.gait() != null and _on_patch():
 		# The clearance sits on its floor (the push-up holds it there) for a stretch of the crest: take the middle.
 		var clearance: float = _walker.min_hip_clearance()
@@ -463,10 +480,13 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 	_spawn_offset = offset_z
 	_tick = 0
 	hover_inside_ticks = 0
+	foot_rise_max = -INF
+	root_rise_max = -INF
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
+		_orbit.recenter_enabled = true
 		_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), _orbit.pitch_deg)
 		_orbit.snap()
 	_last_plant.resize(_walker.leg_count())
@@ -599,9 +619,9 @@ func log_camera(label: String) -> void:
 
 
 ## For every pad: how many of 5 sight lines (top centre + 4 top corners) from the active camera reach it, against
-## the world (layer 1) and the walker's chassis box. The walker's physics colliders are not used: the stance guard
-## is a big invisible cylinder. Hip balls and the tops are ignored. Reported, not asserted:
-## `FOOTVIS <tag> leg=i visible=k/5`.
+## the world (layer 1) and the walker's chassis box ONLY. Other legs, hip balls, the tops and pad side faces are not
+## tested, so 5/5 does not mean "readable": it means no terrain or chassis is in the way. Logged as
+## `FOOTVIS(chassis+terrain) <tag> leg=i visible=k/5`; the lowest count is kept in `min_foot_vis`.
 func log_foot_vis(tag: String) -> void:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var eye: Vector3 = _active_camera().global_position
@@ -620,6 +640,7 @@ func log_foot_vis(tag: String) -> void:
 	var to_local: Transform3D = chassis.global_transform.affine_inverse()
 	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
 	var rows: Array[String] = []
+	min_foot_vis = 5
 	for i in _walker.leg_count():
 		var foot: Vector3 = _walker.foot_position(i)
 		var seen: int = 0
@@ -634,7 +655,8 @@ func log_foot_vis(tag: String) -> void:
 				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
 			if not blocked:
 				seen += 1
-		rows.append("FOOTVIS %s leg=%d visible=%d/5" % [tag, i, seen])
+		min_foot_vis = mini(min_foot_vis, seen)
+		rows.append("FOOTVIS(chassis+terrain) %s leg=%d visible=%d/5" % [tag, i, seen])
 	for row in rows:
 		print(row)
 
@@ -948,6 +970,9 @@ var foot_rise_above_apron: float:
 			if _walker.gait().state_of(i) == GaitSolver.LegState.PLANTED:
 				rise = maxf(rise, _walker.foot_position(i).y)
 		return rise
+## Running maxima of the two since the last spawn_at (a blocked push is judged over the whole push, not one frame).
+var foot_rise_max: float = -INF
+var root_rise_max: float = -INF
 var root_rise_over_nominal: float:
 	get:
 		if _walker == null:

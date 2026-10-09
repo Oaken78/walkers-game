@@ -80,7 +80,7 @@ const FRACTION_RESOLUTION: float = 0.08
 const FRACTION_SHRINK: float = 0.95
 const MIN_FRACTION: float = 0.02
 ## Held for the same reason as last tick: fewer tries, starting from a small fraction (the slow crawl).
-const REPEAT_TRIES: int = 2
+const REPEAT_TRIES: int = 3
 const REPEAT_FRACTION: float = 0.25
 ## Contact buffers and the collide_shape query size of the overlap test.
 const MAX_CONTACTS: int = 24
@@ -1266,6 +1266,12 @@ func _is_wall(normal: Vector3) -> bool:
 	return rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG
 
 
+## The height of the wall probe at (x, z): the feet plane + the height the legs can overcome (today the step-up) + 1 cm.
+## The one place that defines how tall an obstacle must be to count as a wall.
+func _wall_probe_height(x: float, z: float) -> float:
+	return plane_height(_ref_plane, x, z) + _step_up + WALL_PROBE_LIFT
+
+
 ## A steep contact is a wall only if the obstacle it belongs to stands taller than the legs' step-up above the
 ## feet's plane: a low rock, however round, is stepped onto (the body pitches and rises over it). The height of the
 ## face is measured, not the height of the contact: a horizontal ray at the feet plane + step-up + 1 cm runs from just
@@ -1284,7 +1290,7 @@ func _contact_is_wall(normal: Vector3, point: Vector3) -> bool:
 	)
 	if _wall_cache.has(key):
 		return _wall_cache[key]
-	var height: float = plane_height(_ref_plane, point.x, point.z) + _step_up + WALL_PROBE_LIFT
+	var height: float = _wall_probe_height(point.x, point.z)
 	_sight.from = Vector3(point.x + flat.x * WALL_PROBE_BACK, height, point.z + flat.z * WALL_PROBE_BACK)
 	_sight.to = Vector3(
 		point.x - flat.x * WALL_PROBE_LENGTH, height, point.z - flat.z * WALL_PROBE_LENGTH

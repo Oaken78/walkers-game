@@ -462,6 +462,14 @@
   {
    "assert_prop": {
     "node": ".",
+    "prop": "steers_by_orbit",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
     "prop": "steer_mode_name",
     "op": "==",
     "value": "CAMERA_YAW"
@@ -521,6 +529,14 @@
     "node": ".",
     "method": "toggle_steer_mode",
     "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "steers_by_orbit",
+    "op": "==",
+    "value": false
    }
   },
   {
@@ -755,6 +771,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "hold_action",
@@ -839,6 +863,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
    "wait_frames": 20
   },
   {
@@ -850,6 +882,14 @@
      8.0,
      90.0
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": false
    }
   },
   {
@@ -938,6 +978,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
    "wait_frames": 20
   },
   {
@@ -949,6 +997,14 @@
      8.0,
      90.0
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": false
    }
   },
   {
@@ -1030,6 +1086,14 @@
     "args": [
      "talus_top"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_recentering",
+    "op": "==",
+    "value": true
    }
   },
   {

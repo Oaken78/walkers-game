@@ -57,6 +57,8 @@ var velocity_resets: int = 0
 var longest_stall_s: float = 0.0
 ## Largest pitch the contact resolve applied in one tick, apart from the smoothed tilt step (degrees).
 var max_resolve_pitch_deg: float = 0.0
+## Set by the test course on ticks that must not count as a stall (the walker has reached the end of the lane).
+var stall_exempt: bool = false
 ## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
 var min_pad_gap_m: float = INF
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
@@ -78,6 +80,9 @@ var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
 var _hold_run: int = 0
 var _stall_run: int = 0
+var _stall_last: Vector3 = Vector3.ZERO
+var _stall_known: bool = false
+var _stall_teleports: int = 0
 var _tick_ms: PackedFloat32Array = PackedFloat32Array()
 var _plant_pos: PackedVector3Array = PackedVector3Array()
 var _plant_known: PackedByteArray = PackedByteArray()
@@ -156,6 +161,7 @@ func reset() -> void:
 	max_rays_cast_per_tick = 0
 	_tick_ms.resize(0)
 	_stall_run = 0
+	_stall_known = false
 	steps_per_s = 0.0
 	max_foot_slope_deg = 0.0
 	ticks = 0
@@ -301,9 +307,22 @@ func _physics_process(delta: float) -> void:
 	_track_height(walker.height_above_plane())
 
 
+## Progress counts vertical rise too (a slow haul up a ledge is not a stall): the speed of the body root in 3D.
 func _track_stall(delta: float) -> void:
 	var wanted: float = walker.input_speed()
-	if walker.move_input_active and wanted > MOTION_EPSILON_MPS and walker.velocity.length() < STALL_FRACTION * wanted:
+	var here: Vector3 = walker.global_position
+	var progress: float = here.distance_to(_stall_last) / delta if _stall_known else 0.0
+	_stall_last = here
+	_stall_known = true
+	if walker.teleport_count != _stall_teleports:
+		_stall_teleports = walker.teleport_count
+		progress = INF
+	if (
+		not stall_exempt
+		and walker.move_input_active
+		and wanted > MOTION_EPSILON_MPS
+		and progress < STALL_FRACTION * wanted
+	):
 		_stall_run += 1
 		longest_stall_s = maxf(longest_stall_s, float(_stall_run) * delta)
 	else:
