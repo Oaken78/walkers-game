@@ -26,6 +26,19 @@ var exit_mismatch_frames: int = 0
 var check_ok: bool = false
 var check_detail: String = ""
 
+## The build handed out by the last exit_requested was the one passed to setup() and not a display copy.
+var exit_same_build: bool = false
+var exit_is_display: bool = false
+## armed_changed signals seen (setup() emits one when it clears an armed part).
+var armed_changes: int = 0
+## Longest time (microseconds) one click took to handle: the motion and the press, or the release that fires a button.
+var click_usec_max: int = 0
+var click_usec_last: int = 0
+
+var _snapshot: Dictionary = {}
+var _old_economy: Economy
+var _old_inventory: Inventory
+var _setup_build: WalkerBuild
 var _queue: Array[Dictionary] = []  # {frames, event}
 var _start_position: Vector3 = Vector3.ZERO
 
@@ -117,12 +130,68 @@ var panel_share: float:
 var max_panel_width: float:
 	get:
 		return maxf(workshop.ui().left_panel().size.x, workshop.ui().right_panel().size.x)
+## "!" on the Load row, and the blocked-exit pulse.
+var load_flag: bool:
+	get:
+		return workshop.ui().load_flag_visible()
+var reason_pulse_left: float:
+	get:
+		return workshop.ui().reason_pulse_left()
+var reason_pulses: int:
+	get:
+		return workshop.ui().reason_pulse_count()
+var blocked_exits: int:
+	get:
+		return workshop.blocked_exit_count
+var has_exited: bool:
+	get:
+		return workshop.has_exited()
+var anchor_computes: int:
+	get:
+		return workshop.anchor_computes
+var preview_computes: int:
+	get:
+		return workshop.preview_computes
+## The better and worse marks, how far apart they are in luma (GDD 12: at least 0.25).
+var mark_luma_gap: float:
+	get:
+		return WorkshopTheme.mark_luma_gap()
+## The links the workshop holds on the current and on the replaced economy and inventory (must be 1 and 0).
+var economy_links: int:
+	get:
+		return _links(economy.changed)
+var inventory_links: int:
+	get:
+		return _links(inventory.changed)
+var old_economy_links: int:
+	get:
+		return 0 if _old_economy == null else _links(_old_economy.changed)
+var old_inventory_links: int:
+	get:
+		return 0 if _old_inventory == null else _links(_old_inventory.changed)
+var shown_turn: String:
+	get:
+		return workshop.ui().shown_value("turn_rate")
+var shown_slope: String:
+	get:
+		return workshop.ui().shown_value("max_slope")
+var shown_spread: String:
+	get:
+		return workshop.ui().shown_value("spread")
+var shown_scrap: String:
+	get:
+		return workshop.ui().shown_scrap()
+var shown_short_owned: String:
+	get:
+		return workshop.ui().shown_owned(PartCatalog.LEG_SHORT)
 
 
 func _ready() -> void:
 	economy.pick_up("", start_scrap)
 	economy.bank()
 	workshop.exit_requested.connect(_on_exit_requested)
+	workshop.armed_changed.connect(_on_armed_changed)
+	_setup_build = build
 	workshop.setup(build, inventory, economy)
 	_start_position = workshop.walker().global_position
 
@@ -135,7 +204,7 @@ func _process(_delta: float) -> void:
 			due.append(entry)
 	for entry in due:
 		_queue.erase(entry)
-		_dispatch(entry["event"])
+		_timed_dispatch(entry["event"])
 	if workshop.ui().exit_button().disabled == build.is_valid():
 		exit_mismatch_frames += 1
 
@@ -197,20 +266,80 @@ func stop_orbit() -> void:
 	workshop.camera_rig().auto_orbit_deg_per_s = 0.0
 
 
+## Starts a new visit with the same build, inventory and economy (T12 opening the workshop again).
+func reopen() -> void:
+	_setup_build = build
+	workshop.setup(build, inventory, economy)
+
+
+## A new visit with a new economy (55 banked) and a new inventory (4 short legs owned): the workshop must let go of
+## the old ones and show the new ones.
+func swap_state() -> void:
+	_old_economy = economy
+	_old_inventory = inventory
+	economy = Economy.new()
+	economy.pick_up("", 55)
+	economy.bank()
+	inventory = Inventory.new(
+		{
+			PartCatalog.LEG_MEDIUM: 6,
+			PartCatalog.PULSE_CANNON: 1,
+			PartCatalog.LEG_SHORT: 4,
+			PartCatalog.LEG_LONG: 2,
+		}
+	)
+	reopen()
+
+
+## Slides the camera look-at point until the socket mark sits on the left panel heading (a click there reaches the
+## panel and presses nothing).
+func shift_socket_under_panel(socket_id: String) -> void:
+	var rig := workshop.camera_rig()
+	var cam := rig.camera()
+	var id := StringName(socket_id)
+	# The "Parts" heading: inside the panel, nothing to press.
+	var target := Vector2(120.0, 76.0)
+	var screen_height := get_viewport().get_visible_rect().size.y
+	for attempt in 8:
+		var at := workshop.socket_screen_position(id)
+		if at.distance_to(target) < 6.0:
+			return
+		var metres_per_px := 2.0 * rig.distance * tan(deg_to_rad(cam.fov * 0.5)) / screen_height
+		var wanted := target - at
+		var cam_basis := cam.global_transform.basis
+		rig.look_at_point += (cam_basis.x * -wanted.x + cam_basis.y * wanted.y) * metres_per_px
+		rig.set_view(rig.yaw_deg, rig.pitch_deg, rig.distance)
+
+
+## Puts the look-at point back on the walker.
+func reset_look() -> void:
+	var rig := workshop.camera_rig()
+	rig.look_at_point = Vector3(0.0, 0.9, 0.0)
+	rig.set_view(rig.yaw_deg, rig.pitch_deg, rig.distance)
+
+
 # --- Checks (what is on screen against what the rules say) -----------------------------------------------------
 
 
-## The stats panel, the load line and the scrap readout against WalkerBuild.stats() at two decimals.
+## The stats panel, the load line, the "!" flag and the scrap readout against WalkerBuild.stats(), each stat at its
+## own decimals (whole degrees for turn and slope, two decimals for the others).
 func check_stats_shown() -> void:
 	var problems: PackedStringArray = PackedStringArray()
 	var stats := BuildStats.of(build)
 	var ui := workshop.ui()
 	for entry in StatFormat.ROWS:
 		var key: String = entry["key"]
-		var shown := float(ui.shown_value(key))
-		var want := snappedf(float(stats[key]), 0.01)
-		if absf(shown - want) > 0.0051:
-			problems.append("%s shows %s, stats say %.2f" % [key, ui.shown_value(key), want])
+		var shown_text := ui.shown_value(key)
+		var want := StatFormat.value_text(key, float(stats[key]))
+		var tolerance := 0.5 * pow(10.0, -float(entry["decimals"]))
+		if absf(float(shown_text) - float(stats[key])) > tolerance + 0.0001:
+			problems.append("%s shows %s, stats say %s" % [key, shown_text, want])
+		if shown_text.length() != want.length():
+			problems.append("%s shows %s, wanted the decimals of %s" % [key, shown_text, want])
+	if ui.load_flag_visible() != StatFormat.is_overloaded(stats):
+		problems.append(
+			"the Load flag is %s at load %.2f" % [ui.load_flag_visible(), stats["load"]]
+		)
 	if ui.shown_load_detail() != StatFormat.load_detail(stats):
 		problems.append(
 			"load detail shows %s, wanted %s"
@@ -244,20 +373,62 @@ func check_delta_shown(kind: String, socket_id: String, part_id: String = "") ->
 		var key: String = entry["key"]
 		var expected := float(after[key]) - float(before[key])
 		var text := ui.shown_delta(key)
-		if absf(expected) < StatFormat.CHANGE_EPSILON:
+		var step := pow(10.0, -float(entry["decimals"]))
+		if absf(snappedf(expected, step)) < step * 0.5:
 			if text != "":
 				problems.append("%s shows delta %s, none expected" % [key, text])
 			continue
 		changed_rows += 1
 		if text == "":
-			problems.append("%s shows no delta, expected %.2f" % [key, expected])
+			problems.append("%s shows no delta, expected %.3f" % [key, expected])
 			continue
-		if absf(float(text) - snappedf(expected, 0.01)) > 0.0051:
-			problems.append("%s delta shows %s, expected %.2f" % [key, text, expected])
+		if absf(float(text) - snappedf(expected, step)) > step * 0.5 + 0.0001:
+			problems.append("%s delta shows %s, expected %.3f" % [key, text, expected])
+		# The delta has the decimals of the stat's value.
+		var decimals_shown := text.length() - text.find(".") - 1 if "." in text else 0
+		if decimals_shown != int(entry["decimals"]):
+			problems.append("%s delta %s has the wrong decimals" % [key, text])
 		if ui.shown_delta_direction(key) != (1 if expected > 0.0 else -1):
 			problems.append("%s mark points the wrong way" % key)
 	if changed_rows == 0:
 		problems.append("no stat changes at all, the preview is empty")
+	_finish_check(problems)
+
+
+## The better/worse marks on screen against what the polarity table says. `expected` maps a stats key to "better",
+## "worse" or "none"; keys it does not list are not checked.
+func check_delta_quality(expected: Dictionary) -> void:
+	var problems: PackedStringArray = PackedStringArray()
+	var ui := workshop.ui()
+	var names := {1: "better", -1: "worse", 0: "none"}
+	for key: String in expected:
+		var got: String = names[ui.shown_delta_quality(key)]
+		if got != expected[key]:
+			problems.append("%s is marked %s, expected %s" % [key, got, expected[key]])
+	_finish_check(problems)
+
+
+## Remembers the work counters (anchors, previews, armed_changed) for check_counters.
+func snapshot_counters() -> void:
+	_snapshot = {
+		"anchor_computes": workshop.anchor_computes,
+		"preview_computes": workshop.preview_computes,
+		"armed_changes": armed_changes,
+	}
+
+
+## Compares the counters with the snapshot: `expected` maps a counter to how much it must have grown since.
+func check_counters(expected: Dictionary) -> void:
+	var problems: PackedStringArray = PackedStringArray()
+	var now := {
+		"anchor_computes": workshop.anchor_computes,
+		"preview_computes": workshop.preview_computes,
+		"armed_changes": armed_changes,
+	}
+	for counter: String in expected:
+		var grew: int = now[counter] - _snapshot[counter]
+		if grew != int(expected[counter]):
+			problems.append("%s grew by %d, expected %d" % [counter, grew, expected[counter]])
 	_finish_check(problems)
 
 
@@ -276,6 +447,11 @@ func report_ring(socket_id: String) -> void:
 	var at := workshop.socket_screen_position(StringName(socket_id))
 	var radius := workshop.marker_radius_px(StringName(socket_id))
 	print("RING %s at (%d, %d) radius %.1f px" % [socket_id, at.x, at.y, radius])
+
+
+func report_clicks() -> void:
+	var slowest := float(click_usec_max) / 1000.0
+	print("CLICK slowest %.2f ms, last %.2f ms" % [slowest, float(click_usec_last) / 1000.0])
 
 
 func report_layout() -> void:
@@ -298,6 +474,29 @@ func report_layout() -> void:
 func _on_exit_requested(exited: WalkerBuild) -> void:
 	exits_seen += 1
 	exit_leg_count = exited.leg_count()
+	exit_same_build = exited == _setup_build
+	exit_is_display = exited is Workshop.DisplayBuild
+
+
+func _on_armed_changed(_part_id: StringName) -> void:
+	armed_changes += 1
+
+
+## How many connections of `changed_signal` end in the workshop.
+func _links(changed_signal: Signal) -> int:
+	var count := 0
+	for link in changed_signal.get_connections():
+		if (link["callable"] as Callable).get_object() == workshop:
+			count += 1
+	return count
+
+
+## Runs a dispatch and keeps the time it took (microseconds): the click path from the event to the redrawn UI state.
+func _timed_dispatch(event: InputEvent) -> void:
+	var started := Time.get_ticks_usec()
+	_dispatch(event)
+	click_usec_last = Time.get_ticks_usec() - started
+	click_usec_max = maxi(click_usec_max, click_usec_last)
 
 
 func _finish_check(problems: PackedStringArray) -> void:
@@ -308,8 +507,8 @@ func _finish_check(problems: PackedStringArray) -> void:
 
 
 func _click(pos: Vector2, index: MouseButton) -> void:
-	_dispatch(_motion(pos))
-	_dispatch(_button(pos, index, true))
+	_timed_dispatch(_motion(pos))
+	_timed_dispatch(_button(pos, index, true))
 	_queue.append({"frames": click_hold_frames, "event": _button(pos, index, false)})
 
 
@@ -347,3 +546,19 @@ func _button(pos: Vector2, index: MouseButton, pressed: bool) -> InputEventMouse
 func _dispatch(event: InputEvent) -> void:
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
+
+
+func report_state() -> void:
+	print(
+		"STATE armed=%s hover=%s mode=%s reason=%s legs=%d spare_long=%d pos=%s mouse_over_panel=%s"
+		% [
+			armed,
+			hover_id,
+			hover_mode_name,
+			workshop.hover_reason,
+			leg_count,
+			spare_long,
+			workshop.socket_screen_position(&"leg_l3"),
+			workshop.ui().is_over_panel(workshop.socket_screen_position(&"leg_l3")),
+		]
+	)

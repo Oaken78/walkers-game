@@ -262,6 +262,16 @@ func test_the_climb_stat_is_nine_tenths_of_the_reach() -> void:
 	assert_almost_eq(float(BuildStats.of(WalkerBuild.strider())["climb"]), 1.44, TOL)
 
 
+func test_a_mixed_build_climbs_as_far_as_its_shortest_leg() -> void:
+	inventory.buy(LONG, economy)
+	inventory.mount(build, &"leg_l3", LONG)
+	assert_almost_eq(float(BuildStats.of(build)["climb"]), 0.9, TOL)
+	assert_almost_eq(BuildStats.shortest_reach(build), 1.0, TOL)
+	var short_pair := WalkerBuild.crawler()
+	assert_almost_eq(float(BuildStats.of(short_pair)["climb"]), 0.54, TOL)
+	assert_almost_eq(float(BuildStats.of(WalkerBuild.new())["climb"]), 0.0, TOL)
+
+
 # --- Conservation over a long random sequence -------------------------------------------------------------------
 
 
@@ -346,24 +356,112 @@ func _check_invariants(
 # --- Stat formatting --------------------------------------------------------------------------------------------
 
 
-func test_values_show_two_decimals_and_whole_numbers_as_integers() -> void:
-	assert_eq(StatFormat.value_text(4.5), "4.50")
-	assert_eq(StatFormat.value_text(120.0), "120")
-	assert_eq(StatFormat.value_text(0.5645), "0.56")
+func test_every_stat_shows_its_own_number_of_decimals() -> void:
+	assert_eq(StatFormat.value_text("top_speed", 4.5), "4.50")
+	assert_eq(StatFormat.value_text("turn_rate", 120.0), "120")
+	assert_eq(StatFormat.value_text("turn_rate", 112.74), "113")
+	assert_eq(StatFormat.value_text("max_slope", 30.0), "30")
+	assert_eq(StatFormat.value_text("hp", 140.0), "140")
+	assert_eq(StatFormat.value_text("dps", 60.0), "60")
+	assert_eq(StatFormat.value_text("spread", 1.0), "1.00")
+	assert_eq(StatFormat.value_text("step_up", 0.6), "0.60")
+	assert_eq(StatFormat.value_text("climb", 0.9), "0.90")
+	assert_eq(StatFormat.value_text("load", 0.5645), "0.56")
 
 
-func test_deltas_carry_a_sign_and_small_ones_vanish() -> void:
-	assert_eq(StatFormat.delta_text(0.584), "+0.58")
-	assert_eq(StatFormat.delta_text(-7.2599), "-7.26")
-	assert_eq(StatFormat.delta_text(-5.0), "-5")
-	assert_eq(StatFormat.delta_text(0.003), "")
-	assert_eq(StatFormat.delta_direction(0.58), 1)
-	assert_eq(StatFormat.delta_direction(-0.58), -1)
-	assert_eq(StatFormat.delta_direction(0.0), 0)
+func test_deltas_carry_a_sign_and_the_decimals_of_their_stat() -> void:
+	assert_eq(StatFormat.delta_text("top_speed", 0.584), "+0.58")
+	assert_eq(StatFormat.delta_text("turn_rate", -7.2599), "-7")
+	assert_eq(StatFormat.delta_text("max_slope", -5.0), "-5")
+	assert_eq(StatFormat.delta_text("spread", 0.13), "+0.13")
+	for entry in StatFormat.ROWS:
+		var text := StatFormat.delta_text(entry["key"], 12.3456)
+		var decimals := text.length() - text.find(".") - 1 if "." in text else 0
+		assert_eq(decimals, int(entry["decimals"]), "decimals of %s" % entry["key"])
+
+
+func test_a_change_that_rounds_to_nothing_is_not_shown() -> void:
+	assert_eq(StatFormat.delta_text("top_speed", 0.003), "")
+	assert_eq(StatFormat.delta_text("turn_rate", 0.4), "")
+	assert_eq(StatFormat.delta_direction("turn_rate", 0.4), 0)
+	assert_eq(StatFormat.delta_quality("turn_rate", 0.4), 0)
+	assert_eq(StatFormat.delta_direction("top_speed", 0.58), 1)
+	assert_eq(StatFormat.delta_direction("top_speed", -0.58), -1)
+
+
+func _assert_polarity(key: String, higher_is_better: bool) -> void:
+	assert_eq(StatFormat.is_better(key, 1.0), higher_is_better, "%s up" % key)
+	assert_eq(StatFormat.is_better(key, -1.0), not higher_is_better, "%s down" % key)
+	var up_quality := 1 if higher_is_better else -1
+	assert_eq(StatFormat.delta_quality(key, 1.0), up_quality, "%s up quality" % key)
+	assert_eq(StatFormat.delta_quality(key, -1.0), -up_quality, "%s down quality" % key)
+
+
+func test_a_higher_speed_is_better() -> void:
+	_assert_polarity("top_speed", true)
+
+
+func test_a_higher_turn_rate_is_better() -> void:
+	_assert_polarity("turn_rate", true)
+
+
+func test_a_higher_step_up_is_better() -> void:
+	_assert_polarity("step_up", true)
+
+
+func test_a_higher_climb_is_better() -> void:
+	_assert_polarity("climb", true)
+
+
+func test_a_higher_slope_grip_is_better() -> void:
+	_assert_polarity("max_slope", true)
+
+
+func test_more_hp_is_better() -> void:
+	_assert_polarity("hp", true)
+
+
+func test_more_dps_is_better() -> void:
+	_assert_polarity("dps", true)
+
+
+func test_a_higher_spread_is_worse() -> void:
+	_assert_polarity("spread", false)
+
+
+func test_a_higher_load_is_worse() -> void:
+	_assert_polarity("load", false)
+
+
+func test_the_polarity_table_covers_exactly_the_panel_rows() -> void:
+	var keys: Array = []
+	for entry in StatFormat.ROWS:
+		keys.append(entry["key"])
+	var table_keys: Array = StatFormat.HIGHER_IS_BETTER.keys()
+	keys.sort()
+	table_keys.sort()
+	assert_eq(table_keys, keys)
+
+
+func test_the_better_and_worse_marks_are_25_percent_luma_apart_and_not_the_threat_hue() -> void:
+	assert_gte(WorkshopTheme.mark_luma_gap(), 0.25)
+	var threat := Color("E8345A")
+	for color: Color in [WorkshopTheme.BETTER, WorkshopTheme.WORSE]:
+		var hue_gap := absf(color.h - threat.h)
+		hue_gap = minf(hue_gap, 1.0 - hue_gap) * 360.0
+		var message := "%s is near the threat hue" % color.to_html()
+		assert_true(color.s < 0.05 or hue_gap >= 30.0, message)
+	assert_lt(WorkshopTheme.WORSE.s, 0.05, "the worse mark is neutral grey")
 
 
 func test_the_load_line_is_mass_over_lift() -> void:
 	assert_eq(StatFormat.load_detail(BuildStats.of(WalkerBuild.scout())), "315 / 450 kg")
+
+
+func test_the_load_flag_starts_above_a_load_of_one() -> void:
+	assert_false(StatFormat.is_overloaded({"load": 1.0}))
+	assert_true(StatFormat.is_overloaded({"load": 1.001}))
+	assert_false(StatFormat.is_overloaded(BuildStats.of(WalkerBuild.scout())))
 
 
 func test_every_panel_row_is_a_stat_the_build_reports() -> void:
@@ -480,6 +578,7 @@ func test_the_stat_panel_shows_values_and_signed_deltas_with_marks() -> void:
 	assert_ne(ui.shown_delta("top_speed"), "")
 	var speed_change: float = preview["delta"]["top_speed"]
 	assert_eq(ui.shown_delta_direction("top_speed"), 1 if speed_change > 0.0 else -1)
+	assert_eq(ui.shown_delta("top_speed").left(1), "+" if speed_change > 0.0 else "-")
 	ui.clear_deltas("hint")
 	assert_eq(ui.shown_delta("top_speed"), "")
 	assert_eq(ui.shown_delta_direction("top_speed"), 0)
@@ -513,3 +612,99 @@ func test_the_spare_reason_says_what_is_missing_for_a_part_to_be_placed() -> voi
 	build.remove(&"leg_l2")
 	build.remove(&"leg_r2")
 	assert_eq(inventory.spare_reason(build, MEDIUM), "")
+
+
+func _buy_long_pair_and_preview() -> Dictionary:
+	inventory.buy(LONG, economy)
+	return inventory.preview(build, &"leg_l3", LONG)
+
+
+func test_the_long_pair_preview_marks_spread_and_turn_worse_and_load_better() -> void:
+	var ui := _ui()
+	var preview := _buy_long_pair_and_preview()
+	ui.show_deltas(preview["delta"], "Place", preview["invalid_reason_after"])
+	assert_eq(ui.shown_delta_quality("spread"), -1, "spread up is worse")
+	assert_eq(ui.shown_delta_quality("turn_rate"), -1, "turn down is worse")
+	assert_eq(ui.shown_delta_quality("max_slope"), -1, "slope down is worse")
+	assert_eq(ui.shown_delta_quality("load"), 1, "load down is better")
+	assert_eq(ui.shown_delta_quality("top_speed"), 1, "speed up is better")
+	assert_eq(ui.shown_delta_quality("climb"), 0, "climb follows the shortest leg")
+	assert_eq(ui.shown_delta_quality("hp"), 0, "hp is unchanged")
+	ui.clear_deltas("hint")
+	assert_eq(ui.shown_delta_quality("spread"), 0)
+
+
+func test_a_better_row_is_tinted_in_the_accent_and_a_worse_row_in_grey() -> void:
+	var ui := _ui()
+	var preview := _buy_long_pair_and_preview()
+	ui.show_deltas(preview["delta"], "Place", preview["invalid_reason_after"])
+	var better_row := ui.find_control("StatRow_top_speed") as PanelContainer
+	var worse_row := ui.find_control("StatRow_spread") as PanelContainer
+	var plain_row := ui.find_control("StatRow_hp") as PanelContainer
+	assert_eq(better_row.theme_type_variation, WorkshopTheme.STAT_ROW_BETTER)
+	assert_eq(worse_row.theme_type_variation, WorkshopTheme.STAT_ROW_WORSE)
+	assert_eq(plain_row.theme_type_variation, WorkshopTheme.STAT_ROW)
+
+
+func test_the_load_row_shows_an_exclamation_mark_while_load_is_above_one() -> void:
+	var ui := _ui()
+	assert_false(ui.load_flag_visible())
+	inventory.buy(ARMOR, economy)
+	inventory.unmount(build, &"leg_l2")
+	inventory.mount(build, &"top_1", ARMOR)
+	ui.show_stats(BuildStats.of(build))
+	assert_true(ui.load_flag_visible())
+	assert_eq(ui.shown_value("load"), "1.05")
+	inventory.unmount(build, &"top_1")
+	ui.show_stats(BuildStats.of(build))
+	assert_false(ui.load_flag_visible())
+
+
+func test_a_blocked_exit_pulses_its_reason_for_0_3_seconds() -> void:
+	var ui := _ui()
+	ui.set_exit(false, "Needs 4, 6 or 8 legs")
+	assert_almost_eq(ui.reason_pulse_left(), 0.0, TOL)
+	ui.pulse_reason()
+	assert_almost_eq(ui.reason_pulse_left(), WorkshopUI.PULSE_TIME, TOL)
+	assert_almost_eq(WorkshopUI.PULSE_TIME, 0.3, TOL)
+	assert_eq(ui.reason_pulse_count(), 1)
+	ui._process(0.1)
+	assert_almost_eq(ui.reason_pulse_left(), 0.2, TOL)
+	ui._process(0.25)
+	assert_almost_eq(ui.reason_pulse_left(), 0.0, TOL)
+	assert_eq(ui.reason_pulse_count(), 1)
+
+
+func test_a_valid_exit_does_not_pulse_and_a_valid_build_stops_a_pulse() -> void:
+	var ui := _ui()
+	ui.set_exit(true, "")
+	ui.pulse_reason()
+	assert_eq(ui.reason_pulse_count(), 0)
+	ui.set_exit(false, "Needs 4, 6 or 8 legs")
+	ui.pulse_reason()
+	ui.set_exit(true, "")
+	assert_almost_eq(ui.reason_pulse_left(), 0.0, TOL)
+
+
+func test_a_click_on_the_disabled_exit_button_is_reported() -> void:
+	var ui := _ui()
+	watch_signals(ui)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	ui.set_exit(true, "")
+	ui.exit_button().gui_input.emit(click)
+	assert_signal_not_emitted(ui, "exit_blocked_pressed")
+	ui.set_exit(false, "Needs 4, 6 or 8 legs")
+	ui.exit_button().gui_input.emit(click)
+	assert_signal_emit_count(ui, "exit_blocked_pressed", 1)
+
+
+func test_a_new_inventory_changes_the_owned_labels() -> void:
+	var ui := _ui()
+	assert_eq(ui.shown_owned(SHORT), "Own 0")
+	var richer := Inventory.new({MEDIUM: 6, CANNON: 1, SHORT: 4})
+	ui.setup(richer, _economy_with(55))
+	ui.refresh_parts(build, &"")
+	assert_eq(ui.shown_owned(SHORT), "Own 4")
+	assert_eq(ui.shown_scrap(), "55")

@@ -4,6 +4,9 @@ extends Node3D
 ## The cursor is never captured. Frame-rate independent: every move is scaled by the frame time.
 ## Rig: this node sits on the stand's look-at point and turns (yaw, then pitch); the Camera3D hangs `distance` behind.
 
+## Render layer (bit value) the body light lights. The workshop puts the walker chassis and tops on it.
+const BODY_LAYER_MASK: int = 2
+
 ## Point the camera looks at (m), roughly the middle of the walker.
 @export var look_at_point: Vector3 = Vector3(0.0, 0.9, 0.0)
 ## Automatic orbit speed (deg/s). 0 stops it.
@@ -22,9 +25,14 @@ extends Node3D
 @export var start_yaw_deg: float = 35.0
 @export var start_pitch_deg: float = 20.0
 @export var fov: float = 50.0
+## Energy of the head light that rides on the camera and lights only the chassis and the tops (render layer 2): the
+## body reads a step brighter than the legs in front of it, so a leg crossing the chassis does not melt into it.
+@export var body_light_energy: float = 0.35
 
 ## While true the automatic orbit holds still (the cursor is on a socket or a panel).
 var orbit_paused: bool = false
+## False while the workshop ignores input (after it handed the build out): no drag, no zoom.
+var input_enabled: bool = true
 var yaw_deg: float = 0.0
 var pitch_deg: float = 0.0
 
@@ -41,6 +49,12 @@ func _ready() -> void:
 	_camera.fov = fov
 	_camera.far = 200.0
 	add_child(_camera)
+	var body_light := DirectionalLight3D.new()
+	body_light.name = "BodyLight"
+	body_light.light_energy = body_light_energy
+	body_light.light_cull_mask = BODY_LAYER_MASK
+	body_light.shadow_enabled = false
+	_camera.add_child(body_light)
 	_camera.make_current()
 	yaw_deg = start_yaw_deg
 	pitch_deg = start_pitch_deg
@@ -67,7 +81,7 @@ func _process(delta: float) -> void:
 
 ## A MMB press starts a drag and the wheel zooms. Events a panel consumed never get here.
 func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventMouseButton:
+	if not input_enabled or not event is InputEventMouseButton:
 		return
 	var button: InputEventMouseButton = event
 	if button.button_index == MOUSE_BUTTON_MIDDLE and button.pressed:
@@ -80,7 +94,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## A drag goes on, and ends, even when the cursor crosses a panel.
 func _input(event: InputEvent) -> void:
-	if not _dragging:
+	if not input_enabled or not _dragging:
 		return
 	if event is InputEventMouseButton:
 		var button: InputEventMouseButton = event

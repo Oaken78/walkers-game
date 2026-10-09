@@ -8,6 +8,8 @@ extends CanvasLayer
 signal part_selected(part_id: StringName)
 signal buy_pressed(part_id: StringName)
 signal exit_pressed
+## The player clicked the exit button while it is disabled.
+signal exit_blocked_pressed
 
 ## Parts in list order. The chassis is not a shop item.
 const PART_ORDER: Array[StringName] = [
@@ -19,6 +21,10 @@ const PART_ORDER: Array[StringName] = [
 ]
 const VALUE_COLUMN_WIDTH: float = 56.0
 const DELTA_COLUMN_WIDTH: float = 70.0
+## How long the blocked-exit reason pulses (s).
+const PULSE_TIME: float = 0.3
+## Peak growth of the reason text during the pulse (0.12 = 12 % bigger).
+const PULSE_SCALE: float = 0.12
 
 ## Width of each panel (px at the 1280 base).
 @export var panel_width: float = 250.0
@@ -34,7 +40,7 @@ var _left_panel: PanelContainer
 var _right_panel: PanelContainer
 var _scrap_value: Label
 var _part_rows: Dictionary = {}  # part id -> {panel, select, owned, spare, buy}
-var _stat_rows: Dictionary = {}  # stats key -> {panel, value, delta, mark}
+var _stat_rows: Dictionary = {}  # stats key -> {panel, value, delta, mark, flag}
 var _load_detail: Label
 var _preview_line: Label
 var _after_line: Label
@@ -42,6 +48,8 @@ var _exit_button: Button
 var _exit_reason: Label
 var _tip: PanelContainer
 var _tip_label: Label
+var _pulse_left: float = 0.0
+var _pulses: int = 0
 
 
 func _ready() -> void:
@@ -55,6 +63,13 @@ func _ready() -> void:
 	_build_left()
 	_build_right()
 	_build_tip()
+
+
+func _process(delta: float) -> void:
+	if _pulse_left <= 0.0:
+		return
+	_pulse_left = maxf(_pulse_left - delta, 0.0)
+	_apply_pulse()
 
 
 ## Fills the part list. Call once, after the node is in the tree.
@@ -102,9 +117,10 @@ func show_stats(stats: Dictionary) -> void:
 	for entry in StatFormat.ROWS:
 		var key: String = entry["key"]
 		var row: Dictionary = _stat_rows[key]
-		(row["value"] as Label).text = StatFormat.value_text(float(stats[key]))
+		(row["value"] as Label).text = StatFormat.value_text(key, float(stats[key]))
 		_set_delta(key, 0.0)
 	_load_detail.text = StatFormat.load_detail(stats)
+	(_stat_rows["load"]["flag"] as Label).visible = StatFormat.is_overloaded(stats)
 
 
 ## Marks every changed stat with its delta. `caption` says what the preview is; `after_reason` is the invalid
@@ -131,6 +147,18 @@ func set_exit(valid: bool, reason: String) -> void:
 	_exit_button.disabled = not valid
 	_exit_reason.text = reason
 	_exit_reason.visible = not valid
+	if valid:
+		_pulse_left = 0.0
+		_apply_pulse()
+
+
+## A blocked exit answers: the reason text pulses for PULSE_TIME. Does nothing while the exit is allowed.
+func pulse_reason() -> void:
+	if not _exit_reason.visible:
+		return
+	_pulse_left = PULSE_TIME
+	_pulses += 1
+	_apply_pulse()
 
 
 ## Shows `text` next to the cursor, or hides the tip when it is empty.
@@ -171,6 +199,32 @@ func shown_delta_direction(key: String) -> int:
 
 func shown_load_detail() -> String:
 	return _load_detail.text
+
+
+## 1 better, -1 worse, 0 no delta shown.
+func shown_delta_quality(key: String) -> int:
+	var mark := _stat_rows[key]["mark"] as DeltaMark
+	if mark.direction == 0:
+		return 0
+	return 1 if mark.better else -1
+
+
+func shown_owned(part_id: StringName) -> String:
+	return (_part_rows[part_id]["owned"] as Label).text
+
+
+## True while the Load row shows its "!" (load above 1.0).
+func load_flag_visible() -> bool:
+	return (_stat_rows["load"]["flag"] as Label).visible
+
+
+## Seconds left of the blocked-exit pulse, and how many pulses have started.
+func reason_pulse_left() -> float:
+	return _pulse_left
+
+
+func reason_pulse_count() -> int:
+	return _pulses
 
 
 func shown_scrap() -> String:
@@ -339,6 +393,7 @@ func _build_right() -> void:
 	_exit_button.theme_type_variation = WorkshopTheme.EXIT_BUTTON
 	_exit_button.focus_mode = Control.FOCUS_NONE
 	_exit_button.pressed.connect(func() -> void: exit_pressed.emit())
+	_exit_button.gui_input.connect(_on_exit_gui_input)
 	column.add_child(_exit_button)
 	_exit_reason = _make_wrapped_label("ExitReason", WorkshopTheme.ACCENT_LABEL)
 	_exit_reason.visible = false
@@ -371,10 +426,16 @@ func _make_stat_row(entry: Dictionary) -> PanelContainer:
 	cell.add_child(mark)
 	var delta := Label.new()
 	delta.name = "StatDelta_%s" % key
-	delta.theme_type_variation = WorkshopTheme.ACCENT_LABEL
 	delta.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cell.add_child(delta)
-	_stat_rows[key] = {"panel": panel, "value": value, "delta": delta, "mark": mark}
+	var flag := Label.new()
+	flag.name = "StatFlag_%s" % key
+	flag.text = "!"
+	flag.theme_type_variation = WorkshopTheme.ACCENT_LABEL
+	flag.visible = false
+	line.add_child(flag)
+	line.move_child(flag, 1)
+	_stat_rows[key] = {"panel": panel, "value": value, "delta": delta, "mark": mark, "flag": flag}
 	if entry["unit"] != "":
 		name_label.text = "%s %s" % [entry["label"], entry["unit"]]
 	return panel
@@ -424,10 +485,37 @@ func _build_tip() -> void:
 	_root.add_child(_tip)
 
 
+func _on_exit_gui_input(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
+		if _exit_button.disabled:
+			exit_blocked_pressed.emit()
+
+
 func _set_delta(key: String, delta: float) -> void:
 	var row: Dictionary = _stat_rows[key]
-	(row["delta"] as Label).text = StatFormat.delta_text(delta)
-	(row["mark"] as DeltaMark).direction = StatFormat.delta_direction(delta)
-	(row["panel"] as PanelContainer).theme_type_variation = (
-		WorkshopTheme.STAT_ROW_CHANGED if StatFormat.is_changed(delta) else WorkshopTheme.STAT_ROW
+	var quality := StatFormat.delta_quality(key, delta)
+	var label := row["delta"] as Label
+	label.text = StatFormat.delta_text(key, delta)
+	label.theme_type_variation = (
+		WorkshopTheme.WORSE_LABEL if quality < 0 else WorkshopTheme.ACCENT_LABEL
+	)
+	var mark := row["mark"] as DeltaMark
+	mark.direction = StatFormat.delta_direction(key, delta)
+	mark.better = quality >= 0
+	var variation := WorkshopTheme.STAT_ROW
+	if quality > 0:
+		variation = WorkshopTheme.STAT_ROW_BETTER
+	elif quality < 0:
+		variation = WorkshopTheme.STAT_ROW_WORSE
+	(row["panel"] as PanelContainer).theme_type_variation = variation
+
+
+func _apply_pulse() -> void:
+	var t := 1.0 - _pulse_left / PULSE_TIME
+	var bump := sin(PI * clampf(t, 0.0, 1.0)) if _pulse_left > 0.0 else 0.0
+	_exit_reason.pivot_offset = Vector2(0.0, _exit_reason.size.y * 0.5)
+	_exit_reason.scale = Vector2.ONE * (1.0 + PULSE_SCALE * bump)
+	_exit_reason.add_theme_color_override(
+		"font_color", WorkshopTheme.ACCENT.lerp(WorkshopTheme.BODY, bump)
 	)

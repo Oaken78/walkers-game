@@ -11,6 +11,10 @@ const PANEL_EDGE: Color = Color("3A3E45")
 const BODY: Color = Color("E6E1D6")
 const MUTED: Color = Color("B3AFA4")
 const ACCENT: Color = Color("FF8A3D")
+## A better change: the accent. A worse change: light neutral grey. They are at least 0.25 luma apart (GDD 12) and
+## neither is the threat hue.
+const BETTER: Color = ACCENT
+const WORSE: Color = Color("E2E2E2")
 const SALVAGE: Color = Color("3DE0E8")
 const BUTTON_BG: Color = Color("2B2F36")
 const BUTTON_HOVER: Color = Color("3B4048")
@@ -26,13 +30,15 @@ const SCALE_TO_1080P: float = 1.5
 const PART_ROW: StringName = &"PartRow"
 const ARMED_ROW: StringName = &"ArmedRow"
 const STAT_ROW: StringName = &"StatRow"
-const STAT_ROW_CHANGED: StringName = &"StatRowChanged"
+const STAT_ROW_BETTER: StringName = &"StatRowBetter"
+const STAT_ROW_WORSE: StringName = &"StatRowWorse"
 const EXIT_BUTTON: StringName = &"ExitButton"
 const MUTED_LABEL: StringName = &"MutedLabel"
 const HEADING_LABEL: StringName = &"HeadingLabel"
 const SCRAP_LABEL: StringName = &"ScrapLabel"
 const SCRAP_SMALL_LABEL: StringName = &"ScrapSmallLabel"
 const ACCENT_LABEL: StringName = &"AccentLabel"
+const WORSE_LABEL: StringName = &"WorseLabel"
 
 
 static func build() -> Theme:
@@ -47,6 +53,16 @@ static func build() -> Theme:
 ## The smallest font size the theme uses, in pixels at 1080p.
 static func smallest_text_px_1080p() -> float:
 	return float(mini(mini(FONT, SMALL_FONT), HEADING_FONT)) * SCALE_TO_1080P
+
+
+## Rec. 709 luma of the sRGB values (0 to 1), the same measure tools/pixels.ps1 prints.
+static func luma(color: Color) -> float:
+	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
+
+
+## How far apart the better and worse marks are in luma (GDD 12: at least 0.25).
+static func mark_luma_gap() -> float:
+	return absf(luma(BETTER) - luma(WORSE))
 
 
 static func _box(
@@ -72,6 +88,7 @@ static func _labels(theme: Theme) -> void:
 	_label_variation(theme, SCRAP_LABEL, HEADING_FONT, SALVAGE)
 	_label_variation(theme, SCRAP_SMALL_LABEL, SMALL_FONT, SALVAGE)
 	_label_variation(theme, ACCENT_LABEL, FONT, ACCENT)
+	_label_variation(theme, WORSE_LABEL, FONT, WORSE)
 
 
 static func _label_variation(theme: Theme, variation: StringName, size: int, color: Color) -> void:
@@ -86,14 +103,18 @@ static func _panels(theme: Theme) -> void:
 	theme.set_stylebox("panel", PART_ROW, _box(Color(1.0, 1.0, 1.0, 0.04), PANEL_EDGE, 1, 8, 6))
 	theme.set_type_variation(ARMED_ROW, "PanelContainer")
 	theme.set_stylebox("panel", ARMED_ROW, _box(Color(1.0, 0.541, 0.239, 0.16), ACCENT, 2, 8, 6))
-	# Stat rows: plain, or tinted with a bar on the left while the row shows a change.
+	# Stat rows: plain, or tinted with a bar on the left while the row shows a change: accent for better, grey for worse.
 	theme.set_type_variation(STAT_ROW, "PanelContainer")
 	var clear := Color(0.0, 0.0, 0.0, 0.0)
 	theme.set_stylebox("panel", STAT_ROW, _box(clear, clear, 0, 3, 2))
-	theme.set_type_variation(STAT_ROW_CHANGED, "PanelContainer")
-	var changed := _box(Color(1.0, 0.541, 0.239, 0.18), ACCENT, 0, 3, 2)
-	changed.border_width_left = 3
-	theme.set_stylebox("panel", STAT_ROW_CHANGED, changed)
+	theme.set_type_variation(STAT_ROW_BETTER, "PanelContainer")
+	var better := _box(Color(1.0, 0.541, 0.239, 0.18), BETTER, 0, 3, 2)
+	better.border_width_left = 3
+	theme.set_stylebox("panel", STAT_ROW_BETTER, better)
+	theme.set_type_variation(STAT_ROW_WORSE, "PanelContainer")
+	var worse := _box(Color(1.0, 1.0, 1.0, 0.09), WORSE, 0, 3, 2)
+	worse.border_width_left = 3
+	theme.set_stylebox("panel", STAT_ROW_WORSE, worse)
 
 
 static func _buttons(theme: Theme) -> void:

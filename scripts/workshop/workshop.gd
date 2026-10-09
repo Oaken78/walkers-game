@@ -6,15 +6,20 @@ extends Node3D
 ##
 ## For T12:
 ##   workshop.setup(build, inventory, economy)   # edits `build` and `inventory` in place; `economy` pays for parts
-##   workshop.exit_requested.connect(func(build: WalkerBuild) -> void: ...)   # build is valid, the same object
-## The workshop never changes scenes, banks scrap or repairs; it shows the cursor but leaves the mouse mode alone
-## when it ends.
+##   workshop.exit_requested.connect(func(build: WalkerBuild) -> void: ...)   # the very `build` passed to setup()
+## - exit_requested fires once per visit. From then on the workshop ignores input (keys, clicks, the buttons, the
+##   camera) until the next setup(), so a second Tab or a click while T12 fades out changes nothing.
+## - It sets the mouse visible in setup() and never touches the mouse mode again; T12 captures it when the field starts.
+## - It brings its own Camera3D (made current), two DirectionalLight3Ds and a WorldEnvironment. Once the visit is over
+##   T12 must free the workshop, or set `process_mode = PROCESS_MODE_DISABLED`, hide it and make its own camera
+##   current: an unused workshop would still own the current camera and the environment.
+## - The workshop never changes scenes, banks scrap or repairs.
 
 ## The player pressed Tab or the exit button on a valid build.
 signal exit_requested(build: WalkerBuild)
 ## A part was placed or taken off (the build changed).
 signal build_changed
-## The armed part changed (empty means nothing armed).
+## The armed part changed (empty means nothing armed), including when setup() clears it.
 signal armed_changed(part_id: StringName)
 
 enum HoverMode { NONE, IDLE, PLACE, REMOVE, BLOCKED }
@@ -33,14 +38,23 @@ var hover_preview: Dictionary = {}
 ## Frames (Engine.get_process_frames) of the last exit key press and of the last exit_requested, for the 1-frame check.
 var last_exit_key_frame: int = -1
 var last_exit_emit_frame: int = -1
+## Work counters the scenario reads: anchors and previews are computed only when something changed.
+var anchor_computes: int = 0
+var preview_computes: int = 0
+## Exit attempts while the build was invalid (each one pulses the reason).
+var blocked_exit_count: int = 0
 
 var _build: WalkerBuild
 var _inventory: Inventory
 var _economy: Economy
 var _anchors: Dictionary = {}
+var _anchor_armed: StringName = &""
+var _anchor_version: int = -1
+var _anchor_pose: Transform3D = Transform3D()
 var _markers: Dictionary = {}  # socket id -> SocketMarker
 var _mouse_pos: Vector2 = Vector2.ZERO
 var _ready_done: bool = false
+var _exited: bool = false
 var _replant_pending: bool = true
 var _build_version: int = 0
 var _hover_signature: String = ""
@@ -72,6 +86,7 @@ func _ready() -> void:
 	_ui.part_selected.connect(_on_part_selected)
 	_ui.buy_pressed.connect(_on_buy_pressed)
 	_ui.exit_pressed.connect(request_exit)
+	_ui.exit_blocked_pressed.connect(_on_exit_blocked)
 	_mouse_pos = get_viewport().get_mouse_position()
 	_ready_done = true
 	if _build != null:
@@ -86,15 +101,17 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
-	if _build == null:
+	if _build == null or _exited:
 		return
-	_anchors = SocketAnchors.compute(_walker, _build, armed_part)
+	_refresh_anchors()
 	_update_hover()
 	_update_markers()
 	_camera.orbit_paused = hover_socket != &"" or _ui.is_over_panel(_mouse_pos)
 
 
 func _input(event: InputEvent) -> void:
+	if _exited:
+		return
 	if event is InputEventMouseMotion or event is InputEventMouseButton:
 		_mouse_pos = (event as InputEventMouse).position
 	if event.is_action_pressed("build_exit"):
@@ -106,7 +123,7 @@ func _input(event: InputEvent) -> void:
 ## LMB places the armed part on the socket under the cursor, RMB takes the part off it. Clicks on a panel are
 ## consumed by the panel and never get here.
 func _unhandled_input(event: InputEvent) -> void:
-	if _build == null:
+	if _build == null or _exited:
 		return
 	if event.is_action_pressed("build_place"):
 		place_on(_pick_socket(_mouse_pos))
@@ -117,7 +134,8 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Public API (T12 and the scenarios) -----------------------------------------------------------------------
 
 
-## Starts a workshop visit. `build` and `inventory` are edited in place; `economy` pays for purchases.
+## Starts a workshop visit (and ends the latch of the one before). `build` and `inventory` are edited in place;
+## `economy` pays for purchases. Calling it again moves every connection to the new economy and inventory.
 func setup(build: WalkerBuild, inventory: Inventory, economy: Economy) -> void:
 	_disconnect_sources()
 	_build = build
@@ -125,8 +143,13 @@ func setup(build: WalkerBuild, inventory: Inventory, economy: Economy) -> void:
 	_economy = economy
 	_economy.changed.connect(_on_economy_changed)
 	_inventory.changed.connect(_refresh_all)
-	armed_part = &""
+	_exited = false
+	_camera.input_enabled = true
+	_build_version += 1
 	_replant_pending = true
+	if armed_part != &"":
+		armed_part = &""
+		armed_changed.emit(armed_part)
 	if _ready_done:
 		_start()
 
@@ -135,19 +158,32 @@ func current_build() -> WalkerBuild:
 	return _build
 
 
+## True once exit_requested has fired, until the next setup().
+func has_exited() -> bool:
+	return _exited
+
+
 func is_exit_enabled() -> bool:
-	return _build != null and _build.is_valid()
+	return _build != null and not _exited and _build.is_valid()
 
 
-## Emits exit_requested(build) when the build is valid. Nothing happens, and no signal, while it is not.
+## Emits exit_requested(build) when the build is valid, once per visit. While the build is not valid nothing is
+## emitted and the reason pulses instead.
 func request_exit() -> void:
-	if is_exit_enabled():
-		last_exit_emit_frame = Engine.get_process_frames()
-		exit_requested.emit(_build)
+	if _build == null or _exited:
+		return
+	if not _build.is_valid():
+		_on_exit_blocked()
+		return
+	_latch()
+	last_exit_emit_frame = Engine.get_process_frames()
+	exit_requested.emit(_build)
 
 
 ## Arms a part for placing (empty disarms). Arming the armed part again disarms it.
 func arm(part_id: StringName) -> void:
+	if _exited:
+		return
 	if part_id == armed_part:
 		part_id = &""
 	armed_part = part_id
@@ -157,7 +193,7 @@ func arm(part_id: StringName) -> void:
 
 ## Buys the part (a leg pair, or one top part) out of the bank and arms it.
 func buy(part_id: StringName) -> bool:
-	if not _inventory.buy(part_id, _economy):
+	if _exited or not _inventory.buy(part_id, _economy):
 		return false
 	armed_part = part_id
 	armed_changed.emit(armed_part)
@@ -167,7 +203,7 @@ func buy(part_id: StringName) -> bool:
 
 ## Mounts the armed part on a socket (a leg also on its mirror).
 func place_on(socket_id: StringName) -> bool:
-	if socket_id == &"" or armed_part == &"":
+	if _exited or socket_id == &"" or armed_part == &"":
 		return false
 	if not _inventory.mount(_build, socket_id, armed_part):
 		return false
@@ -177,7 +213,7 @@ func place_on(socket_id: StringName) -> bool:
 
 ## Takes the part off a socket (a leg takes its mirror off too). The part goes back to the spare stock.
 func remove_from(socket_id: StringName) -> bool:
-	if socket_id == &"" or not _inventory.unmount(_build, socket_id):
+	if _exited or socket_id == &"" or not _inventory.unmount(_build, socket_id):
 		return false
 	_after_edit()
 	return true
@@ -236,6 +272,16 @@ func _start() -> void:
 	_refresh_all()
 
 
+## After exit_requested: no more input, no more work, nothing shown, until the next setup().
+func _latch() -> void:
+	_exited = true
+	_camera.input_enabled = false
+	_camera.orbit_paused = true
+	_ui.show_tip("", _mouse_pos)
+	for id: StringName in _markers:
+		(_markers[id] as SocketMarker).set_state(SocketMarker.State.HIDDEN)
+
+
 func _disconnect_sources() -> void:
 	if _economy != null and _economy.changed.is_connected(_on_economy_changed):
 		_economy.changed.disconnect(_on_economy_changed)
@@ -255,6 +301,14 @@ func _on_buy_pressed(part_id: StringName) -> void:
 	buy(part_id)
 
 
+## Tab or a click on the disabled exit while the build is invalid: the reason pulses.
+func _on_exit_blocked() -> void:
+	if _exited or _build == null or _build.is_valid():
+		return
+	blocked_exit_count += 1
+	_ui.pulse_reason()
+
+
 func _after_edit() -> void:
 	_build_version += 1
 	_apply_build_to_walker()
@@ -268,7 +322,36 @@ func _apply_build_to_walker() -> void:
 	for socket: StringName in parts:
 		shown.place(socket, parts[socket])
 	_walker.apply_build(shown)
+	_tag_body_layers()
+	_refresh_anchors(true)
+
+
+## The chassis and the tops get render layer 2, the layer the camera body light lights (legs stay on layer 1 only).
+## WalkerBody builds the tops again on every apply, so this runs after each one.
+func _tag_body_layers() -> void:
+	(_walker.get_node("Chassis") as MeshInstance3D).layers |= WorkshopCamera.BODY_LAYER_MASK
+	for piece in _walker.get_node("Tops").get_children():
+		(piece as MeshInstance3D).layers |= WorkshopCamera.BODY_LAYER_MASK
+
+
+## Socket anchors and the marks' places are worked out again only when the build, the armed part or the walker's pose
+## changed, not every frame.
+func _refresh_anchors(force: bool = false) -> void:
+	var pose := _walker.body_pose()
+	if (
+		not force
+		and _anchor_version == _build_version
+		and _anchor_armed == armed_part
+		and _anchor_pose == pose
+	):
+		return
+	_anchor_version = _build_version
+	_anchor_armed = armed_part
+	_anchor_pose = pose
 	_anchors = SocketAnchors.compute(_walker, _build, armed_part)
+	anchor_computes += 1
+	for id: StringName in _markers:
+		(_markers[id] as SocketMarker).global_position = _anchors[id]["pos"]
 
 
 func _refresh_all() -> void:
@@ -279,7 +362,8 @@ func _refresh_all() -> void:
 	_ui.refresh_parts(_build, armed_part)
 	_ui.set_exit(_build.is_valid(), _build.invalid_reason())
 	_hover_signature = ""
-	_update_hover()
+	if not _exited:
+		_update_hover()
 
 
 func _pick_socket(pos: Vector2) -> StringName:
@@ -305,8 +389,20 @@ func _faces_camera(anchor: Dictionary) -> bool:
 	return (anchor["normal"] as Vector3).dot(to_camera) > 0.0
 
 
+## The socket under the cursor is picked every frame (the camera moves); what a click there would do, and its stat
+## preview, are worked out only when the pick, the armed part or the build changed.
 func _update_hover() -> void:
-	hover_socket = _pick_socket(_mouse_pos)
+	var hit := _pick_socket(_mouse_pos)
+	var signature := "%s|%s|%d" % [hit, armed_part, _build_version]
+	if signature != _hover_signature:
+		_hover_signature = signature
+		_compute_hover(hit)
+		_show_hover_in_ui()
+	_ui.show_tip(_tip_text(), _mouse_pos)
+
+
+func _compute_hover(hit: StringName) -> void:
+	hover_socket = hit
 	hover_reason = ""
 	hover_preview = {}
 	if hover_socket == &"":
@@ -314,6 +410,7 @@ func _update_hover() -> void:
 	elif _build.part_at(hover_socket) != &"":
 		hover_mode = HoverMode.REMOVE
 		hover_preview = _inventory.preview(_build, hover_socket)
+		preview_computes += 1
 	elif armed_part == &"":
 		hover_mode = HoverMode.IDLE
 	else:
@@ -321,16 +418,9 @@ func _update_hover() -> void:
 		if hover_reason == "":
 			hover_mode = HoverMode.PLACE
 			hover_preview = _inventory.preview(_build, hover_socket, armed_part)
+			preview_computes += 1
 		else:
 			hover_mode = HoverMode.BLOCKED
-	var signature := "%s|%d|%s|%s|%d" % [
-		hover_socket, hover_mode, armed_part, hover_reason, _build_version
-	]
-	if signature == _hover_signature:
-		_ui.show_tip(_tip_text(), _mouse_pos)
-		return
-	_hover_signature = signature
-	_show_hover_in_ui()
 
 
 func _show_hover_in_ui() -> void:
@@ -344,9 +434,10 @@ func _show_hover_in_ui() -> void:
 		HoverMode.REMOVE:
 			_ui.show_deltas(
 				hover_preview["delta"],
-				"Take off %s from %s" % [
-					_part_label(_build.part_at(hover_socket)), _socket_label(hover_socket)
-				],
+				(
+					"Take off %s from %s"
+					% [_part_label(_build.part_at(hover_socket)), _socket_label(hover_socket)]
+				),
 				hover_preview["invalid_reason_after"]
 			)
 		HoverMode.BLOCKED:
@@ -355,7 +446,6 @@ func _show_hover_in_ui() -> void:
 			_ui.clear_deltas("Pick a part to place on %s" % _socket_label(hover_socket))
 		_:
 			_ui.clear_deltas(_idle_hint())
-	_ui.show_tip(_tip_text(), _mouse_pos)
 
 
 func _tip_text() -> String:
@@ -392,7 +482,6 @@ func _update_markers() -> void:
 	for id: StringName in _markers:
 		var marker: SocketMarker = _markers[id]
 		var anchor: Dictionary = _anchors[id]
-		marker.global_position = anchor["pos"]
 		var state := SocketMarker.State.HIDDEN
 		if id in live:
 			state = SocketMarker.State.HOVER
