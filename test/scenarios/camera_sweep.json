@@ -1,0 +1,1671 @@
+{
+    "scene":  "res://scenes/camera/view_probe.tscn",
+    "seed":  1234,
+    "timeout_frames":  7000,
+    "steps":  [
+                  {
+                      "wait_frames":  5
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "scout"
+                                            ],
+                                   "method":  "use_build",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  150
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  60
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r60"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r60"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                120,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  300
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  120
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r120"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r120"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                165,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  412
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  165
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r165"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r165"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0.5,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144_uneven"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144_uneven"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0.6,
+                                                true
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144_random"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144_random"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                400
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  150
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  60
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r60"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r60"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                400
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r144"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r144"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                165,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                400
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  412
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  165
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r165"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r165"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0.5,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                400
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r144_uneven"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r144_uneven"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_right",
+                                                true,
+                                                0.4
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r144"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r144"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                144,
+                                                0.5,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_right",
+                                                true,
+                                                0.4
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  360
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  144
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r144_uneven"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r144_uneven"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_no_errors":  true
+                  }
+              ]
+}
