@@ -106,9 +106,16 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
 
 **Tank controls:**
 - W/S drive along the body's facing, A/D turn the body at its turn rate, and Q/E crab-strafe.
-- The mouse orbits the camera independently (yaw free, pitch clamped -10 to 60 deg) and aims the turret.
-- The turret can only fire within +/- 150 deg of the body's facing (8.3), so heavy threats behind you mean
-  turning the body. This makes the turn rate a build stat you feel in every fight (Pillar 1).
+- The mouse orbits the camera independently and never turns the walker. Mouse X yaws the camera freely (360 deg).
+  Mouse Y pitches it from -20 to 60 deg. -10 to 60 is the normal range. -20 to -10 is the aim-up range for
+  drones close overhead: there the spring arm shortens against the ground (rock wins), and feet may leave the frame.
+- Weapons point where the walker faces. Their yaw is always the body's heading; there is no turret yaw. Their
+  elevation follows the camera: they aim at the height and range of the point under the screen centre (8.3).
+  Turning the body (A/D, at the build's turn rate) is how you aim sideways. Q/E strafing dodges bolts while the
+  guns stay on target. This makes the turn rate a build stat you feel in every fight (Pillar 1).
+- `aim` (RMB, held): FOV 70 -> 50 in 0.10 s and turn rate x 0.6 for fine tracking (Scout 120 -> 72 deg/s). It
+  pauses recentring and releases the descent floor, as before. It does not swing the camera to the heading; the
+  weapon reticle (section 12) shows where the guns point.
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
   idle and pauses while `aim` is held; this is a tuning knob for the gate.
@@ -266,13 +273,34 @@ already allow it.
 
 ### 8.3 Weapons - top socket parts
 - **State:** cooldown, heat (M1).
-- **Rules:** a weapon fires at the camera crosshair ray hit point. Its turret yaws at 360 deg/s within +/- 150 deg
-  of the body's forward direction, and pitches -10 to 45 deg. A target outside the turret arc does not fire, and the crosshair greys out.
-- **Tests:** fire rate cap; damage applied once per projectile; no fire while the target is out of arc.
+- **Rules (aim model, Klas at the gate: yaw from the body, pitch from the camera):**
+  - *Aim point P:* the camera's centre ray hits the world or an enemy (layers 1 and 3, never the player), up to
+    120 m. With no hit, P is the point at 120 m.
+  - *Aim range d and height h:* d is the horizontal distance from the body origin to P, clamped to 4-120 m (a
+    camera looking down at the walker's own feet never points the guns into the ground under it). h is P's height.
+  - *Convergence point Q:* d metres along the body's heading from the body origin, at height h. Every weapon aims
+    at Q. Its yaw follows the heading (lateral convergence from its socket offset only, <= 4 deg at 4 m), and its
+    elevation is the angle from its muzzle to Q. When the target sits on the heading, the shot lands where the
+    camera looks.
+  - *Elevation limits:* -10 to +45 deg, world-relative, so a body tilted up to 45 deg on the talus still aims level.
+    At a limit the weapon still fires, and the reticle shows where the shot really lands.
+  - *Response:* weapon elevation slews at 360 deg/s (a full mouse flick is followed within 0.15 s). Yaw is locked
+    to the heading on every tick, with 0 lag.
+  - *Crosshair far off the heading:* the weapons always fire along the heading. There is no arc lockout and nothing
+    greys out. When the camera's yaw is more than 90 deg off the heading, d and h hold their last values, so the
+    guns do not nod while you look behind you; they pick P up again within 90 deg.
+  - *Several weapons:* LMB fires every mounted weapon. Each keeps its own rate (pulse cannon 4 shots/s), and their
+    phases are spread evenly: weapon k of n fires k / (n x rate) s after the first, so two cannons fire every
+    0.125 s, a steady rhythm rather than a double bang.
+- **Tests:** fire rate cap; damage applied once per projectile; weapon yaw equals the body heading within 0.1 deg on
+  every tick; with a target on the heading, the shot passes within 0.5 deg of the camera's aim point inside the
+  elevation limits; elevation is clamped to -10..45 deg world-relative on a body tilted 39 deg; d is clamped to
+  4 m when the camera looks straight down; d and h hold when the camera yaw is more than 90 deg off the heading;
+  two weapons fire 0.125 s apart.
 
 ### 8.4 Enemies - drones (M0); enemy walkers (M1)
 - **Drone states:** idle-hover, patrol, alert (sees the player within 35 m, line of sight), strafe (orbits at
-  12-18 m), wind-up (0.6 s, glows), fire, dead (falls, drops 3-8 scrap).
+  12-18 m, at <= 6 m/s, risk 8), wind-up (0.6 s, glows), fire, dead (falls, drops 3-8 scrap).
 - **Rules:** max 4 active drones. Drones leash back to their spawn when the player is more than 60 m away, and
   respawn on bank.
 - **Combat check:** a strafing Scout takes <= 40 % of the damage that an idle Scout takes in `drone_fight`, so
@@ -430,7 +458,23 @@ World palette, from the 50 % style mix (look-test mockup):
 - **Workshop:** part list on the left, walker on a stand in the centre, stat panel with deltas on the right,
   and an "Exit [Tab]" button that is disabled with its reason shown when the build is invalid.
 - **Field HUD:**
-  - Crosshair.
+  - **Aim: a camera dot and a world-space weapon reticle.** The camera is free, so the screen centre shows where
+    you look, and the reticle shows where the guns will hit. The gap between them is the "turn this way" cue.
+    Numbers are at 1080p and scale with resolution:
+    - *Camera dot:* 6 px, player body `#E6E1D6` with a 1 px ink `#14161A` outline, at the screen centre. It sets P
+      (8.3).
+    - *Weapon reticle:* a ring 28 px across with a 3 px stroke, in player accent `#FF8A3D` with a 2 px ink outline,
+      so it reads in grayscale against sky and ground. It sits at the screen projection of the first hit along the
+      line from the weapons to Q (layers 1 and 3, up to 120 m), computed from the same tick's weapon pose (no lag).
+      Over an enemy hurtbox the stroke goes from 3 to 5 px. It never takes the threat hue (rule 2).
+    - *Merge:* when the reticle centre is within 12 px of the dot, the dot hides and the ring shows a 4 px centre
+      pip: on target.
+    - *At an elevation limit (-10 or +45 deg):* the ring is drawn dashed (8 segments), so a shot that cannot reach the
+      dot reads as such.
+    - *Off screen or behind the camera:* a 32 px accent chevron at the screen edge, 24 px inset, points to where the
+      guns aim. To bring them to the dot, the player turns the body toward the dot. No other HUD element sits within
+      40 px of the chevron.
+    - All aim marks use `mouse_filter = IGNORE`.
   - Chassis HP bar (bottom left).
   - Carried and banked scrap (top right).
   - Compass marker to the workshop and to the wreck cache.
@@ -474,8 +518,8 @@ World palette, from the 50 % style mix (look-test mockup):
 2. **Builds feel different enough** (section 4). Spike: the `build_contrast` scenario with A/B metrics, checked
    before any content work.
 3. **Tank controls feel clunky with a free camera** (driving one way while looking another). Fallback: the body
-   turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate. Decided 2026-10-09: tank kept;
-   weapons follow the body's heading and the camera's pitch (Decisions log).
+   turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate. Closed 2026-10-09: tank kept;
+   weapons follow the body's heading and the camera's pitch (sections 6, 8.3 and 12; Decisions log).
 4. **Toon outline cost** on a 400 m terrain. The outline is built in M1; measure its draw calls there.
    M0 ships the toon ramp without it.
 5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T00 (section 13).
@@ -486,6 +530,20 @@ World palette, from the 50 % style mix (look-test mockup):
    centre-of-mass margin >= 0.1 x mean reach. Spike: a side-view pose search per build (Scout, Strider, Crawler) with
    the real chassis box, hip positions and bones, before any controller work. Fallback: climb 0.8 x reach and the
    ledge pocket at 1.07 m. Checked 2026-10-09: passes, with the descent drop raised to 0.32 x reach (Decisions log).
+8. **Sideways aim depends on turn rate** (Pillar 1). A drone orbiting faster than the walker can turn cannot be
+   tracked, and the fight turns into waiting. Bound: drone orbit speed <= 6 m/s (<= 29 deg/s at 12 m), so even the
+   slowest reference build while aiming (Crawler 109 x 0.6 = 65 deg/s) turns >= 2.2x faster than a drone moves
+   across its view. Builds near the 60 deg/s turn floor (aiming 36 deg/s, 1.2x) are the M1 heavy end and need a
+   check there. Spike (T07 `drone_fight`): every M0 reference build brings its heading onto a drone 90 deg off in
+   <= 1.0 s (Crawler 90 / 109 + 0.1 s ramp = 0.93 s), and a scripted tracker holding A/D toward an orbiting drone at
+   15 m lands >= 50 % of its shots with the Scout and with the Crawler. Fallback: slow the drone orbit, or drop the
+   x 0.6 aim turn penalty.
+9. **Aiming up at close, high drones.** At camera pitch -10 the centre ray rises only 10 deg from a camera 8 m back,
+   so a drone 12 m out and higher than about 4.2 m (drones hover 3-6 m) cannot be put under the dot. Mitigation:
+   the aim-up range down to -20 deg (section 6). The spring arm shortens to about 5-6 m against flat ground, and
+   the ray then reaches about 6.3 m at 12 m for every build. Spike (T06): a shot at pitch -20 with a drone at 12 m
+   and 6 m hover; the drone sits under the dot and the walker's chassis is in frame. Fallback: raise the camera's
+   target offset while `aim` is held, or cap drone hover at 4 m.
 
 ## 17. Decisions log (append-only)
 | Date | Decision | Why | Rejected alternatives |
@@ -554,6 +612,8 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | The descent floor stays at slope minus 5 (the walker stays visible; on the 40 deg talus the pads stack per side) | Klas, from the T15 mid-face shots at 35, 45 and 50 deg: slope plus 10 (50 deg) reads 2-3 pads per side instead of 1 but doubles the camera move and takes the horizon and drones out of frame (Pillar 3); the player can still pitch up by hand | Slope plus 10 |
 | 2026-10-09 | Gate (risk 3): tank steering stays, Q/E strafe kept. Weapons point where the walker faces horizontally and follow the camera's pitch vertically; no free turret yaw. Section 6 and 8.3 to be rewritten for this aim model | Klas at the T03/T04 gate, after playtesting the Windows build: "Keep tank steering. Any weapon is pointed where the walker is directed horizontally and follows the camera vertically. Keep strafing". Turning the body is now how you aim sideways, so the turn rate is felt in every fight (Pillar 1) | Camera-yaw fallback (body turns to camera yaw); hybrid (camera-yaw while aiming); free turret +/- 150 deg |
 | 2026-10-09 | After play: the descent camera floor stays as built, sliding along an unclimbable face keeps full along-face speed, the start pitch stays 20 deg | Klas at the gate, from the playtest build | Softer or no descent floor; slide damped to 70 %; start pitch 15 deg |
+| 2026-10-09 | Aim model details, building on Klas's gate row: the weapons aim at a convergence point Q on the body's heading, at the horizontal range (4-120 m) and height of the camera centre ray's hit P. Elevation is -10..+45 deg world-relative, slewing at 360 deg/s; yaw is locked to the heading. The weapons always fire (no arc lockout), and range and height hold when the camera looks more than 90 deg off the heading. Several weapons fire in even phases (two cannons every 0.125 s). HUD: a 6 px camera dot plus a 28 px world-space weapon reticle that merges into an on-target pip within 12 px, is dashed at an elevation limit, and becomes an edge chevron when off screen. RMB keeps FOV 50, the x 0.6 turn and the paused recentring, and does not swing the camera. Camera pitch -10 -> -20 (aim-up range, feet may leave the frame below -10). Risk 3 closed; new risks 8 (turn-rate tracking, drone orbit <= 6 m/s) and 9 (aiming up at close drones) | Game-designer, from Klas's gate decision ("Keep tank steering. Any weapon is pointed where the walker is directed horizontally and follows the camera vertically. Keep strafing"). Aiming at the camera ray's range and height means a target on the heading is hit exactly where the player looks. The free camera keeps the legs in view from any side (Pillar 2) and keeps Klas's T04 rule that aiming never swings the view off a drone. The dot-to-reticle gap shows the turn the build still has to make, so the turn rate is seen as well as felt (Pillar 1). World-relative limits let a Crawler tilted 39 deg on the talus still shoot level (T06 note). Pitch -20 lets the dot reach drones at 12 m and 6 m hover | Weapon elevation = the camera's own look angle (at the default 20 deg pitch the guns would fire into the ground 10 m ahead); RMB swings the camera behind the heading so the screen centre is the weapon line (breaks the T04 aim rule and hides the legs side-on in fights); one centre crosshair only (lies whenever the camera is off the heading); body-relative limits; firing all weapons at once; keep pitch -10 and cap drone hover at 4 m |
+| 2026-10-09 | Klas confirmed the aim model details: the camera dot plus world-space weapon reticle, the aim-up range down to -20 deg, the x 0.6 turn rate while `aim` is held, and the guns holding their last range and height when the camera looks more than 90 deg off the heading | Klas, choosing the game-designer's recommendation on each: the camera stays free in fights so the legs read from any side (Pillar 2), close high drones can be aimed at, fine tracking when zoomed, no guns nodding at nothing | RMB swings the camera behind the body with one centre crosshair; keep -10 deg and cap drone hover at 4 m; full turn rate while aiming; guns keep following the camera when looking behind |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
