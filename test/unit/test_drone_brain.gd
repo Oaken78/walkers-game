@@ -7,6 +7,7 @@ const S := DroneBrain.State
 
 var _hits: int = 0
 var _last_hit_damage: float = 0.0
+var _last_hit_source: Node = null
 
 
 # --- Helpers ----------------------------------------------------------------------------------------------------
@@ -95,9 +96,10 @@ func _hurtbox_at(at: Vector3, layer: int, radius: float = 0.6) -> Hurtbox:
 	box.add_child(shape)
 	box.position = at
 	box.hit_taken.connect(
-		func(damage: float, _source: Node, _point: Vector3) -> void:
+		func(damage: float, source: Node, _point: Vector3) -> void:
 			_hits += 1
 			_last_hit_damage = damage
+			_last_hit_source = source
 	)
 	add_child_autofree(box)
 	return box
@@ -287,17 +289,59 @@ func test_a_hit_that_does_not_kill_never_cancels_the_shot() -> void:
 	assert_eq(shots, 1, "and the shot still left")
 
 
-func test_a_hit_that_kills_the_drone_during_the_wind_up_loses_the_shot() -> void:
+func test_a_drone_killed_during_the_wind_up_still_fires_at_the_end_of_it() -> void:
 	var brain: DroneBrain = _orbiting_brain()
 	var s := _senses(15.0)
-	var fired: bool = false
+	var start: int = -1
+	var shots: Array[int] = []
 	for tick in 200:
 		if brain.state == S.WIND_UP and brain.state_t > 0.3:
 			s.hp = 0.0
 		brain.update(TICK, s)
+		if brain.wind_up_began:
+			start = tick
+		if brain.fired:
+			shots.append(tick)
+	assert_eq(brain.state, S.DEAD)
+	assert_eq(shots.size(), 1, "one last shot, and no more after it")
+	assert_eq(shots[0] - start, 36, "0.6 s after the wind-up started, as if it had lived")
+
+
+func test_the_glow_of_a_drone_killed_in_its_wind_up_keeps_rising_to_the_shot() -> void:
+	var brain: DroneBrain = _orbiting_brain()
+	var s := _senses(15.0)
+	while brain.state != S.WIND_UP:
+		brain.update(TICK, s)
+	for i in 20:
+		brain.update(TICK, s)
+	s.hp = 0.0
+	brain.update(TICK, s)
+	assert_eq(brain.state, S.DEAD)
+	var last: float = brain.glow()
+	assert_gt(last, 0.5, "it was well into its wind-up")
+	for i in 100:
+		brain.update(TICK, s)
+		if brain.fired:
+			break
+		assert_gte(brain.glow(), last - 0.000001, "still rising")
+		last = brain.glow()
+	assert_true(brain.fired)
+	assert_gt(last, 0.95, "full glow when the shot leaves")
+	assert_eq(brain.glow(), 0.0, "dark once it has fired")
+
+
+func test_a_drone_killed_after_its_shot_has_no_shot_left() -> void:
+	var brain: DroneBrain = _orbiting_brain()
+	var s := _senses(15.0)
+	while brain.state != S.RECOVER:
+		brain.update(TICK, s)
+	s.hp = 0.0
+	var fired: bool = false
+	for tick in 100:
+		brain.update(TICK, s)
 		fired = fired or brain.fired
 	assert_eq(brain.state, S.DEAD)
-	assert_false(fired, "a wreck does not shoot")
+	assert_false(fired)
 
 
 func test_the_glow_ramps_0_to_1_over_the_wind_up_and_fades_over_the_recovery() -> void:
@@ -518,6 +562,31 @@ func test_three_pulses_kill_a_drone_once_and_the_wreck_takes_no_more_hits() -> v
 	assert_eq(deaths.size(), 1)
 
 
+func test_the_ink_rim_is_unshaded_ink_and_never_glows() -> void:
+	_floor()
+	var drone: Drone = _drone()
+	drone.place(Vector3.ZERO, 4.0)
+	var rim: MeshInstance3D = drone.get_node("Body/Rim") as MeshInstance3D
+	var material: StandardMaterial3D = rim.material_override as StandardMaterial3D
+	assert_eq(material.albedo_color, Color("14161A"))
+	assert_eq(material.shading_mode, BaseMaterial3D.SHADING_MODE_UNSHADED)
+	assert_false(material.emission_enabled)
+	var torus: TorusMesh = rim.mesh as TorusMesh
+	assert_almost_eq(torus.inner_radius, 0.34, 0.0001)
+	assert_almost_eq(torus.outer_radius, 0.66, 0.0001)
+	# Full glow and a white flash: the ring changes, the rim does not.
+	drone.ai_enabled = false
+	drone.brain.state = DroneBrain.State.WIND_UP
+	drone.brain.state_t = DroneBrain.WIND_UP_S
+	drone.step(TICK)
+	var ring_material: StandardMaterial3D = (drone.get_node("Body/Ring") as MeshInstance3D).material_override
+	assert_almost_eq(ring_material.emission_energy_multiplier, Drone.GLOW_MAX, 0.0001)
+	drone.hurtbox.take_hit(15.0, null, Vector3.ZERO)
+	assert_eq(ring_material.albedo_color, Color.WHITE)
+	assert_eq(material.albedo_color, Color("14161A"))
+	assert_false(material.emission_enabled)
+
+
 func test_a_hit_flashes_the_drone_white_for_0_06_s() -> void:
 	_floor()
 	var drone: Drone = _drone()
@@ -609,7 +678,7 @@ func test_the_bolt_aims_at_the_chassis_position_at_fire_time_with_no_lead() -> v
 	assert_gt(rad_to_deg((shot[1] as Vector3).angle_to(old_aim)), 1.0, "and not where it was at the wind-up start")
 
 
-func test_a_hit_during_the_wind_up_does_not_cancel_the_shot_but_a_kill_does() -> void:
+func test_neither_a_hit_nor_a_kill_during_the_wind_up_cancels_the_shot() -> void:
 	_floor()
 	var pool: DroneBoltPool = _pool()
 	var walker: Node3D = _walker(Vector3(0.0, 1.0, 15.0))
@@ -632,8 +701,9 @@ func test_a_hit_during_the_wind_up_does_not_cancel_the_shot_but_a_kill_does() ->
 			killed.hurtbox.take_hit(45.0, null, Vector3.ZERO)
 	assert_eq(wounded.health.hp, 15.0)
 	assert_eq(wounded.shots_fired, 1, "two hits in the wind-up, the shot still left")
-	assert_eq(killed.shots_fired, 0, "a dead drone shoots nothing")
+	assert_eq(killed.shots_fired, 1, "a drone always fires: killed 0.3 s in, its bolt still left at 0.6 s")
 	assert_true(killed.is_dead())
+	assert_eq(pool.spawned_count, 2)
 
 
 func test_the_drone_holds_still_through_the_wind_up_the_shot_and_the_recovery() -> void:
@@ -760,6 +830,124 @@ func test_a_drone_does_not_see_a_walker_behind_a_wall() -> void:
 	for tick in 120:
 		drone.step(TICK)
 	assert_eq(drone.state_name(), "IDLE_HOVER", "20 m away but behind the wall")
+
+
+func test_a_provoked_drone_that_gave_up_goes_home_and_stays_there_while_the_walker_is_unseen() -> void:
+	_floor()
+	# 55 m away: inside the 60 m leash, outside the 35 m sight, and still out of sight after 3 s of closing in.
+	var walker: Node3D = _walker(Vector3(0.0, 1.0, 55.0))
+	await wait_physics_frames(2)
+	var drone: Drone = _drone()
+	drone.target = walker
+	drone.place(Vector3.ZERO, 4.0)
+	var entered: Array[String] = []
+	drone.state_changed.connect(
+		func(_d: Drone, _from: DroneBrain.State, to_state: DroneBrain.State) -> void:
+			entered.append(DroneBrain.state_name(to_state))
+	)
+	drone.hurtbox.take_hit(15.0, null, Vector3.ZERO)
+	for tick in 700:
+		drone.step(TICK)
+	assert_eq(entered.count("ALERT"), 1, "provoked once, and it did not turn round again")
+	assert_true("PATROL" in entered, "it gave up after 3 s without sight")
+	assert_eq(drone.state_name(), "IDLE_HOVER", "and went home")
+	assert_lt(drone.global_position.distance_to(drone.home), 0.05)
+
+
+func test_a_bolt_whose_drone_was_freed_still_lands_and_passes_no_source() -> void:
+	var pool: DroneBoltPool = _pool()
+	_hits = 0
+	_last_hit_source = Node.new()
+	add_child_autofree(_last_hit_source)
+	var drone: Drone = load("res://scenes/enemies/drone.tscn").instantiate()
+	drone.auto_step = false
+	add_child(drone)
+	_hurtbox_at(Vector3(10.0, 1.0, 0.0), CombatLayers.PLAYER)
+	await wait_physics_frames(2)
+	assert_true(pool.fire(Vector3(0.0, 1.0, 0.0), Vector3.RIGHT, drone))
+	drone.free()
+	for i in 40:
+		pool.step(TICK)
+	assert_eq(_hits, 1, "the bolt of a freed drone still hurts")
+	assert_null(_last_hit_source, "the freed drone is passed as null")
+	assert_eq(pool.live, 0)
+	_last_hit_source = null
+
+
+func test_a_retired_bolt_forgets_its_drone() -> void:
+	var pool: DroneBoltPool = _pool()
+	var drone: Drone = load("res://scenes/enemies/drone.tscn").instantiate()
+	drone.auto_step = false
+	add_child_autofree(drone)
+	pool.fire(Vector3(0.0, 50.0, 0.0), Vector3.UP, drone)
+	var bolt: DroneBoltPool.Bolt = pool.live_bolts()[0]
+	assert_eq(bolt.source, drone)
+	pool.clear()
+	assert_null(bolt.source)
+
+
+func test_respawn_all_stops_an_old_drone_that_was_due_to_fire_this_tick() -> void:
+	_floor()
+	var walker: Node3D = _walker(Vector3(0.0, 1.0, 15.0))
+	await wait_physics_frames(2)
+	var field: DroneField = _field_with_sites(walker)
+	field.add_encounter(Vector3.ZERO, 1, 1)
+	var old: Drone = field.encounters[0].drones[0]
+	old.engage_now()
+	old.brain.state = DroneBrain.State.WIND_UP
+	old.brain.state_t = 0.59
+	# The signal of a bank arrives in the middle of the tick; the old drone, not yet freed, still gets its turn.
+	field.respawn_all()
+	old.step(TICK)
+	assert_eq(old.shots_fired, 0, "the old drone did not fire")
+	assert_eq(field.bolts.live, 0, "and no bolt is in the air")
+	assert_eq(field.alive_count(), 1, "the new drone is there")
+
+
+func test_a_dead_drone_frees_its_slot_so_the_waiting_fifth_engages() -> void:
+	_floor()
+	var walker: Node3D = _walker(Vector3(0.0, 1.0, 0.0))
+	await wait_physics_frames(2)
+	var field: DroneField = _field_with_sites(walker)
+	var encounter: DroneEncounter = field.add_encounter(Vector3(0.0, 0.0, -25.0), 5, 5)
+	await wait_physics_frames(60)
+	assert_eq(field.active_count(), 4)
+	var waiting: Drone = null
+	var victim: Drone = null
+	for drone in encounter.drones:
+		if drone.state_name() == "IDLE_HOVER":
+			waiting = drone
+		elif victim == null:
+			victim = drone
+	assert_not_null(waiting, "one drone waits at home")
+	victim.hurtbox.take_hit(45.0, null, Vector3.ZERO)
+	assert_eq(field.active_count(), 3, "the dead drone gave its slot back")
+	await wait_physics_frames(5)
+	assert_true(DroneBrain.is_engaged(waiting.brain.state), "and the waiting drone took it")
+	assert_eq(field.active_count(), 4)
+
+
+func test_respawn_all_mid_fight_clears_the_bolts_and_resets_the_drones() -> void:
+	_floor()
+	var walker: Node3D = _walker(Vector3(0.0, 1.0, 0.0))
+	await wait_physics_frames(2)
+	var field: DroneField = _field_with_sites(walker)
+	var encounter: DroneEncounter = field.add_encounter(Vector3(0.0, 0.0, -20.0), 3, 3)
+	var waited: int = 0
+	while field.bolts.live == 0 and waited < 500:
+		await wait_physics_frames(1)
+		waited += 1
+	assert_gt(field.bolts.live, 0, "the fight is on, with a bolt in the air")
+	encounter.drones[0].hurtbox.take_hit(15.0, null, Vector3.ZERO)
+	field.respawn_all()
+	assert_eq(field.bolts.live, 0, "the bolts are gone")
+	assert_eq(field.active_count(), 0, "no drone holds a slot")
+	assert_eq(field.alive_count(), 3)
+	for drone in encounter.drones:
+		assert_eq(drone.health.hp, 45.0)
+		assert_eq(drone.state_name(), "IDLE_HOVER")
+	await wait_physics_frames(5)
+	assert_eq(field.bolts.live, 0, "and no old drone fired after the respawn")
 
 
 # --- Field ------------------------------------------------------------------------------------------------------

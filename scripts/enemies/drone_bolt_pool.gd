@@ -49,7 +49,8 @@ class Bolt:
 	var alive: bool = false
 	var velocity: Vector3 = Vector3.ZERO
 	var damage: float = 0.0
-	var source: Node = null
+	## The drone that fired it. A Variant, because the drone may be freed while the bolt is still flying.
+	var source: Variant = null
 	var age: float = 0.0
 	var travelled: float = 0.0
 
@@ -185,7 +186,9 @@ func _land(bolt: Bolt, hit: Dictionary) -> void:
 	var collider: Object = hit["collider"]
 	impact_count += 1
 	var damage: float = bolt.damage
-	var source: Node = bolt.source
+	var source: Node = null
+	if is_instance_valid(bolt.source):
+		source = bolt.source
 	_retire(bolt)
 	var counted: bool = false
 	if collider != null and collider.has_method("take_hit"):
@@ -197,4 +200,5 @@ func _land(bolt: Bolt, hit: Dictionary) -> void:
 func _retire(bolt: Bolt) -> void:
 	bolt.alive = false
 	bolt.visible = false
+	bolt.source = null
 	_live -= 1

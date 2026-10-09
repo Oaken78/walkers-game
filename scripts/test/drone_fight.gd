@@ -45,6 +45,9 @@ const RESUME_SHARE: float = 0.98
 const REF_WIDTH: float = 1920.0
 const REF_HEIGHT: float = 1080.0
 const LUMA_CHANGED: float = 0.03
+## The glowing band: the ring's tube is centred 0.5 m from the drone's centre and 0.2 m thick.
+const BAND_MID_M: float = 0.5
+const BAND_HALF_M: float = 0.07
 ## The orbit radius is read after the drones have closed in.
 const RADIUS_SETTLE_S: float = 5.0
 
@@ -199,8 +202,10 @@ var max_home_dist: float:
 		return worst
 var luma_ok: bool:
 	get:
-		# Pixels cannot be read headless: the check is skipped there (the windowed run measures it).
-		return not luma_measured or luma_delta >= 0.3
+		# Pixels cannot be read headless: the check is skipped there. Windowed it must have measured, and passed.
+		if DisplayServer.get_name() == "headless":
+			return true
+		return luma_measured and luma_delta >= 0.3
 var drone_count: int:
 	get:
 		return _drones.size()
@@ -618,8 +623,9 @@ func keep_frame() -> void:
 		_frames.append(image)
 
 
-## The luma of the ring's pixels in the wound-up frame and in the idle frame (the pixels where the drone differs from the
-## clear frame), 0..1. Needs the three kept frames; headless there are none and luma_measured stays false.
+## The luma of the glowing band in the wound-up frame and in the idle frame, 0..1: the pixels of the ring's tube (0.07 m
+## either side of its mid radius, the ink rim excluded) where the drone differs from the clear frame. Needs the three
+## kept frames; headless there are none and luma_measured stays false.
 func measure_luma() -> void:
 	luma_measured = false
 	if _frames.size() < 3:
@@ -635,12 +641,16 @@ func measure_luma() -> void:
 	var depth: float = -(camera.global_transform.affine_inverse() * at).z
 	var focal: float = 0.5 * float(wound.get_height()) / tan(deg_to_rad(camera.fov) * 0.5)
 	var reach: int = int(ceil(focal * Drone.HURT_RADIUS_M / maxf(depth, 0.001) * 1.5))
+	var mid_px: float = focal * BAND_MID_M / maxf(depth, 0.001)
+	var half_px: float = focal * BAND_HALF_M / maxf(depth, 0.001)
 	var sum_wound: float = 0.0
 	var sum_idle: float = 0.0
 	var count: int = 0
 	for y in range(int(centre.y) - reach, int(centre.y) + reach + 1):
 		for x in range(int(centre.x) - reach, int(centre.x) + reach + 1):
 			if x < 0 or y < 0 or x >= wound.get_width() or y >= wound.get_height():
+				continue
+			if absf(Vector2(float(x) + 0.5, float(y) + 0.5).distance_to(centre) - mid_px) > half_px:
 				continue
 			var l_clear: float = clear.get_pixel(x, y).get_luminance()
 			var l_idle: float = idle.get_pixel(x, y).get_luminance()

@@ -8,7 +8,8 @@ extends RefCounted
 ## 35 m, closes in) - STRAFE (orbits at 12-18 m) - WIND_UP (0.6 s, glows, holds still) - FIRE (the tick the bolt
 ## leaves; it never lasts longer than that tick) - RECOVER (0.3 s, holds still) - DEAD.
 ## The hold: speed falls to 0 within 0.1 s of the wind-up start and stays 0 through the shot and the recovery
-## (0.9 s of every 1.5 s cycle), then rises back to orbit speed over 0.3 s. A hit never cancels a shot; only a death does.
+## (0.9 s of every 1.5 s cycle), then rises back to orbit speed over 0.3 s. A drone always fires (Klas): a hit never
+## cancels a shot, and a drone killed during its wind-up still fires at the end of the 0.6 s (`shot_pending_s`).
 
 enum State { IDLE_HOVER, PATROL, ALERT, STRAFE, WIND_UP, FIRE, RECOVER, DEAD }
 
@@ -61,8 +62,10 @@ var cycle_t: float = 0.0
 var lost_sight_t: float = 0.0
 ## 0 = holding still, 1 = full speed: brakes to 0 over BRAKE_S, rises over RESUME_S.
 var speed_factor: float = 0.0
-## True for the one update in which the bolt leaves.
+## True for the one update in which the bolt leaves (a dead drone's last shot included).
 var fired: bool = false
+## Seconds until the shot of a drone killed during its wind-up leaves; 0 when there is none.
+var shot_pending_s: float = 0.0
 ## True for the one update in which a wind-up started.
 var wind_up_began: bool = false
 
@@ -132,6 +135,7 @@ func update(delta: float, s: Senses) -> void:
 	fired = false
 	wind_up_began = false
 	if state == State.DEAD:
+		_count_down_last_shot(delta)
 		return
 	state_t += delta
 	cycle_t += delta
@@ -141,16 +145,28 @@ func update(delta: float, s: Senses) -> void:
 		if next == state:
 			break
 		_enter(next)
+		if next == State.PATROL:
+			# The body clears its grudge on entering PATROL; the next update decides from fresh senses.
+			break
 	_update_speed(delta)
 
 
-## Dead at once (a hit took the last hit point). A shot that has not left is lost.
+## The wind-up glow of this drone, 0..1. A drone killed during its wind-up keeps glowing up to its last shot.
+func glow() -> float:
+	if state == State.DEAD and shot_pending_s > 0.0:
+		return clampf(1.0 - shot_pending_s / WIND_UP_S, 0.0, 1.0)
+	return glow_level(state, state_t)
+
+
+## Dead at once (a hit took the last hit point). A shot that has not left still leaves when its wind-up ends.
 func kill() -> void:
 	_enter(State.DEAD)
 	speed_factor = 0.0
 
 
 func _enter(next: State) -> void:
+	if next == State.DEAD and state == State.WIND_UP:
+		shot_pending_s = maxf(WIND_UP_S - state_t, TIMER_EPSILON)
 	state = next
 	state_t = 0.0
 	match next:
@@ -164,6 +180,15 @@ func _enter(next: State) -> void:
 			fired = true
 		State.DEAD:
 			speed_factor = 0.0
+
+
+func _count_down_last_shot(delta: float) -> void:
+	if shot_pending_s <= 0.0:
+		return
+	shot_pending_s -= delta
+	if shot_pending_s <= TIMER_EPSILON:
+		shot_pending_s = 0.0
+		fired = true
 
 
 func _update_speed(delta: float) -> void:

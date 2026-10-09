@@ -88,6 +88,9 @@ func clear() -> void:
 		if is_instance_valid(drone):
 			if field != null:
 				field.set_engaged(drone, false)
+			# queue_free() takes effect at the end of the frame: until then the old drone must not think, fire or step.
+			drone.ai_enabled = false
+			drone.auto_step = false
 			drone.queue_free()
 	drones.clear()
 	last_wind_up_s = -INF

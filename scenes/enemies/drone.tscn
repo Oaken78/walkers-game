@@ -9,6 +9,12 @@ outer_radius = 0.6
 rings = 24
 ring_segments = 8
 
+[sub_resource type="TorusMesh" id="rim_mesh"]
+inner_radius = 0.34
+outer_radius = 0.66
+rings = 24
+ring_segments = 8
+
 [sub_resource type="SphereShape3D" id="hurt_shape"]
 radius = 0.6
 
@@ -20,6 +26,10 @@ script = ExtResource("1_drone")
 [node name="Ring" type="MeshInstance3D" parent="Body"]
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
 mesh = SubResource("ring_mesh")
+
+[node name="Rim" type="MeshInstance3D" parent="Body"]
+cast_shadow = 0
+mesh = SubResource("rim_mesh")
 
 [node name="Hurtbox" type="Area3D" parent="Body"]
 script = ExtResource("2_hurtbox")

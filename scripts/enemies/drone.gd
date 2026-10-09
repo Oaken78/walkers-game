@@ -24,6 +24,12 @@ const HURT_RADIUS_M: float = 0.6
 const FLASH_S: float = 0.06
 const THREAT_COLOR: Color = Color("E8345A")
 const RING_COLOR: Color = Color("181A1F")
+## The ink rim behind the ring (GDD 10 rule 2): unshaded, never glows, so the ring keeps a dark edge in grayscale.
+const RIM_COLOR: Color = Color("14161A")
+## The rim torus is squashed to this share of its thickness along the ring's axis and sits this far behind the ring, so
+## the whole ring stays in front of it and only a dark edge shows round the ring.
+const RIM_FLATTEN: float = 0.25
+const RIM_BEHIND_M: float = 0.05
 ## Emissive energy at the end of the wind-up (GDD 10: 0 to 3 over 0.6 s).
 const GLOW_MAX: float = 3.0
 const FLASH_ENERGY: float = 1.5
@@ -106,6 +112,7 @@ var _sight_query: PhysicsRayQueryParameters3D
 @onready var hurtbox: Hurtbox = $Body/Hurtbox
 @onready var _body: Node3D = $Body
 @onready var _ring: MeshInstance3D = $Body/Ring
+@onready var _rim: MeshInstance3D = $Body/Rim
 
 
 func _init() -> void:
@@ -121,6 +128,13 @@ func _ready() -> void:
 	_ring_material.emission = THREAT_COLOR
 	_ring_material.emission_energy_multiplier = 0.0
 	_ring.material_override = _ring_material
+	var rim_material := StandardMaterial3D.new()
+	rim_material.albedo_color = RIM_COLOR
+	rim_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_rim.material_override = rim_material
+	# Mesh space: the torus' axis is Y. Squash it, then lay the axis along the body's Z (the way the ring faces).
+	var lay_flat := Basis.from_euler(Vector3(PI * 0.5, 0.0, 0.0))
+	_rim.transform = Transform3D(lay_flat * Basis.from_scale(Vector3(1.0, RIM_FLATTEN, 1.0)), Vector3(0.0, 0.0, RIM_BEHIND_M))
 	_ground_query = PhysicsRayQueryParameters3D.new()
 	_ground_query.collision_mask = CombatLayers.WORLD
 	_ground_query.collide_with_areas = false
@@ -199,7 +213,7 @@ func chassis_point() -> Vector3:
 
 ## The wind-up glow as drawn, 0..1.
 func glow() -> float:
-	return DroneBrain.glow_level(brain.state, brain.state_t)
+	return brain.glow()
 
 
 ## The body's bob offset from the hover point (m).
@@ -212,6 +226,11 @@ func step(delta: float) -> void:
 	var started: int = Time.get_ticks_usec()
 	flash_left_s = maxf(flash_left_s - delta, 0.0)
 	if brain.state == DroneBrain.State.DEAD:
+		if ai_enabled:
+			# A drone always fires: one killed during its wind-up still sends its bolt at the end of the 0.6 s.
+			brain.update(delta, _senses)
+			if brain.fired:
+				_fire_bolt()
 		_fall(delta)
 	else:
 		if ai_enabled:
@@ -235,7 +254,8 @@ func _think(delta: float) -> void:
 		var from_state: DroneBrain.State = _prev_state
 		_prev_state = brain.state
 		_set_engaged(DroneBrain.is_engaged(brain.state))
-		if brain.state == DroneBrain.State.IDLE_HOVER:
+		if brain.state == DroneBrain.State.PATROL or brain.state == DroneBrain.State.IDLE_HOVER:
+			# Going home ends the grudge: a drone that gave up does not turn round for a walker it cannot see.
 			_provoked = false
 		state_changed.emit(self, from_state, brain.state)
 	if brain.wind_up_began:
@@ -394,8 +414,8 @@ func _on_hit_taken(_damage: float, _source: Node, _point: Vector3) -> void:
 	_paint()
 
 
-## A killing hit: the drone is dead at once, so a shot that has not left is lost (a hit that does not kill never
-## cancels one). It falls, drops 3-8 scrap where it lands and is gone 2 s later.
+## A killing hit: the drone is dead at once but a drone always fires, so a wind-up in progress still ends in its shot
+## (DroneBrain.shot_pending_s). It falls, drops 3-8 scrap where it lands and is gone 2 s later.
 func _on_depleted() -> void:
 	brain.kill()
 	_set_engaged(false)
