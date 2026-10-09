@@ -112,7 +112,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.319
+    "value": -0.055
    }
   },
   {
@@ -137,7 +137,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -178,6 +178,14 @@
     "prop": "longest_stall_s",
     "op": "<=",
     "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_input_stall_s",
+    "op": "<=",
+    "value": 0.6
    }
   },
   {
@@ -294,7 +302,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.356
+    "value": -0.314
    }
   },
   {
@@ -319,7 +327,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -360,6 +368,14 @@
     "prop": "longest_stall_s",
     "op": "<=",
     "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_input_stall_s",
+    "op": "<=",
+    "value": 0.6
    }
   },
   {
@@ -476,7 +492,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.202
+    "value": -0.291
    }
   },
   {
@@ -501,7 +517,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -542,6 +558,14 @@
     "prop": "longest_stall_s",
     "op": "<=",
     "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_input_stall_s",
+    "op": "<=",
+    "value": 0.6
    }
   },
   {

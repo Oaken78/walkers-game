@@ -94,6 +94,7 @@ func test_scout_matches_reference_row() -> void:
 			"top_speed": 4.5,
 			"turn_rate": 120.0,
 			"step_up": 0.6,
+			"climb": 0.9,
 			"max_slope": 35,
 			"spread": 1.0,
 			"hp": 100,
@@ -115,6 +116,7 @@ func test_strider_matches_reference_row() -> void:
 			"top_speed": 6.496,
 			"turn_rate": 134.118,
 			"step_up": 0.96,
+			"climb": 1.44,
 			"max_slope": 30,
 			"spread": 1.5,
 			"hp": 100,
@@ -136,6 +138,7 @@ func test_crawler_matches_reference_row() -> void:
 			"top_speed": 3.807,
 			"turn_rate": 109.205,
 			"step_up": 0.36,
+			"climb": 0.54,
 			"max_slope": 45,
 			"spread": 0.5,
 			"hp": 140,
@@ -332,7 +335,7 @@ func test_mounted_legs_are_ordered_left_then_right_front_to_back() -> void:
 
 func test_legless_build_stats_are_finite_and_zero() -> void:
 	var s := WalkerBuild.new().stats()
-	for key in ["lift", "load", "reach", "top_speed", "turn_rate", "step_up", "max_slope", "spread"]:
+	for key in ["lift", "load", "reach", "top_speed", "turn_rate", "step_up", "climb", "max_slope", "spread"]:
 		assert_eq(s[key], 0.0, key)
 		assert_true(is_finite(s[key]), key)
 	assert_eq(s["mass"], 125.0)
@@ -344,7 +347,7 @@ func test_stats_have_exactly_the_contract_keys() -> void:
 	var keys: Array = WalkerBuild.scout().stats().keys()
 	keys.sort()
 	var want: Array = [
-		"dps", "hp", "leg_count", "lift", "load", "mass", "max_slope", "reach", "spread",
+		"climb", "dps", "hp", "leg_count", "lift", "load", "mass", "max_slope", "reach", "spread",
 		"step_up", "top_speed", "turn_rate"
 	]
 	want.sort()
@@ -378,3 +381,30 @@ func test_copy_is_independent() -> void:
 	assert_eq(a.part_at(&"top_0"), PartCatalog.PULSE_CANNON)
 	assert_eq(a.part_at(&"top_1"), &"")
 	assert_eq(b.chassis_id, a.chassis_id)
+
+func test_climb_is_0_9_times_the_mean_reach_for_the_reference_builds() -> void:
+	assert_almost_eq(WalkerBuild.scout().stats()["climb"] as float, 0.90, 0.01)
+	assert_almost_eq(WalkerBuild.strider().stats()["climb"] as float, 1.44, 0.01)
+	assert_almost_eq(WalkerBuild.crawler().stats()["climb"] as float, 0.54, 0.01)
+
+
+func test_strider_climbs_at_least_40_percent_higher_than_crawler_expected_0_625() -> void:
+	var a := WalkerBuild.strider().stats()["climb"] as float
+	var c := WalkerBuild.crawler().stats()["climb"] as float
+	assert_gte((a - c) / a, 0.4)
+	assert_almost_eq((a - c) / a, 0.625, 0.001)
+
+
+func _scout_with_pair(pair: StringName) -> WalkerBuild:
+	var build := WalkerBuild.new()
+	for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
+		build.place(socket, PartCatalog.LEG_MEDIUM)
+	for socket: StringName in [&"leg_l2", &"leg_r2"]:
+		build.place(socket, pair)
+	build.place(&"top_0", PartCatalog.PULSE_CANNON)
+	return build
+
+
+func test_climb_of_a_mixed_build_uses_the_shortest_leg_reach() -> void:
+	assert_almost_eq(_scout_with_pair(PartCatalog.LEG_SHORT).stats()["climb"] as float, 0.54, 0.001, "short pair")
+	assert_almost_eq(_scout_with_pair(PartCatalog.LEG_LONG).stats()["climb"] as float, 0.90, 0.001, "long pair")

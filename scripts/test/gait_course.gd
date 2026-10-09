@@ -14,13 +14,14 @@ const LANE_LEDGES: String = "ledges"
 const LANE_WALL: String = "wall"
 const LANE_POCKET: String = "pocket"
 const LANE_PATCH_A: String = "patch_a"
+const LANE_CLIMB: String = "climb"
 const LANE_TALUS: String = "talus"
 const LANE_X: Dictionary = {
-	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0, "talus": 300.0
+	"flat": 0.0, "bumps": 60.0, "ledges": 120.0, "wall": 180.0, "pocket": 240.0, "talus": 300.0, "climb": -60.0
 }
 ## Half-width of the area each lane is meant to be driven in (edge margins are measured against it).
 const LANE_HALF_WIDTH: Dictionary = {
-	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0, "talus": 6.0
+	"flat": 20.0, "bumps": 15.0, "ledges": 5.0, "wall": 10.0, "pocket": 10.0, "talus": 6.0, "climb": 5.0
 }
 const FLAT_LENGTH: float = 150.0
 const FLAT_STRIPE: float = 2.0
@@ -62,8 +63,17 @@ const LEDGE_FLAT_RUN: float = 6.0
 const LEDGE_DECK_DEPTH: float = 6.0
 const LEDGE_FIRST_HEIGHT: float = 0.30
 const LEDGE_HEIGHT_STEP: float = 0.05
-const LEDGE_COUNT: int = 16
+const LEDGE_COUNT: int = 27
+## The climb lane: one block of a height the scenario sets (set_climb_height), a flat run in front and a deck behind it.
+const CLIMB_FLAT_RUN: float = 8.0
+const CLIMB_DECK_DEPTH: float = 10.0
+## The along-face slide is measured while the walker's origin is within this (m) of the climb block's face and this far (m) from
+## its ends.
+const FACE_SLIDE_BAND: float = 2.5
+const FACE_SLIDE_END_MARGIN: float = 1.0
 const POCKET_HEIGHT: float = 0.8
+## A foot planted this high (m) above the floor is on a top (the reach-freeze).
+const REACH_FREEZE_MIN_Y: float = 0.3
 const WALL_Z: float = -14.0
 const WALL_HEIGHT: float = 1.5
 const WALL_WIDTH: float = 20.0
@@ -78,6 +88,15 @@ const SUN_AZIMUTH_DEG: float = 25.0
 const CAMERA_PITCH_DEG: float = 25.0
 const CAMERA_AZIMUTH_DEG: float = 20.0
 const TERRAIN_SEED: int = 99
+## Two tall rocks side by side with a gap too narrow for any body: the V-notch test (beside the flat lane's line).
+const NOTCH_X: float = 12.0
+const NOTCH_Z: float = -14.0
+const NOTCH_RADIUS: float = 0.9
+const NOTCH_GAP: float = 0.1
+const WEDGE_HEIGHT: float = 2.0
+const WEDGE_LENGTH: float = 5.0
+const LATERAL_MIN_MPS: float = 0.2
+const LATERAL_WINDOW_TICKS: int = 120
 const AUTOPILOT_PERIOD_S: float = 8.0
 const AUTOPILOT_CENTERING: float = 0.12
 const AUTOPILOT_DEAD_DEG: float = 3.0
@@ -107,6 +126,9 @@ var b_speed: float = 0.0
 var b_step_up: float = 0.0
 var contrast_speed: float = 0.0
 var contrast_step_up: float = 0.0
+## (strider - crawler) / strider of the tallest block each climbed (record_climb).
+var contrast_climb: float = 0.0
+var _climb_by_build: Dictionary = {}
 var autopilot_amplitude_deg: float = 35.0
 var yaw_overshoot_deg: float = 0.0
 ## Straight-line distance the walker has travelled since mark().
@@ -202,6 +224,15 @@ var camera_bob_p2p_m: float:
 var camera_height_m: float:
 	get:
 		return _camera_height()
+## The commanded speed of the walker (m/s): what the ramp asks of it after walls took their part.
+var commanded_speed_mps: float:
+	get:
+		return _walker.commanded_speed() if _walker != null else 0.0
+## Most sign changes of the lateral velocity (across the spawn heading, beyond 0.2 m/s) in any 2 s window since
+## track_lateral(true): a walker in a V between two rocks must not shuffle left and right.
+var max_lateral_flips_2s: int:
+	get:
+		return _lateral_flips_max
 ## Tilt of the walker body from level (degrees).
 var tilt_deg: float:
 	get:
@@ -248,6 +279,26 @@ var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
 var _freeze_stall: float = -1.0
+var _freeze_reach: bool = false
+var _freeze_descend: bool = false
+const BACKOFF_PROBE_TICKS: int = 6
+## The probe opens on a support wait that has lasted this many ticks (not a one-tick flicker).
+const BACKOFF_WAIT_MIN_TICKS: int = 8
+var _backoff_wait_ticks: int = 0
+## The descent still waits for a front foot this far (m) below the top of the block.
+const DESCEND_FREEZE_BELOW: float = 0.3
+## How far the walker moved in the 0.1 s of the back-off probe (-1 until it has run).
+var backoff_moved_m: float = -1.0
+## The same window without S (the control), and whether a leg waited when the window opened.
+var backoff_control_m: float = -1.0
+var backoff_waited: bool = false
+var _backoff_press: bool = true
+var _backoff_facing: Vector3 = Vector3.FORWARD
+var _backoff_state: int = 0
+var _backoff_ticks: int = 0
+var _backoff_from: Vector3 = Vector3.ZERO
+var _freeze_paw: float = -1.0
+var _freeze_margin: float = -1.0
 var _freeze_tick: int = -1
 var _tick: int = 0
 var _track_clearance: bool = false
@@ -270,9 +321,22 @@ var _yaw_source: Node3D
 var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
+var _pocket_block: Node3D = null
 var _tallest_boulder_radius: float = 0.0
 var _tallest_boulder_top: Vector3 = Vector3.ZERO
 var _track_frames: bool = false
+## Tick of the first reach-up swing of the climb in progress (-1 none), and the reach-ups seen so far.
+var _reach_start_tick: int = -1
+var _last_reach_ups: int = 0
+## Seconds from the first reach-up swing to every foot standing on the top, of the last block climbed (see CLIMBTIME).
+var climb_time_s: float = 0.0
+var _notch: Node3D
+var _climb_block: StaticBody3D
+var _lateral_track: bool = false
+var _lateral_right: Vector3 = Vector3.RIGHT
+var _lateral_sign: float = 0.0
+var _lateral_flip_ticks: Array[int] = []
+var _lateral_flips_max: int = 0
 var _frame_last_usec: int = 0
 var _frame_ms: PackedFloat32Array = PackedFloat32Array()
 var _frame_ms_max: float = 0.0
@@ -356,16 +420,26 @@ func _physics_process(delta: float) -> void:
 		spawn_at(_lane, _spawn_offset)
 	if _autopilot:
 		_run_autopilot(delta)
+	if _hash_on:
+		# A rolling hash of the walker's state each tick (position, the leg that waits, contacts): two identical runs must agree.
+		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker._hang_wait * 7 + _walker._contact_count) & 0x3FFFFFFFFFFF
+	_run_backoff_probe()
+	_track_lateral_offset()
 	_track_step_up()
+	_track_lateral_flips()
 	_track_yaw_overshoot()
 	_track_hover_inside()
+	_track_face_slide(delta)
 	_tick += 1
 	if _tick == 5:
 		_nominal_root_y = _walker.global_position.y
 	# Walking into the end of a lane (no ground ahead) is not a stall of the controller.
-	_telemetry.stall_exempt = _walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS
+	_telemetry.stall_exempt = (
+		(_walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS)
+		or (_lane == LANE_LEDGES and _stopped_before_face())
+	)
 	if _walker.gait() != null:
-		foot_rise_max = maxf(foot_rise_max, foot_rise_above_apron)
+		foot_rise_max = maxf(foot_rise_max, foot_rise_from_start if _foot_start_y.size() == _walker.leg_count() else foot_rise_above_apron)
 		if _tick > 5:
 			root_rise_max = maxf(root_rise_max, root_rise_over_nominal)
 	if _track_clearance and _walker.gait() != null and _on_patch():
@@ -383,6 +457,15 @@ func _physics_process(delta: float) -> void:
 	if _freeze_stall >= 0.0 and _telemetry.current_stall_s >= _freeze_stall:
 		get_tree().paused = true
 		_freeze_stall = -1.0
+	if _freeze_margin >= 0.0 and _walker.support_margin_ratio() < _freeze_margin:
+		get_tree().paused = true
+		_freeze_margin = -1.0
+	if _freeze_paw >= 0.0:
+		for i in _walker.leg_count():
+			if _walker.is_leg_hanging(i) and _walker.foot_position(i).y >= _freeze_paw * _walker.leg_reach(i):
+				get_tree().paused = true
+				_freeze_paw = -1.0
+				break
 	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
 		get_tree().paused = true
 		_freeze_tilt = -1.0
@@ -470,6 +553,13 @@ func use_build(build_name: String) -> void:
 			for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
 				build.place(socket, PartCatalog.LEG_MEDIUM)
 			build.place(&"top_0", PartCatalog.PULSE_CANNON)
+		"scout_long_pair":
+			build = WalkerBuild.new()
+			for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
+				build.place(socket, PartCatalog.LEG_MEDIUM)
+			for socket: StringName in [&"leg_l2", &"leg_r2"]:
+				build.place(socket, PartCatalog.LEG_LONG)
+			build.place(&"top_0", PartCatalog.PULSE_CANNON)
 		"scout_short_pair":
 			build = WalkerBuild.new()
 			for socket: StringName in [&"leg_l0", &"leg_l1", &"leg_r0", &"leg_r1"]:
@@ -487,6 +577,9 @@ func use_build(build_name: String) -> void:
 ## Teleports the walker to the start of a lane, facing -Z (turned `heading_deg` to the left, and `offset_x` m to the
 ## right of the lane's start). Telemetry keeps its numbers (call reset() on it).
 func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, offset_x: float = 0.0) -> void:
+	if lane == "notch" and _notch == null:
+		# The rocks only exist once a scenario asks for them (they would show in the other lanes' shots).
+		_build_notch()
 	var origin: Vector3 = _spawn_point(lane) + Vector3(offset_x, 0.0, offset_z)
 	if origin.y < -100.0:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
@@ -494,10 +587,21 @@ func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, off
 	_lane = lane
 	_spawn_offset = offset_z
 	_tick = 0
+	_reach_start_tick = -1
+	_last_reach_ups = _walker.reach_ups
+	climb_time_s = 0.0
 	hover_inside_ticks = 0
 	foot_rise_max = -INF
 	root_rise_max = -INF
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane) + deg_to_rad(heading_deg)), origin))
+	_spawn_origin = origin
+	_spawn_heading = _spawn_yaw(lane) + deg_to_rad(heading_deg)
+	lateral_offset_max = 0.0
+	face_slide_speed_mps = 0.0
+	face_slide_time_s = 0.0
+	_slide_dist = 0.0
+	_slide_last_x = INF
+	_slide_gap_min = INF
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
@@ -542,6 +646,31 @@ func mark() -> void:
 	_mark = _walker.global_position
 
 
+## Starts (or stops) counting sign changes of the lateral velocity across the walker's current heading.
+func track_lateral(enabled: bool) -> void:
+	_lateral_track = enabled
+	_lateral_right = Basis(Vector3.UP, _walker.yaw_radians()) * Vector3.RIGHT
+	_lateral_sign = 0.0
+	_lateral_flip_ticks.clear()
+	_lateral_flips_max = 0
+
+
+## Prints the lateral-flip count (report numbers: `LATERAL label flips_2s=N lateral_m=x`).
+func log_lateral(label: String) -> void:
+	var lateral: float = (_walker.global_position - _mark).dot(_lateral_right)
+	print("LATERAL %s flips_2s=%d lateral_m=%.2f along_m=%.2f" % [label, _lateral_flips_max, lateral, moved_since_mark])
+
+
+## Forgets the running rise maxima (call after a spawn has settled, so the start pose does not count).
+func reset_rise_max() -> void:
+	_foot_start_y.resize(_walker.leg_count())
+	for i in _walker.leg_count():
+		_foot_start_y[i] = _walker.foot_position(i).y
+	foot_rise_max = -INF
+	root_rise_max = -INF
+	_nominal_root_y = _walker.global_position.y
+
+
 func hold_action(action: String, pressed: bool, strength: float = 1.0) -> void:
 	if pressed:
 		Input.action_press(action, strength)
@@ -582,6 +711,22 @@ func arm_stall_freeze(seconds: float) -> void:
 	_freeze_stall = seconds
 
 
+## Pauses the game the first tick a foot that a reach-up lifted plants on a top (a still of the reach); resume() continues.
+func arm_reach_freeze() -> void:
+	_freeze_reach = true
+
+
+## Pauses the game the first tick a hanging pad is `ratio` x its reach above the floor (the top of a paw); resume() continues.
+func arm_paw_freeze(ratio: float) -> void:
+	_freeze_paw = ratio
+
+
+## Pauses the game the first tick the support margin (over the mean reach) falls below `ratio` while a leg hangs: a still at
+## the lowest margin of a run that cannot keep 0.1. resume() continues.
+func arm_margin_freeze(ratio: float) -> void:
+	_freeze_margin = ratio
+
+
 ## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.
 func track_clearance(enabled: bool) -> void:
 	_track_clearance = enabled
@@ -593,6 +738,73 @@ func track_clearance(enabled: bool) -> void:
 ## Pauses the game at tick `offset` ticks from the recorded minimum-clearance tick (a deterministic replay).
 func arm_freeze_at_clearance(offset: int) -> void:
 	_freeze_tick = clearance_tick + offset
+
+
+## Arms the back-off probe: the first tick a leg waits in a support shift, the forward key is let go and, when `press_back`, S is
+## pressed for BACKOFF_PROBE_TICKS ticks (0.1 s). The distance the walker moved backward (along -facing) in that time is
+## backoff_moved_m with S and backoff_control_m without it (GDD 8.2: the player can always back off).
+func arm_backoff_probe(press_back: bool = true) -> void:
+	_backoff_state = 1
+	_backoff_press = press_back
+	_backoff_wait_ticks = 0
+	backoff_waited = false
+
+
+## How much further back (m, along -facing) S took the walker than the control window without it.
+var backoff_gain_m: float:
+	get:
+		return backoff_moved_m - backoff_control_m
+
+
+## True once the probe has run its 0.1 s.
+var backoff_done: bool:
+	get:
+		return _backoff_state == 3
+
+
+## The widest the walker has been from the line it spawned on (m): a support shift must not carry it off its lane.
+var lateral_offset_max: float = 0.0
+var _spawn_origin: Vector3 = Vector3.ZERO
+var _spawn_heading: float = 0.0
+
+
+func _track_lateral_offset() -> void:
+	var right := Vector3(cos(_spawn_heading), 0.0, -sin(_spawn_heading))
+	var offset: float = (_walker.global_position - _spawn_origin).dot(right)
+	lateral_offset_max = maxf(lateral_offset_max, absf(offset))
+	var on_floor: bool = _walker.global_position.y < 0.6 * _walker.leg_reach(0) + 0.15
+	_telemetry.observe_lateral(offset, on_floor, get_physics_process_delta_time())
+
+
+func _run_backoff_probe() -> void:
+	if _backoff_state == 1:
+		_backoff_wait_ticks = _backoff_wait_ticks + 1 if _walker.is_waiting_for_support() else 0
+	if _backoff_state == 1 and _backoff_wait_ticks >= BACKOFF_WAIT_MIN_TICKS:
+		_backoff_state = 2
+		_backoff_ticks = 0
+		_backoff_from = _walker.global_position
+		_backoff_facing = -_walker.global_basis.z
+		backoff_waited = true
+		Input.action_release("move_forward")
+		if _backoff_press:
+			Input.action_press("move_back")
+	elif _backoff_state == 2:
+		_backoff_ticks += 1
+		if _backoff_ticks >= BACKOFF_PROBE_TICKS:
+			var moved: float = (_backoff_from - _walker.global_position).dot(_backoff_facing)
+			print("BACKOFF press=%s moved_back=%.3f" % [str(_backoff_press), moved])
+			if _backoff_press:
+				backoff_moved_m = moved
+				Input.action_release("move_back")
+			else:
+				backoff_control_m = moved
+			_backoff_state = 3
+
+
+## Pauses the game the first tick a front foot plants below the lip of the climb lane's block after the walker has climbed
+## it (a still at the start of the descent); resume() continues.
+func arm_descend_freeze() -> void:
+	_freeze_descend = true
 
 
 func resume() -> void:
@@ -983,6 +1195,8 @@ func _spawn_point(lane: String) -> Vector3:
 			return Vector3(LANE_X[LANE_BUMPS] - 8.0, SPAWN_Y, -CREST_ALONG)
 		"boulders":
 			return Vector3(LANE_X[LANE_BUMPS] + (BOULDER_X_MIN + BOULDER_X_MAX) * 0.5, SPAWN_Y, -6.0)
+		"notch":
+			return Vector3(NOTCH_X, SPAWN_Y, SPAWN_Z)
 	if not LANE_X.has(lane):
 		return Vector3(0.0, -1000.0, 0.0)
 	return Vector3(LANE_X[lane], SPAWN_Y, SPAWN_Z)
@@ -1017,6 +1231,16 @@ func _track_hover_inside() -> void:
 
 ## Planted-foot rise above the lane's apron, and the body root's rise over (apron + nominal body height): the
 ## blocked-at-the-talus numbers (a blocked walker stays level on the apron).
+## How far a planted foot is above the height it stood at when `reset_rise_max()` was called, the largest over the planted feet
+## (each foot from its own start: a walker that starts with its feet on a toe is not counted for the toe).
+var foot_rise_from_start: float:
+	get:
+		var rise: float = -INF
+		for i in _walker.leg_count():
+			if _walker.gait().state_of(i) == GaitSolver.LegState.PLANTED:
+				rise = maxf(rise, _walker.foot_position(i).y - _foot_start_y[i])
+		return rise
+var _foot_start_y: PackedFloat32Array = PackedFloat32Array()
 var foot_rise_above_apron: float:
 	get:
 		if _walker == null or _walker.gait() == null:
@@ -1044,6 +1268,8 @@ func _on_patch() -> bool:
 
 
 func _lane_key() -> String:
+	if _lane == "notch":
+		return LANE_FLAT
 	if _lane == "talus_top":
 		return LANE_TALUS
 	if _lane == LANE_PATCH_A or _lane == "boulders" or _lane == "crest":
@@ -1064,9 +1290,9 @@ func _edge_margin() -> float:
 
 
 func _first_blocked_block() -> Dictionary:
-	var step_up: float = _walker.stats()["step_up"]
+	var climb: float = _walker.climb_limit()
 	for block in _blocks.get(LANE_LEDGES, []):
-		if float(block["h"]) > step_up + 0.001:
+		if float(block["h"]) > climb + 0.001:
 			return block
 	return {}
 
@@ -1080,21 +1306,77 @@ func _stopped_before_face() -> bool:
 	var face: float = block["z_front"]
 	if _walker.global_position.z < face:
 		return false
+	var nearest: float = INF
 	for i in _walker.leg_count():
 		if _walker.foot_position(i).z < face:
 			return false
-	return true
+		nearest = minf(nearest, _walker.foot_position(i).z - face)
+	# Stopped *at* the face (its nearest foot within one reach of it), not a long way short of it: a walker held back by
+	# the rise cap, or trapped on top of the previous block, is not "blocked by the face".
+	return nearest <= _walker.leg_reach(0)
+
+
+func _track_lateral_flips() -> void:
+	if not _lateral_track or _walker == null:
+		return
+	var lateral: float = _walker.velocity.dot(_lateral_right)
+	if absf(lateral) > LATERAL_MIN_MPS:
+		var sign_now: float = signf(lateral)
+		if _lateral_sign != 0.0 and sign_now != _lateral_sign:
+			_lateral_flip_ticks.append(_tick)
+		_lateral_sign = sign_now
+	while not _lateral_flip_ticks.is_empty() and _lateral_flip_ticks[0] <= _tick - LATERAL_WINDOW_TICKS:
+		_lateral_flip_ticks.pop_front()
+	_lateral_flips_max = maxi(_lateral_flips_max, _lateral_flip_ticks.size())
+
+
+## Logs, a frame after the reach freeze, each leg's drawn pad mesh centre next to the telemetry's pad box and the block's box (the
+## pad mesh and the metric must agree: the mesh centre is the foot + 0.10 up, the metric box runs foot + 0.01 to foot + 0.20).
+func _log_pad_boxes() -> void:
+	await get_tree().process_frame
+	var block: Dictionary = _blocks[LANE_CLIMB][0]
+	print("PADBOX block top=%.3f z_front=%.3f z_back=%.3f" % [block["h"], block["z_front"], block["z_back"]])
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		var mesh: Vector3 = _walker.pad_mesh_center(i)
+		var box_center: Vector3 = foot + _walker.foot_normal(i) * (0.01 + 0.095)
+		print(
+			"PADBOX leg %d state %d foot %s mesh_centre %s metric_box_centre %s mesh_minus_foot_y %.3f past_lip_m %.3f"
+			% [i, _walker.gait().state_of(i), str(foot), str(mesh), str(box_center), mesh.y - foot.y, block["z_front"] - foot.z]
+		)
+
+
+## True for a leg whose hip is in the front half of the body.
+func _is_front_leg(leg: int) -> bool:
+	var forward := Vector3(-sin(_walker.yaw_radians()), 0.0, -cos(_walker.yaw_radians()))
+	return (_walker.hip_position(leg) - _walker.global_position).dot(forward) > 0.2
 
 
 func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
 	if leg < _last_plant.size():
 		_last_plant[leg] = position
+	if _freeze_descend and _blocks.has(LANE_CLIMB) and _is_front_leg(leg):
+		var top: float = float(_blocks[LANE_CLIMB][0]["h"])
+		if _telemetry.max_climb_m >= 0.9 * top and position.y < top - DESCEND_FREEZE_BELOW:
+			get_tree().paused = true
+			_freeze_descend = false
+	if _freeze_reach and position.y > REACH_FREEZE_MIN_Y and _walker.reach_ups > 0:
+		# The first foot a reach-up puts down on a top: the still of "front foot on the lip, knee above the hip".
+		get_tree().paused = true
+		_freeze_reach = false
+		get_tree().process_frame.connect(_log_pad_boxes, CONNECT_ONE_SHOT)
 
 
 ## "Every foot planted on the block's top": each leg's most recent plant point lies on the deck. (A walking
 ## tripod gait never has all feet on the ground in the same tick.)
 func _track_step_up() -> void:
-	if _walker == null or _walker.gait() == null or not _blocks.has(_lane):
+	if _walker == null or _walker.gait() == null:
+		return
+	if _walker.reach_ups != _last_reach_ups:
+		if _reach_start_tick < 0:
+			_reach_start_tick = _tick
+		_last_reach_ups = _walker.reach_ups
+	if not _blocks.has(_lane):
 		return
 	if _last_plant.size() != _walker.leg_count():
 		return
@@ -1109,7 +1391,14 @@ func _track_step_up() -> void:
 				all_on_top = false
 				break
 		if all_on_top:
-			_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
+			_telemetry.max_climb_m = maxf(_telemetry.max_climb_m, height)
+			if height <= float(_walker.stats()["step_up"]) + 0.001:
+				_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
+				_reach_start_tick = -1
+			elif _reach_start_tick >= 0:
+				climb_time_s = float(_tick - _reach_start_tick) / float(Engine.physics_ticks_per_second)
+				print("CLIMBTIME height=%.2f s=%.2f" % [height, climb_time_s])
+				_reach_start_tick = -1
 
 
 ## The node the walker steers to in CAMERA_YAW (the orbit rig after toggle_steer_mode, else the scripted YawSource).
@@ -1447,18 +1736,23 @@ func _build_ledges() -> void:
 	_blocks[LANE_LEDGES] = list
 
 
-## One 0.8 m block with vertical faces, like the T05 pocket: climb on, then leave over the far face.
-func _build_pocket() -> void:
+## One block with vertical faces (0.8 m, or what `set_pocket_height` sets), like the valley ledge pocket: climb on, then leave: climb on, then leave over the far face.
+func _build_pocket(height: float = POCKET_HEIGHT) -> void:
 	var x: float = LANE_X[LANE_POCKET]
 	var z_front: float = SPAWN_Z - 6.0
 	var z_back: float = z_front - 6.0
 	_pocket_back_z = z_back
-	_add_box(
-		Vector3(x, POCKET_HEIGHT * 0.5, (z_front + z_back) * 0.5),
-		Vector3(LEDGE_WIDTH, POCKET_HEIGHT, 6.0),
-		_block_material
+	if _pocket_block != null:
+		_pocket_block.queue_free()
+	_pocket_block = _add_box(
+		Vector3(x, height * 0.5, (z_front + z_back) * 0.5), Vector3(LEDGE_WIDTH, height, 6.0), _block_material
 	)
-	_blocks[LANE_POCKET] = [{"h": POCKET_HEIGHT, "z_front": z_front, "z_back": z_back}]
+	_blocks[LANE_POCKET] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+
+
+## Rebuilds the pocket block at another height (the quad is blocked by 1.2 m, the Strider steps onto 0.8 m).
+func set_pocket_height(height: float) -> void:
+	_build_pocket(height)
 
 
 ## Height of the talus lane above its apron at `along` metres down the lane: ValleyLayout.talus_y itself.
@@ -1473,8 +1767,9 @@ func _talus_height(along: float) -> float:
 ## flat shelf, 12 m wide.
 func _build_talus() -> void:
 	var x: float = LANE_X[LANE_TALUS]
+	# The apron in front of the corner is the big ground slab's own top (y = 0): a second surface there would fight it
+	# for depth (a ramp patch that flipped shade with sub-pixel camera moves), so the talus mesh starts at the corner.
 	var stops: Array[float] = [
-		0.0,
 		TALUS_CORNER_ALONG,
 		TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN,
 		TALUS_LENGTH
@@ -1510,6 +1805,176 @@ func _build_talus() -> void:
 	instance.material_override = _ground_material
 	body.add_child(instance)
 	add_child(body)
+
+
+## Replaces the notch rocks by two wall arms forming a V that opens toward the walker (half angle in degrees).
+func set_wedge(half_angle_deg: float) -> void:
+	if _notch != null:
+		_notch.queue_free()
+	_notch = Node3D.new()
+	_notch.name = "Notch"
+	add_child(_notch)
+	var a: float = deg_to_rad(half_angle_deg)
+	for side in [-1.0, 1.0]:
+		var direction := Vector3(side * sin(a), 0.0, cos(a))
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = Vector3(NOTCH_X, WEDGE_HEIGHT * 0.5, NOTCH_Z) + direction * (WEDGE_LENGTH * 0.5)
+		body.rotation.y = side * a
+		var shape := BoxShape3D.new()
+		shape.size = Vector3(0.5, WEDGE_HEIGHT, WEDGE_LENGTH)
+		var collider := CollisionShape3D.new()
+		collider.shape = shape
+		body.add_child(collider)
+		var mesh := BoxMesh.new()
+		mesh.size = shape.size
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = _block_material
+		body.add_child(instance)
+		_notch.add_child(body)
+
+
+## Rebuilds the climb lane's single block with this height (m): a flat run, the block, then flat ground.
+func set_climb_height(height: float, width: float = LEDGE_WIDTH) -> void:
+	if _climb_block != null:
+		_climb_block.queue_free()
+		_climb_block = null
+	var z_front: float = SPAWN_Z - CLIMB_FLAT_RUN
+	var z_back: float = z_front - CLIMB_DECK_DEPTH
+	_climb_block = _add_box(
+		Vector3(LANE_X[LANE_CLIMB], height * 0.5, (z_front + z_back) * 0.5),
+		Vector3(width, height, CLIMB_DECK_DEPTH),
+		_block_material
+	)
+	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back, "w": width}]
+
+
+## Mean speed (m/s) along the climb block's front face while the walker walks beside it on the floor: its origin within
+## FACE_SLIDE_BAND of the face and more than FACE_SLIDE_END_MARGIN from its ends. Over the stat top speed times the cosine of the
+## angle between the heading and the face (the along-face part of full speed) it is `face_slide_ratio` (GDD 8.2: a shallow
+## approach slides along at full along-face speed). `face_slide_time_s` says how long the walker was beside the face.
+var face_slide_speed_mps: float = 0.0
+var face_slide_time_s: float = 0.0
+var face_slide_ratio: float:
+	get:
+		var along: float = absf(sin(_spawn_heading - _spawn_yaw(LANE_CLIMB)))
+		var full: float = float(_walker.stats()["top_speed"]) * along
+		return face_slide_speed_mps / full if full > 0.001 else 0.0
+var _slide_dist: float = 0.0
+var _slide_last_x: float = INF
+var _slide_gap_min: float = INF
+
+
+func _track_face_slide(delta: float) -> void:
+	if _lane != LANE_CLIMB or not _blocks.has(LANE_CLIMB) or _walker.gait() == null:
+		return
+	var block: Dictionary = _blocks[LANE_CLIMB][0]
+	var at: Vector3 = _walker.global_position
+	var gap: float = at.z - float(block["z_front"])
+	var half: float = float(block.get("w", LEDGE_WIDTH)) * 0.5 - FACE_SLIDE_END_MARGIN
+	var beside: bool = (
+		gap > 0.0 and gap < FACE_SLIDE_BAND and absf(at.x - float(LANE_X[LANE_CLIMB])) < half
+		and at.y < 0.6 * float(_walker.stats()["reach"]) + 0.15 and _walker.move_input_active
+	)
+	if beside:
+		_slide_gap_min = minf(_slide_gap_min, gap)
+	if beside and _slide_last_x != INF:
+		_slide_dist += absf(at.x - _slide_last_x)
+		face_slide_time_s += delta
+		face_slide_speed_mps = _slide_dist / face_slide_time_s
+	_slide_last_x = at.x if beside else INF
+
+
+## Prints the along-face slide (`FACESLIDE label speed ratio time closest`).
+func log_face_slide(label: String) -> void:
+	print("FACESLIDE %s speed=%.3f ratio=%.3f time=%.2f closest=%.2f" % [label, face_slide_speed_mps, face_slide_ratio, face_slide_time_s, _slide_gap_min])
+
+
+## Rolling hash of the run since `hash_start()`, and the one `hash_record()` kept for the run before.
+var run_hash: int = 0
+var hash_ref: int = -1
+var _hash_on: bool = false
+## True when the run since `hash_record()` reproduced the recorded hash.
+var hash_matches: bool:
+	get:
+		return run_hash == hash_ref
+
+
+func hash_start() -> void:
+	run_hash = 0
+	_hash_on = true
+
+
+func hash_stop() -> void:
+	_hash_on = false
+
+
+func hash_record() -> void:
+	hash_ref = run_hash
+	_hash_on = false
+
+
+## True when the walker is past the climb lane's block and back at the height it stands on the floor (it was climbed and
+## descended).
+var descended_climb: bool:
+	get:
+		if not _blocks.has(LANE_CLIMB):
+			return false
+		var block: Dictionary = _blocks[LANE_CLIMB][0]
+		return (
+			_walker.global_position.z < block["z_back"] - 0.3
+			and _walker.global_position.y < 0.6 * _walker.leg_reach(0) + 0.15
+		)
+
+
+## Remembers the tallest block the current run climbed for a build ("strider" and "crawler" feed the contrast).
+func record_climb(build_name: String) -> void:
+	_climb_by_build[build_name] = _telemetry.max_climb_m
+	if _climb_by_build.has("strider") and _climb_by_build.has("crawler") and _climb_by_build["strider"] > 0.0:
+		contrast_climb = (_climb_by_build["strider"] - _climb_by_build["crawler"]) / _climb_by_build["strider"]
+	print("CLIMBREC %s %.3f contrast=%.3f" % [build_name, _telemetry.max_climb_m, contrast_climb])
+
+
+## Prints the build's stats that the climb checks compare with (`STAT build step_up climb`).
+func log_stat(label: String) -> void:
+	var stats: Dictionary = _walker.stats()
+	print("STAT %s reach=%.3f step_up=%.3f climb=%.3f" % [label, stats["reach"], stats["step_up"], stats["climb"]])
+
+
+## Moves the two notch rocks apart or together (the clear gap between them, m) and rebuilds them.
+func set_notch_gap(gap: float) -> void:
+	_build_notch(gap)
+
+
+## Two rocks with a gap between them, ahead of the notch spawn: a walker driven at the gap meets both.
+func _build_notch(gap: float = NOTCH_GAP) -> void:
+	if _notch != null:
+		_notch.queue_free()
+	_notch = Node3D.new()
+	_notch.name = "Notch"
+	add_child(_notch)
+	for side in [-1.0, 1.0]:
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = Vector3(NOTCH_X + side * (NOTCH_RADIUS + gap * 0.5), NOTCH_RADIUS, NOTCH_Z)
+		var shape := SphereShape3D.new()
+		shape.radius = NOTCH_RADIUS
+		var collider := CollisionShape3D.new()
+		collider.shape = shape
+		body.add_child(collider)
+		var mesh := SphereMesh.new()
+		mesh.radius = NOTCH_RADIUS
+		mesh.height = NOTCH_RADIUS * 2.0
+		mesh.radial_segments = 16
+		mesh.rings = 8
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = _boulder_material
+		body.add_child(instance)
+		_notch.add_child(body)
 
 
 func _build_wall() -> void:

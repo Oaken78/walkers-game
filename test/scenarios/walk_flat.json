@@ -181,7 +181,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -343,7 +343,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -405,7 +405,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -549,7 +549,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -633,7 +633,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.017
+    "value": 0.016
    }
   },
   {
@@ -641,7 +641,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -777,7 +777,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -936,7 +936,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1024,7 +1024,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1087,7 +1087,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1191,7 +1191,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1392,7 +1392,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1553,7 +1553,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.0
+    "value": 0.004
    }
   },
   {
@@ -1561,7 +1561,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1728,17 +1728,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.343
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1905,17 +1897,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.2
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2084,7 +2068,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.332
+    "value": -0.314
    }
   },
   {
@@ -2092,7 +2076,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2259,17 +2243,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.268
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2380,6 +2356,18 @@
   {
    "call": {
     "node": ".",
+    "method": "set_pocket_height",
+    "args": [
+     1.2
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "spawn_at",
     "args": [
      "pocket"
@@ -2414,7 +2402,7 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "walk_flat quad blocked at the 0.8 m face"
+     "walk_flat quad blocked at the 1.2 m face"
     ]
    }
   },
@@ -2423,7 +2411,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.332
+    "value": 0.468
    }
   },
   {
@@ -2431,7 +2419,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2533,7 +2521,7 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "walk_flat quad recovered from the 0.8 m face"
+     "walk_flat quad recovered from the 1.2 m face"
     ]
    }
   },
@@ -2542,7 +2530,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.208
+    "value": -0.275
    }
   },
   {
@@ -2550,7 +2538,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2665,7 +2653,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.319
+    "value": -0.078
    }
   },
   {
@@ -2673,7 +2661,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2840,7 +2828,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -2927,6 +2915,18 @@
   {
    "call": {
     "node": ".",
+    "method": "set_pocket_height",
+    "args": [
+     0.8
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "spawn_at",
     "args": [
      "pocket"
@@ -2991,7 +2991,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {

@@ -13,6 +13,19 @@ const BOB_WINDOW_TICKS: int = 120
 const STALL_FRACTION: float = 0.1
 ## A stall longer than this is logged as a STALL line.
 const STALL_LOG_S: float = 0.4
+## The drawn pad (foot to foot + PAD_SIZE.y) is checked from this far above its foot point, so the ground it stands on is not an overlap.
+const PAD_CHECK_LIFT: float = 0.01
+## The body stands on the floor this long (s) before the sway left over counts as a residual.
+const LATERAL_SETTLE_S: float = 1.5
+## Stands for "no gap on this axis" in `box_gap` (the vertical axis is left out of the pad separation).
+const PAD_SEP_NO_AXIS: float = 1000.0
+## Two same-side pads overlap this much fore-aft (m) or more: stacked on one spot (a whole pad length is 0.34).
+const STACKED_OVERLAP_M: float = 0.3
+## `ahead_rise` scans heights from AHEAD_STEP to AHEAD_MAX in these steps (m).
+const AHEAD_STEP: float = 0.1
+const AHEAD_MAX: float = 3.0
+## How far ahead (m) `ahead_rise` looks: a tall walker stops a reach (up to 2.5 m for a long build) short of a face.
+const AHEAD_DISTANCE: float = 2.5
 
 var top_speed_mps: float = 0.0
 var time_to_top_s: float = UNSET
@@ -22,6 +35,9 @@ var time_to_turn_rate_s: float = UNSET
 var input_to_motion_ticks: int = UNSET_TICKS
 var first_lift_ticks: int = UNSET_TICKS
 var max_drift_m: float = 0.0
+## Highest a planted pad was lifted above where it was planted (m): the IK folds a leg no tighter than its fold distance and
+## pushes the pad up when the hip comes down on it (a descent). The whole 3D slide is `max_drift_m`.
+var max_fold_lift_m: float = 0.0
 var airborne_violations: int = 0
 var max_airborne: int = 0
 var min_steps_per_leg: int = 0
@@ -35,6 +51,8 @@ var max_tilt_deg: float = 0.0
 var body_height_m: float = 0.0
 var bob_amplitude_m: float = 0.0
 var max_step_up_m: float = 0.0
+## Highest block every foot stood on the top of (a climb: reach up and haul), set by the test course.
+var max_climb_m: float = 0.0
 var current_speed_mps: float = 0.0
 ## Horizontal distance travelled since reset.
 var distance_m: float = 0.0
@@ -51,6 +69,11 @@ var min_knee_bend_ratio: float = INF
 var min_hip_clearance_m: float = INF
 ## Largest push-up (rise from ground contact) applied in one tick.
 var max_push_rise_m: float = 0.0
+var max_landing_snap_m: float = 0.0
+var max_landing_slide_m: float = 0.0
+var landings_moved: int = 0
+## Landings whose drawn pad rose or dropped more than the leg's stride step-up in the touchdown tick: a landing that changed level.
+var landing_level_changes: int = 0
 ## Largest tick-to-tick tilt change, and the slowest physics tick (ms) since the last reset.
 var max_tilt_step_deg: float = 0.0
 var max_physics_ms: float = 0.0
@@ -65,7 +88,47 @@ var max_resolve_pitch_deg: float = 0.0
 var stall_exempt: bool = false
 ## Smallest fore-aft distance between two planted pads on one side, less one pad length (m). INF until two are planted.
 var min_pad_gap_m: float = INF
-## `min_pad_gap_m` as it stood at the last report() (an assert one frame later would see another tick).
+## Smallest separation of two planted pad boxes on one side in 2D, lateral and fore-aft (m): positive = apart, negative = the boxes overlap
+## (how deep). Unlike `min_pad_gap_m` it counts the sideways offset too, so it does not sit at a -0.34 floor.
+var min_pad_sep_m: float = INF
+## Ticks in which two planted pads of one side stand (almost) on one spot (their fore-aft overlap is at least STACKED_OVERLAP_M).
+var stacked_pad_ticks: int = 0
+## Sway off the line the walker was walking (fed by a test course that knows the line; 0 elsewhere): the widest offset (m), the
+## widest offset once the body is back on the floor and settled, the longest time (s) from an offset over 0.1 m to back within
+## 0.05 m, and the most direction reversals of the sideways motion during one hang.
+var max_lateral_offset_m: float = 0.0
+var lateral_residual_m: float = 0.0
+var lateral_return_s: float = 0.0
+var sway_reversals_per_hang: int = 0
+var _lat_prev: float = 0.0
+var _lat_dir: float = 0.0
+var _lat_out_since: float = -1.0
+var _lat_reversals: int = 0
+var _lat_was_hanging: bool = false
+var _lat_settle: float = 0.0
+## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
+## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
+var longest_input_stall_s: float = 0.0
+## Since reset: reach-up swings, step-up swings, and ticks with a leg hanging for a rise or drop beyond a stride.
+## Largest nose-up or nose-down pitch of the body (degrees), and the largest rise of the body root in one tick (m).
+var max_pitch_deg: float = 0.0
+## The most nose-down pitch (negative degrees; 0 when the body never pitched down): the descent's lean.
+var min_pitch_deg: float = 0.0
+var max_root_rise_tick_m: float = 0.0
+## Smallest centre-of-mass margin inside the planted feet's polygon over the mean reach, over ticks with a leg hanging.
+var min_support_margin_ratio: float = INF
+## Ticks on which a pad that reaches, steps up or down or hangs (swinging or not), or a planted pad a reach-up put down, overlapped
+## the world with its drawn box (from 1 cm above its foot to its top, corners included): GDD 5, never.
+var pad_inside_ticks: int = 0
+## Ticks on which a swinging stride pad's drawn box overlapped the world (a stride over a lip or past a rock grazes it; reported,
+## the round-7 follow-up).
+var pad_inside_stride_ticks: int = 0
+## Highest a hanging foot got above the ground below it, over its reach (hanging legs only).
+var max_hang_rise_ratio: float = 0.0
+var reach_ups: int = 0
+var step_ups: int = 0
+var hang_ticks: int = 0
+## `min_pad_sep_m` (2D: lateral and fore-aft, not the vertical axis) as it stood at the last report() (an assert one frame later would see another tick).
 var pad_gap_at_report_m: float = 9.0
 ## Walker cost per physics tick since reset, spawn ticks excluded: ms percentiles and the worst call counts.
 var max_test_motions_per_tick: int = 0
@@ -86,10 +149,12 @@ var _turn_start_tick: int = -1
 var _stop_ticks: int = -1
 var _hold_run: int = 0
 var _stall_run: int = 0
+var _input_stall_run: int = 0
 var _stall_delta: float = 1.0 / 60.0
 var _stall_start: Vector3 = Vector3.ZERO
 var _stall_causes: Dictionary = {}
 var _stall_last: Vector3 = Vector3.ZERO
+var _stall_step: Vector3 = Vector3.ZERO
 var _stall_known: bool = false
 var _stall_teleports: int = 0
 var _tick_ms: PackedFloat32Array = PackedFloat32Array()
@@ -103,7 +168,15 @@ var _bob_ring: PackedFloat32Array = PackedFloat32Array()
 var _bob_index: int = 0
 var _bob_count: int = 0
 var _teleports_seen: int = 0
+## True on the tick a teleport (spawn, rebuild) happened: root rise and pad checks skip it.
+var _teleported_now: bool = false
 var _resets_base: int = 0
+var _last_root_y: float = 0.0
+var _pad_shape: BoxShape3D
+var _pad_query: PhysicsShapeQueryParameters3D
+var _reach_base: int = 0
+var _step_base: int = 0
+var _hang_base: int = 0
 var _gap_ray: PhysicsRayQueryParameters3D
 
 
@@ -136,6 +209,7 @@ func reset() -> void:
 	input_to_motion_ticks = UNSET_TICKS
 	first_lift_ticks = UNSET_TICKS
 	max_drift_m = 0.0
+	max_fold_lift_m = 0.0
 	airborne_violations = 0
 	max_airborne = 0
 	min_steps_per_leg = 0
@@ -147,6 +221,7 @@ func reset() -> void:
 	body_height_m = 0.0
 	bob_amplitude_m = 0.0
 	max_step_up_m = 0.0
+	max_climb_m = 0.0
 	current_speed_mps = 0.0
 	distance_m = 0.0
 	max_plant_gap_m = 0.0
@@ -156,16 +231,33 @@ func reset() -> void:
 	min_knee_bend_ratio = INF
 	min_hip_clearance_m = INF
 	max_push_rise_m = 0.0
+	max_landing_snap_m = 0.0
+	max_landing_slide_m = 0.0
+	landings_moved = 0
 	max_tilt_step_deg = 0.0
 	max_physics_ms = 0.0
 	if walker != null:
 		walker.max_push_rise = 0.0
+		walker.max_landing_snap = 0.0
+		walker.max_landing_slide = 0.0
+		walker.landings_moved = 0
 		walker.max_tilt_step_deg = 0.0
 		walker.max_resolve_pitch_deg = 0.0
 	velocity_resets = 0
 	longest_stall_s = 0.0
 	max_resolve_pitch_deg = 0.0
 	min_pad_gap_m = INF
+	min_pad_sep_m = INF
+	stacked_pad_ticks = 0
+	max_lateral_offset_m = 0.0
+	lateral_residual_m = 0.0
+	lateral_return_s = 0.0
+	sway_reversals_per_hang = 0
+	_lat_out_since = -1.0
+	_lat_reversals = 0
+	_lat_settle = 0.0
+	longest_input_stall_s = 0.0
+	_input_stall_run = 0
 	max_test_motions_per_tick = 0
 	max_shape_queries_per_tick = 0
 	max_rays_cast_per_tick = 0
@@ -189,6 +281,22 @@ func reset() -> void:
 		_teleports_seen = walker.teleport_count
 		walker.max_rays_per_tick = 0
 		_resets_base = walker.velocity_resets
+		_reach_base = walker.reach_ups
+		_step_base = walker.step_ups
+		_hang_base = walker.hang_ticks
+	reach_ups = 0
+	step_ups = 0
+	hang_ticks = 0
+	max_pitch_deg = 0.0
+	min_pitch_deg = 0.0
+	max_root_rise_tick_m = 0.0
+	min_support_margin_ratio = INF
+	pad_inside_ticks = 0
+	pad_inside_stride_ticks = 0
+	max_hang_rise_ratio = 0.0
+	landing_level_changes = 0
+	if walker != null:
+		walker.landing_level_changes = 0
 
 
 ## Fraction of ticks the body was held by rule 5 (0..1).
@@ -217,7 +325,7 @@ var tick_max_ms: float:
 
 
 func report(label: String = "") -> void:
-	pad_gap_at_report_m = minf(min_pad_gap_m, 9.0)
+	pad_gap_at_report_m = snappedf(minf(min_pad_sep_m, 9.0), 0.0001)
 	var data: Dictionary = {
 		"label": label,
 		"legs": walker.leg_count() if walker != null else 0,
@@ -230,6 +338,7 @@ func report(label: String = "") -> void:
 		"input_to_motion_ticks": input_to_motion_ticks,
 		"first_lift_ticks": first_lift_ticks,
 		"max_drift_m": snappedf(max_drift_m, 0.00001),
+		"max_fold_lift_m": snappedf(max_fold_lift_m, 0.001),
 		"airborne_violations": airborne_violations,
 		"max_airborne": max_airborne,
 		"min_steps_per_leg": min_steps_per_leg,
@@ -242,6 +351,7 @@ func report(label: String = "") -> void:
 		"body_height_m": snappedf(body_height_m, 0.001),
 		"bob_amplitude_m": snappedf(bob_amplitude_m, 0.0001),
 		"max_step_up_m": snappedf(max_step_up_m, 0.001),
+		"max_climb_m": snappedf(max_climb_m, 0.001),
 		"distance_m": snappedf(distance_m, 0.01),
 		"max_plant_gap_m": snappedf(max_plant_gap_m, 0.0001),
 		"max_rays_per_tick": max_rays_per_tick,
@@ -250,12 +360,33 @@ func report(label: String = "") -> void:
 		"min_knee_bend_ratio": snappedf(minf(min_knee_bend_ratio, 9.0), 0.0001),
 		"min_hip_clearance_m": snappedf(minf(min_hip_clearance_m, 9.0), 0.001),
 		"max_push_rise_m": snappedf(max_push_rise_m, 0.001),
+		"max_landing_snap_m": snappedf(max_landing_snap_m, 0.001),
+		"max_landing_slide_m": snappedf(max_landing_slide_m, 0.001),
+		"landings_moved": walker.landings_moved if walker != null else 0,
+		"landing_level_changes": landing_level_changes,
 		"max_tilt_step_deg": snappedf(max_tilt_step_deg, 0.01),
 		"max_physics_ms": snappedf(max_physics_ms, 0.01),
 		"velocity_resets": velocity_resets,
 		"longest_stall_s": snappedf(longest_stall_s, 0.01),
 		"max_resolve_pitch_deg": snappedf(max_resolve_pitch_deg, 0.01),
 		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
+		"min_pad_sep_m": snappedf(minf(min_pad_sep_m, 9.0), 0.001),
+		"stacked_pad_ticks": stacked_pad_ticks,
+		"max_lateral_offset_m": snappedf(max_lateral_offset_m, 0.001),
+		"lateral_residual_m": snappedf(lateral_residual_m, 0.001),
+		"lateral_return_s": snappedf(lateral_return_s, 0.01),
+		"sway_reversals_per_hang": sway_reversals_per_hang,
+		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
+		"max_pitch_deg": snappedf(max_pitch_deg, 0.01),
+		"min_pitch_deg": snappedf(min_pitch_deg, 0.01),
+		"max_root_rise_tick_m": snappedf(max_root_rise_tick_m, 0.0001),
+		"min_support_margin_ratio": snappedf(minf(min_support_margin_ratio, 9.0), 0.001),
+		"pad_inside_ticks": pad_inside_ticks,
+		"pad_inside_stride_ticks": pad_inside_stride_ticks,
+		"max_hang_rise_ratio": snappedf(max_hang_rise_ratio, 0.001),
+		"reach_ups": reach_ups,
+		"step_ups": step_ups,
+		"hang_ticks": hang_ticks,
 		"tick_p95_ms": snappedf(tick_p95_ms, 0.001),
 		"tick_p99_ms": snappedf(tick_p99_ms, 0.001),
 		"tick_max_ms": snappedf(tick_max_ms, 0.001),
@@ -283,7 +414,8 @@ func report(label: String = "") -> void:
 func _physics_process(delta: float) -> void:
 	if walker == null or not is_instance_valid(walker) or walker.gait() == null:
 		return
-	if walker.teleport_count != _teleports_seen:
+	_teleported_now = walker.teleport_count != _teleports_seen
+	if _teleported_now:
 		_teleports_seen = walker.teleport_count
 		_plant_known.fill(0)
 	ticks += 1
@@ -309,11 +441,18 @@ func _physics_process(delta: float) -> void:
 	min_knee_rise_ratio = minf(min_knee_rise_ratio, walker.min_knee_rise_ratio())
 	min_knee_bend_ratio = minf(min_knee_bend_ratio, walker.min_knee_bend_ratio())
 	velocity_resets = walker.velocity_resets - _resets_base
+	reach_ups = walker.reach_ups - _reach_base
+	step_ups = walker.step_ups - _step_base
+	hang_ticks = walker.hang_ticks - _hang_base
 	min_hip_clearance_m = minf(min_hip_clearance_m, walker.min_hip_clearance())
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
+	max_landing_snap_m = maxf(max_landing_snap_m, walker.max_landing_snap)
+	max_landing_slide_m = maxf(max_landing_slide_m, walker.max_landing_slide)
+	landing_level_changes = walker.landing_level_changes
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
 	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, walker.max_resolve_pitch_deg)
 	_track_stall(delta)
+	_track_climb(delta)
 	_track_pad_gap()
 	_track_cost()
 	max_physics_ms = maxf(max_physics_ms, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
@@ -321,11 +460,62 @@ func _physics_process(delta: float) -> void:
 	_track_height(walker.height_above_plane())
 
 
+## Pitch, root rise per tick, support margin, pads inside geometry and the height of hanging feet (T16).
+func _track_climb(_delta: float) -> void:
+	max_pitch_deg = maxf(max_pitch_deg, absf(walker.pitch_degrees()))
+	min_pitch_deg = minf(min_pitch_deg, walker.pitch_degrees())
+	var root_y: float = walker.global_position.y
+	if not _teleported_now and ticks > 1:
+		max_root_rise_tick_m = maxf(max_root_rise_tick_m, root_y - _last_root_y)
+	_last_root_y = root_y
+	var margin: float = walker.support_margin_ratio()
+	if margin < INF:
+		min_support_margin_ratio = minf(min_support_margin_ratio, margin)
+	if _pad_shape == null:
+		_pad_shape = BoxShape3D.new()
+		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, WalkerLeg.PAD_SIZE.y - PAD_CHECK_LIFT, WalkerLeg.PAD_SIZE.z)
+		_pad_query = PhysicsShapeQueryParameters3D.new()
+		_pad_query.shape = _pad_shape
+		_pad_query.collision_mask = 1
+	var space: PhysicsDirectSpaceState3D = walker.get_world_3d().direct_space_state
+	var basis := Basis(Vector3.UP, walker.yaw_radians())
+	var gait: GaitSolver = walker.gait()
+	var inside: bool = false
+	var stride_inside: bool = false
+	for i in walker.leg_count():
+		var foot: Vector3 = walker.foot_position(i)
+		var near_face: bool = walker.is_leg_hanging(i)
+		var flying: bool = gait.state_of(i) == GaitSolver.LegState.SWINGING
+		var climbing: bool = walker.is_leg_climbing(i)
+		if (near_face or flying or walker.leg_reached_up(i)) and not _teleported_now:
+			# The whole pad's footprint (corners included). A pad in the air is drawn level (yaw only), so it is checked level; a
+			# standing or hanging pad is checked tilted to its ground normal (a pad on a slope lies on it).
+			var up: Vector3 = Vector3.UP if flying else walker.foot_normal(i)
+			var tilt: Basis = Basis(Quaternion(Vector3.UP, up)) * basis
+			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + _pad_shape.size.y * 0.5))
+			if not space.intersect_shape(_pad_query, 1).is_empty():
+				if flying and not climbing:
+					stride_inside = true
+				else:
+					inside = true
+		if near_face:
+			_gap_ray.from = foot + Vector3.UP * 0.5
+			_gap_ray.to = foot + Vector3.DOWN * 3.0
+			var hit: Dictionary = space.intersect_ray(_gap_ray)
+			if not hit.is_empty():
+				max_hang_rise_ratio = maxf(max_hang_rise_ratio, (foot.y - hit["position"].y) / walker.leg_reach(i))
+	if inside:
+		pad_inside_ticks += 1
+	if stride_inside:
+		pad_inside_stride_ticks += 1
+
+
 ## Progress counts vertical rise too (a slow haul up a ledge is not a stall): the speed of the body root in 3D.
 func _track_stall(delta: float) -> void:
 	var wanted: float = walker.input_speed()
 	var here: Vector3 = walker.global_position
 	var progress: float = here.distance_to(_stall_last) / delta if _stall_known else 0.0
+	_stall_step = Vector3(here.x - _stall_last.x, 0.0, here.z - _stall_last.z) if _stall_known else Vector3.ZERO
 	_stall_last = here
 	_stall_known = true
 	if walker.teleport_count != _stall_teleports:
@@ -346,10 +536,23 @@ func _track_stall(delta: float) -> void:
 		longest_stall_s = maxf(longest_stall_s, float(_stall_run) * delta)
 	else:
 		_end_stall()
+	var direction: Vector3 = walker.input_direction()
+	var along: float = _stall_step.dot(direction) / delta if direction != Vector3.ZERO else 0.0
+	if (
+		not stall_exempt
+		and walker.move_input_active
+		and wanted > MOTION_EPSILON_MPS
+		and walker.teleport_count == _stall_teleports
+		and along < STALL_FRACTION * wanted
+	):
+		_input_stall_run += 1
+		longest_input_stall_s = maxf(longest_input_stall_s, float(_input_stall_run) * delta)
+	else:
+		_input_stall_run = 0
 
 
 ## Logs a finished stall over STALL_LOG_S: `STALL dur=.. pos=.. ahead_rise=.. causes=..` (ahead_rise: the tallest
-## ground 0.5-1.5 m ahead of the body over the ground under it).
+## ground or face up to AHEAD_DISTANCE ahead of the body over the ground under it).
 func _end_stall() -> void:
 	if float(_stall_run) * _stall_delta > STALL_LOG_S:
 		print(
@@ -371,13 +574,23 @@ func _ahead_rise(from: Vector3) -> float:
 	var forward := Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
 	var under: float = _ground_y(space, from)
 	var tallest: float = 0.0
-	for distance in [0.5, 1.0, 1.5]:
+	for distance in [0.5, 1.0, 1.5, 2.0, 2.5]:
 		tallest = maxf(tallest, _ground_y(space, from + forward * distance) - under)
+	# A vertical face (or an overhang above the body, as in an alcove) hides from the downward rays: horizontal
+	# rays 0.1 m apart in height, AHEAD_DISTANCE ahead, give the tallest height that is blocked.
+	var height: float = AHEAD_STEP
+	while height <= AHEAD_MAX:
+		_gap_ray.from = Vector3(from.x, under + height, from.z)
+		_gap_ray.to = _gap_ray.from + forward * AHEAD_DISTANCE
+		if not space.intersect_ray(_gap_ray).is_empty():
+			tallest = maxf(tallest, height)
+		height += AHEAD_STEP
 	return tallest
 
 
+## Ground height under `at`: a ray from just above the walker root (not from 3 m up: an alcove roof would be hit).
 func _ground_y(space: PhysicsDirectSpaceState3D, at: Vector3) -> float:
-	_gap_ray.from = at + Vector3.UP * 3.0
+	_gap_ray.from = at + Vector3.UP * 0.3
 	_gap_ray.to = at + Vector3.DOWN * 3.0
 	var hit: Dictionary = space.intersect_ray(_gap_ray)
 	return hit["position"].y if not hit.is_empty() else at.y
@@ -393,15 +606,38 @@ var current_stall_s: float:
 func _track_pad_gap() -> void:
 	var gait: GaitSolver = walker.gait()
 	var forward: Vector3 = Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
+	var right: Vector3 = Vector3(cos(walker.yaw_radians()), 0.0, -sin(walker.yaw_radians()))
 	var count: int = walker.leg_count()
+	var stacked: bool = false
 	for i in count:
 		if gait.state_of(i) != GaitSolver.LegState.PLANTED:
 			continue
 		for j in range(i + 1, count):
 			if gait.state_of(j) != GaitSolver.LegState.PLANTED or walker.leg_side(i) != walker.leg_side(j):
 				continue
-			var apart: float = absf((walker.foot_position(i) - walker.foot_position(j)).dot(forward))
+			var offset: Vector3 = walker.foot_position(i) - walker.foot_position(j)
+			var apart: float = absf(offset.dot(forward))
 			min_pad_gap_m = minf(min_pad_gap_m, apart - WalkerLeg.PAD_SIZE.z)
+			var lateral: float = absf(offset.dot(right)) - WalkerLeg.PAD_SIZE.x
+			# Pads that overlap sideways are measured by how far they overlap fore-aft (down to a whole pad length when they sit
+			# on one spot); pads beside each other by the length of their gaps.
+			var sep: float = apart - WalkerLeg.PAD_SIZE.z if lateral < 0.0 else box_gap(lateral, -PAD_SEP_NO_AXIS, apart - WalkerLeg.PAD_SIZE.z)
+			min_pad_sep_m = minf(min_pad_sep_m, sep)
+			if sep <= -STACKED_OVERLAP_M:
+				stacked = true
+	if stacked and not _teleported_now:
+		stacked_pad_ticks += 1
+
+
+## Separation of two boxes from their per-axis gaps (centre distance less the summed half sizes): the length of the
+## positive gaps when apart, else the shallowest overlap (negative).
+static func box_gap(gap_x: float, gap_y: float, gap_z: float) -> float:
+	var px: float = maxf(gap_x, 0.0)
+	var py: float = maxf(gap_y, 0.0)
+	var pz: float = maxf(gap_z, 0.0)
+	if px > 0.0 or py > 0.0 or pz > 0.0:
+		return sqrt(px * px + py * py + pz * pz)
+	return maxf(gap_x, maxf(gap_y, gap_z))
 
 
 func _track_cost() -> void:
@@ -462,6 +698,7 @@ func _track_gait() -> void:
 				_measure_plant_gap(foot)
 			else:
 				max_drift_m = maxf(max_drift_m, foot.distance_to(_plant_pos[i]))
+				max_fold_lift_m = maxf(max_fold_lift_m, foot.y - _plant_pos[i].y)
 		fewest = mini(fewest, _steps[i])
 	min_steps_per_leg = 0 if fewest == (1 << 30) else fewest
 
@@ -516,3 +753,31 @@ func _on_foot_planted(leg: int, _position: Vector3, normal: Vector3) -> void:
 	max_foot_slope_deg = maxf(max_foot_slope_deg, rad_to_deg(normal.angle_to(Vector3.UP)))
 	if leg < _steps.size():
 		_steps[leg] += 1
+
+
+## One tick of sideways offset (m) from the line the walker follows; `on_floor` when the body stands on the ground between blocks.
+func observe_lateral(offset: float, on_floor: bool, delta: float) -> void:
+	var off: float = absf(offset)
+	max_lateral_offset_m = maxf(max_lateral_offset_m, off)
+	_lat_settle = 0.0 if not on_floor else _lat_settle + delta
+	if on_floor and _lat_settle > LATERAL_SETTLE_S:
+		lateral_residual_m = maxf(lateral_residual_m, off)
+	var clock: float = float(ticks) * delta
+	if off > 0.1 and _lat_out_since < 0.0:
+		_lat_out_since = clock
+	elif off < 0.05 and _lat_out_since >= 0.0:
+		lateral_return_s = maxf(lateral_return_s, clock - _lat_out_since)
+		_lat_out_since = -1.0
+	var hanging: bool = walker != null and walker.is_hanging()
+	if hanging and not _lat_was_hanging:
+		_lat_reversals = 0
+		_lat_dir = 0.0
+	if hanging:
+		var step: float = offset - _lat_prev
+		if absf(step) > 0.0005:
+			if _lat_dir != 0.0 and signf(step) != _lat_dir:
+				_lat_reversals += 1
+				sway_reversals_per_hang = maxi(sway_reversals_per_hang, _lat_reversals)
+			_lat_dir = signf(step)
+	_lat_was_hanging = hanging
+	_lat_prev = offset

@@ -93,6 +93,11 @@ func setup(leg_side: int, leg_reach: float, hip: Vector3, rest: Vector3) -> void
 	pole_local = Vector3.UP + outward * POLE_OUTWARD
 
 
+## Where the drawn pad's box centre is in the world (a test compares it with the telemetry's pad box).
+func pad_mesh_center() -> Vector3:
+	return _foot_mesh.global_position
+
+
 ## Solves the leg for a hip and a foot, poses the meshes, and stores the rendered foot.
 func pose(
 	hip: Vector3, foot_target: Vector3, pole: Vector3, pad_basis: Basis, strut_top: Vector3

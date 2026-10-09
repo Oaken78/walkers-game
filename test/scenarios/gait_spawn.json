@@ -307,6 +307,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -353,6 +360,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -388,6 +419,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -440,6 +478,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -475,6 +537,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -522,6 +591,30 @@
    "assert_prop": {
     "node": ".",
     "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
     "op": "==",
     "value": false
    }
@@ -830,6 +923,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -876,6 +976,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -911,6 +1035,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -963,6 +1094,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -998,6 +1153,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -1045,6 +1207,30 @@
    "assert_prop": {
     "node": ".",
     "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
     "op": "==",
     "value": false
    }
@@ -1353,6 +1539,13 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "hold_action",
     "args": [
      "move_back",
@@ -1399,6 +1592,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -1434,6 +1651,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -1486,6 +1710,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
    "wait_frames": 5
   },
   {
@@ -1521,6 +1769,13 @@
    "call": {
     "node": ".",
     "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
     "args": []
    }
   },
@@ -1568,6 +1823,433 @@
    "assert_prop": {
     "node": ".",
     "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout stopped at the toe, before the spin"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout spun in place at the toe"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider stopped at the toe, before the spin"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider spun in place at the toe"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_rise_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler stopped at the toe, before the spin"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_rise_max",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler spun in place at the toe"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "root_rise_max",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_patch",
     "op": "==",
     "value": false
    }

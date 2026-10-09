@@ -315,13 +315,13 @@ func test_wash_path_runs_from_the_workshop_to_the_ruins() -> void:
 # ---- ledge pocket ----------------------------------------------------------------------------------------
 
 
-func test_ledge_rise_is_0_8_m_along_the_whole_entrance() -> void:
+func test_ledge_rise_is_1_2_m_along_the_whole_entrance() -> void:
 	var z: float = ValleyLayout.LEDGE_Z0 + 0.5
 	var count: int = 0
 	while z < ValleyLayout.LEDGE_Z1:
 		var front: float = _terrain_y(ValleyLayout.WALL_LEFT_X + 0.3, z)
 		var behind: float = _terrain_y(ValleyLayout.WALL_LEFT_X - 0.3, z)
-		assert_between(behind - front, 0.75, 0.85, "ledge rise at z=%.1f" % z)
+		assert_between(behind - front, 1.15, 1.25, "ledge rise at z=%.1f" % z)
 		count += 1
 		z += 1.0
 	assert_eq(count, 16, "rays along the 16 m entrance")
@@ -376,7 +376,7 @@ func test_ledge_pocket_is_160_to_240_m_out_on_the_right_hand_wall() -> void:
 	assert_false(face_hit.is_empty(), "ledge face found by ray")
 	var face_x: float = (face_hit["position"] as Vector3).x
 	var floor_y: float = _terrain_y(face_x - 6.0, mid_z)
-	assert_almost_eq(floor_y - apron, 0.8, 0.02, "alcove floor measured above the apron")
+	assert_almost_eq(floor_y - apron, 1.2, 0.02, "alcove floor measured above the apron")
 	var back: Dictionary = _ray(
 		Vector3(face_x - 3.0, floor_y + 1.0, mid_z), Vector3(face_x - 60.0, floor_y + 1.0, mid_z)
 	)

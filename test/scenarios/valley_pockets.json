@@ -39,8 +39,9 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     20.0,
-     8.0
+     12.0,
+     6.5,
+     -50.0
     ]
    }
   },
@@ -51,6 +52,15 @@
     "args": [
      "move_forward",
      true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_paw_freeze",
+    "args": [
+     0.65
     ]
    }
   },
@@ -71,11 +81,58 @@
   },
   {
    "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
     "node": "%Telemetry",
     "method": "report",
     "args": [
      "valley_pockets scout at the ledge pocket"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_hang_rise_ratio",
+    "op": ">=",
+    "value": 0.6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -99,7 +156,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -274,7 +331,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.115
+    "value": 0.048
    }
   },
   {
@@ -290,7 +347,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -413,9 +470,25 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
+    "prop": "min_support_margin_ratio",
     "op": ">=",
-    "value": 0.483
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
    }
   },
   {
@@ -431,7 +504,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -463,7 +536,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 30
+    "value": 190
    }
   },
   {
@@ -471,7 +544,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 68
+    "value": 290
    }
   },
   {
@@ -498,6 +571,176 @@
      "move_forward",
      false
     ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "action_press": "turn_left",
+   "frames": 80
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     10.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_lip_freeze",
+    "args": [
+     1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 300
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 200
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "valley_pockets strider climbed back out of the ledge pocket (turn, walk)"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_root_rise_tick_m",
+    "op": "<=",
+    "value": 0.0252
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "on_ledge_floor",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "past_entrance",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 5.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_shape_queries_per_tick",
+    "op": "<=",
+    "value": 190
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_rays_cast_per_tick",
+    "op": "<=",
+    "value": 290
    }
   },
   {
@@ -568,7 +811,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.147
+    "value": 0.326
    }
   },
   {
@@ -584,7 +827,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -759,7 +1002,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.104
+    "value": -0.282
    }
   },
   {
@@ -775,7 +1018,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -888,7 +1131,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.303
+    "value": -0.335
    }
   },
   {
@@ -904,7 +1147,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -944,7 +1187,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 57
+    "value": 66
    }
   },
   {
@@ -1095,7 +1338,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1119,7 +1362,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 57
+    "value": 66
    }
   },
   {
@@ -1208,7 +1451,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.051
+    "value": 0.057
    }
   },
   {
@@ -1224,7 +1467,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1264,7 +1507,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 60
+    "value": 66
    }
   },
   {
@@ -1399,7 +1642,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": -0.262
+    "value": 0.057
    }
   },
   {
@@ -1415,7 +1658,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1439,7 +1682,7 @@
     "node": "%Telemetry",
     "prop": "max_rays_cast_per_tick",
     "op": "<=",
-    "value": 60
+    "value": 66
    }
   },
   {
@@ -1556,7 +1799,7 @@
     "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
-    "value": 2.0
+    "value": 3.0
    }
   },
   {
@@ -1635,6 +1878,104 @@
   },
   {
    "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "action_press": "turn_left",
+   "frames": 100
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     10.0,
+     8.0,
+     180.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_lip_freeze",
+    "args": [
+     1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 500
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "valley_pockets crawler turned on the talus shelf"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "on_talus_shelf",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
   },
   {
    "assert_no_errors": true

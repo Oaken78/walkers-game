@@ -22,6 +22,8 @@ var root_rise_max: float = -INF
 var min_foot_vis: int = 5
 
 var _nominal_root_y: float = 0.0
+var _freeze_lip: float = -1.0
+var _freeze_paw: float = -1.0
 var _tick: int = 0
 var _mark: Vector3 = Vector3.ZERO
 
@@ -73,6 +75,15 @@ func _physics_process(_delta: float) -> void:
 			foot_rise_max = maxf(foot_rise_max, _walker.foot_position(i).y - apron)
 	if _tick > 5:
 		root_rise_max = maxf(root_rise_max, _walker.global_position.y - _nominal_root_y)
+	if _freeze_lip >= 0.0 and _lip_distance() <= _freeze_lip:
+		get_tree().paused = true
+		_freeze_lip = -1.0
+	if _freeze_paw >= 0.0:
+		for i in _walker.leg_count():
+			if _walker.is_leg_hanging(i) and _walker.foot_position(i).y - _apron_y() >= _freeze_paw * _walker.leg_reach(i):
+				get_tree().paused = true
+				_freeze_paw = -1.0
+				break
 
 
 ## "scout", "strider" or "crawler".
@@ -106,10 +117,10 @@ func spawn_at(which: String) -> void:
 
 
 ## Orbit camera behind the walker at a pitch (degrees) and distance (m), as the T14 gate rig shots use.
-func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0) -> void:
+func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0, yaw_offset_deg: float = 0.0) -> void:
 	_orbit.camera().make_current()
 	_orbit.distance = distance
-	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), pitch_deg)
+	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z) + yaw_offset_deg, pitch_deg)
 	_walker.reset_physics_interpolation()
 	_orbit.snap()
 
@@ -154,11 +165,38 @@ func mark() -> void:
 	_mark = _walker.global_position
 
 
+## Pauses the game the first tick the walker's front foot (facing out of the pocket) is within `distance` m of the pocket's
+## lip (the ledge's face, the talus shelf's edge): a still looking out over the drop. resume() continues.
+func arm_lip_freeze(distance: float) -> void:
+	_freeze_lip = distance
+
+
+## Pauses the game the first tick a hanging pad is `ratio` x its reach above the apron (the top of a paw). resume() continues.
+func arm_paw_freeze(ratio: float) -> void:
+	_freeze_paw = ratio
+
+
+func resume() -> void:
+	get_tree().paused = false
+
+
 func hold_action(action: String, pressed: bool) -> void:
 	if pressed:
 		Input.action_press(action)
 	else:
 		Input.action_release(action)
+
+
+## Distance (m) from the foot nearest the lip, facing out of the pocket, to the lip (negative once past it).
+func _lip_distance() -> float:
+	var nearest: float = INF
+	for i in _walker.leg_count():
+		var x: float = _walker.foot_position(i).x
+		if pocket == "ledge":
+			nearest = minf(nearest, ValleyLayout.WALL_LEFT_X - x)
+		else:
+			nearest = minf(nearest, x - (ValleyLayout.WALL_RIGHT_X + ValleyLayout.TALUS_SLOPE_LEN))
+	return nearest
 
 
 func _apron_y() -> float:

@@ -366,3 +366,153 @@ func test_telemetry_percentile_is_zero_without_samples() -> void:
 	var telemetry := WalkerTelemetry.new()
 	assert_eq(telemetry.tick_p99_ms, 0.0)
 	telemetry.free()
+
+
+func test_pad_box_gap_is_the_length_of_the_positive_gaps_when_apart() -> void:
+	assert_almost_eq(WalkerTelemetry.box_gap(0.3, 0.4, -0.1), 0.5, 0.0001)
+	assert_almost_eq(WalkerTelemetry.box_gap(-0.2, -0.1, 0.25), 0.25, 0.0001)
+
+
+func test_pad_box_gap_is_the_shallowest_overlap_when_the_boxes_intersect() -> void:
+	assert_almost_eq(WalkerTelemetry.box_gap(-0.3, -0.2, -0.34), -0.2, 0.0001)
+	# Pads one above the other do not overlap: the vertical gap is positive.
+	assert_gt(WalkerTelemetry.box_gap(-0.3, 0.5, -0.34), 0.0)
+
+
+func test_convex_hull_drops_interior_points_and_is_counter_clockwise() -> void:
+	var points := PackedVector2Array([Vector2(0, 0), Vector2(2, 0), Vector2(2, 2), Vector2(0, 2), Vector2(1, 1), Vector2(1, 0)])
+	var hull: PackedVector2Array = WalkerBody.convex_hull(points)
+	assert_eq(hull.size(), 4, "the interior and edge points are dropped")
+	var area: float = 0.0
+	for k in hull.size():
+		area += hull[k].cross(hull[(k + 1) % hull.size()]) * 0.5
+	assert_almost_eq(area, 4.0, 0.0001, "positive area means counter-clockwise")
+
+
+func test_convex_hull_of_fewer_than_three_points_is_returned_as_is() -> void:
+	assert_eq(WalkerBody.convex_hull(PackedVector2Array([Vector2(1, 1), Vector2(2, 2)])).size(), 2)
+
+
+func test_polygon_margin_is_positive_inside_negative_outside() -> void:
+	var square := PackedVector2Array([Vector2(0, 0), Vector2(2, 0), Vector2(2, 2), Vector2(0, 2)])
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(1, 1)), 1.0, 0.0001)
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(1.8, 1)), 0.2, 0.0001)
+	assert_almost_eq(WalkerBody.polygon_margin(square, Vector2(2.5, 1)), -0.5, 0.0001)
+	assert_eq(WalkerBody.polygon_margin(PackedVector2Array([Vector2(0, 0), Vector2(1, 0)]), Vector2(0.5, 0.1)), -1.0)
+
+
+func test_climb_plane_follows_the_line_from_the_rear_feet_to_the_front_feet() -> void:
+	# Two rows of feet 2 m apart along -Z, the front row 1 m up on a ledge: the body must lie along a 1 m per 2 m line.
+	var feet := PackedVector3Array(
+		[Vector3(-0.5, 0, 1), Vector3(0.5, 0, 1), Vector3(-0.5, 0, 0), Vector3(0.5, 0, 0), Vector3(-0.5, 1, -1), Vector3(0.5, 1, -1)]
+	)
+	var plane: Plane = WalkerBody.climb_plane(feet, feet.size(), Vector3(0, 0, -1))
+	assert_gt(plane.normal.z, 0.0, "the normal leans back when the front is up")
+	var slope: float = plane.normal.z / plane.normal.y
+	assert_gt(slope, 0.3, "steeper than the flat least-squares fit of a long body with two feet up")
+
+
+func test_climb_plane_of_flat_ground_is_flat() -> void:
+	var feet := PackedVector3Array(
+		[Vector3(-0.5, 0, 1), Vector3(0.5, 0, 1), Vector3(-0.5, 0, 0), Vector3(0.5, 0, 0), Vector3(-0.5, 0, -1), Vector3(0.5, 0, -1)]
+	)
+	var plane: Plane = WalkerBody.climb_plane(feet, feet.size(), Vector3(0, 0, -1))
+	assert_almost_eq(plane.normal.y, 1.0, 0.0001)
+
+
+func test_convex_hull_scratch_reuse_does_not_leak_points_between_calls() -> void:
+	var big := PackedVector2Array([Vector2(0, 0), Vector2(4, 0), Vector2(4, 4), Vector2(0, 4), Vector2(2, 2), Vector2(1, 3)])
+	assert_eq(WalkerBody.convex_hull(big).size(), 4)
+	var small := PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(0, 1)])
+	var hull: PackedVector2Array = WalkerBody.convex_hull(small)
+	assert_eq(hull.size(), 3, "the second call sees only its own points")
+	assert_almost_eq(WalkerBody.polygon_margin(hull, Vector2(0.25, 0.25)), 0.25, 0.0001)
+
+
+func test_support_advance_keeps_the_back_off_input_while_a_leg_waits() -> void:
+	var facing := Vector3(0, 0, -1)
+	var back: Vector3 = WalkerBody.support_advance(Vector3(0, 0, 4.0), facing, Vector3.ZERO, 1.8)
+	assert_gt(back.z, 1.0, "S moves the body back even with no shift")
+	var forward: Vector3 = WalkerBody.support_advance(Vector3(0, 0, -4.0), facing, Vector3.ZERO, 1.8)
+	assert_almost_eq(forward.length(), 0.0, 0.0001, "forward input is not added to the shift")
+	var strafe: Vector3 = WalkerBody.support_advance(Vector3(3.0, 0, -4.0), facing, Vector3.ZERO, 1.8)
+	assert_gt(strafe.x, 1.0, "strafe input is kept")
+
+
+
+func _fold_rig() -> Array:
+	# One hip 1.0 m above a planted foot, fold distance 0.4: poses are plain translations.
+	var hips := PackedVector3Array([Vector3.ZERO])
+	var feet := PackedVector3Array([Vector3(0, -1.0, 0)])
+	var planted := PackedByteArray([1])
+	var limits := PackedFloat32Array([1.5])
+	var folds := PackedFloat32Array([0.4])
+	return [hips, feet, planted, limits, folds]
+
+
+func test_a_hip_may_not_come_inside_the_fold_distance_of_its_planted_foot() -> void:
+	var r: Array = _fold_rig()
+	var now := Transform3D.IDENTITY
+	var near := Transform3D(Basis.IDENTITY, Vector3(0, -0.5, 0))
+	assert_true(WalkerBody.feet_in_reach(near, now, r[0], r[1], r[2], r[3], r[4]), "0.5 m above the foot is outside 0.4")
+	var inside := Transform3D(Basis.IDENTITY, Vector3(0, -0.7, 0))
+	assert_false(WalkerBody.feet_in_reach(inside, now, r[0], r[1], r[2], r[3], r[4]), "0.3 m above the foot is inside the fold distance")
+	assert_true(WalkerBody.feet_in_reach(inside, now, r[0], r[1], r[2], r[3]), "without fold distances the old rule holds")
+
+
+func test_a_hip_already_inside_the_fold_distance_may_only_move_away_from_its_foot() -> void:
+	var r: Array = _fold_rig()
+	var inside := Transform3D(Basis.IDENTITY, Vector3(0, -0.7, 0))
+	var away := Transform3D(Basis.IDENTITY, Vector3(0, -0.65, 0))
+	assert_true(WalkerBody.feet_in_reach(away, inside, r[0], r[1], r[2], r[3], r[4]), "moving away is always allowed")
+	var closer := Transform3D(Basis.IDENTITY, Vector3(0, -0.75, 0))
+	assert_false(WalkerBody.feet_in_reach(closer, inside, r[0], r[1], r[2], r[3], r[4]), "nearer would push the pad out and up")
+
+
+func test_a_climb_swing_settles_onto_its_landing_with_no_step_at_either_end() -> void:
+	assert_almost_eq(WalkerBody.ease_settle(0.0), 0.0, 0.000001)
+	assert_almost_eq(WalkerBody.ease_settle(1.0), 1.0, 0.000001)
+	# Flat at the end: the last tick of a 21-tick swing leaves under 1 % of the settle (smoothstep leaves about 3 %).
+	assert_lt(1.0 - WalkerBody.ease_settle(0.9), 0.01)
+	var last: float = 0.0
+	for k in 21:
+		var value: float = WalkerBody.ease_settle(float(k) / 20.0)
+		assert_gte(value, last, "monotone at %d" % k)
+		last = value
+
+
+func test_a_ledge_is_climbed_within_45_deg_of_head_on_and_slid_along_beyond() -> void:
+	var body := WalkerBody.new()
+	# Heading -Z (yaw 0); a face ahead points its normal out toward the walker (+Z).
+	for case in [[0.0, true], [30.0, true], [44.0, true], [46.0, false], [60.0, false], [90.0, false]]:
+		var out := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(out), case[1], "up a face %s deg off head-on" % case[0])
+	# Stepping down: the edge's face points out of the higher ground, along the heading.
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var out_down := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(out_down), case[1], "down an edge %s deg off head-on" % case[0])
+	body.free()
+
+
+func test_a_climb_under_way_finishes_whatever_the_heading() -> void:
+	var body := WalkerBody.new()
+	var shallow := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(70.0))
+	assert_false(body._approach_ok(shallow))
+	body._climb_session = true
+	assert_true(body._approach_ok(shallow), "a foot is up: the climb finishes")
+	body.free()
+
+
+func test_a_walker_backing_head_on_into_a_ledge_or_off_an_edge_climbs_or_steps_down() -> void:
+	var body := WalkerBody.new()
+	# Heading -Z (yaw 0), reversing (+Z). A ledge behind it: its face points out of the higher ground toward the walker (-Z).
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var behind_up := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(behind_up), case[1], "backing up a face %s deg off head-on" % case[0])
+	# An edge behind it to step down: its face points out of the higher ground, away from the walker (+Z).
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var behind_down := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(behind_down), case[1], "backing down an edge %s deg off head-on" % case[0])
+	# Strafing into a ledge meets it side-on: shallow.
+	assert_false(body._approach_ok(Vector3(1.0, 0.0, 0.0)), "a face beside the walker")
+	body.free()
