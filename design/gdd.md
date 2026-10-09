@@ -170,10 +170,26 @@ already allow it.
     the 8-block build; M0 keeps it as one fixed part with its 8 leg sockets (4 per side) and 3 top sockets.
   - Where an M0 rule narrows the leg count, placement or length (4, 6 or 8 legs, symmetric, three leg lengths), it is
     an M0 scope limit, not a design rule.
-  - Not yet decided: the 8-block layout; a block's price, mass and HP; whether a socket with a block attached is
-    closed and whether blocks may stack; how many blocks and legs a chassis may have (the upper leg limit, with its
-    cost per tick); which other modules ship when and what they do, and the cargo container's numbers; whether a module's facing matters; the limits that keep
-    building readable and affordable; and whether leg length stays a few discrete parts or is grown.
+  - **Build rules from M1** (Klas, 2026-10-09, all four as the game-designer recommended):
+    - *Layout:* today's chassis is 4 blocks long and 2 wide. A block is 0.7 x 0.5 x 0.3 m, so hips sit at a 0.7 m
+      pitch. The 4 x 2 build has 4 left and 4 right sockets (today's 8 leg sockets), 8 top, 8 bottom, 2 front and 2
+      back. A socket that faces an attached block is closed. Blocks may stack; in M1 legs mount only on bottom-layer
+      blocks, so hips stay on short struts and the knees stay visible (Pillar 2).
+    - *Leg length:* a ladder of 9 lengths, 0.4, 0.5, 0.6, 0.8, 1.0, 1.25, 1.6, 2.0 and 2.5 m (about x1.25 per step).
+      Today's short, medium and long legs are steps 3, 5 and 7. The player pays scrap to grow or shrink an owned leg
+      one step; a leg's mass, lift, grip and spread follow curves through today's three legs. The extreme lengths
+      (0.4, 0.5, 2.0 and 2.5 m) are unlocked by blueprints found out exploring.
+    - *Economy:* a block is 1/8 of today's chassis: 15.625 kg, 12.5 HP and 15 scrap; the player starts owning 8, so
+      the 8-block build keeps today's 125 kg and 100 HP. Everything the player owns stays in inventory, and
+      re-socketing is free, so experimenting stays cheap (section 7). A walker carries at most 60 scrap per trip, +40
+      per cargo container: a full walker heads home (Pillar 3).
+    - *Limits:* mass against leg lift is the main limit, felt in speed and turning; there is no power resource. M1
+      hard caps: 12 legs (raised only after a 12-leg performance test passes) and 4 weapons. A weapon on any face
+      aims along the walker's heading (the aim model, section 6). A module on a bottom socket lowers the ground
+      clearance by its depth, shown as a stat.
+  - Not yet decided: the chassis size cap (blocks long, wide and high); the cargo container's mass and price; which
+    other modules ship when and what they do; the gait for 9-12 legs; and the stats the new shapes stretch (the top
+    speed range, the turn rate floor, the camera distance for large builds).
 - **State:** chassis id; map of socket id to part id.
 - **Rules:**
   - The chassis defines sockets. M0 medium chassis (the 8-block build as one fixed part): 8 leg sockets and 3 top
@@ -702,6 +718,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Block chassis: the chassis is built from blocks that can be expanded like Lego; each block has 6 sockets, one per direction; a leg mounts only on a block's left or right socket. Today's medium chassis is the 8-block build, kept in M0 as one fixed part (8 leg and 3 top sockets). The layout, block price, mass and HP, attachment and stacking, and the block and leg limits are open (8.1) | Klas, 2026-10-09: "My wish is that the chassis is built from blocks that can be expanded like Legos. The corresponding build for the current chassis would be 8 blocks. Each block has 6 sockets, one in each direction." and "Legs can only be placed on left or right side." The body grows with the walker, which serves the build principle and Pillar 1 | A fixed chassis with fixed sockets; a segmented spine of 2-socket segments; legs on any face |
 | 2026-10-09 | Any socket takes another block or a module. Modules include weapons, cargo containers and drone hatches, and the list is meant to grow; legs stay the one module limited to left and right sockets. Wide room for expansion is a design goal, and building is named the core of the game in section 1 and Pillar 1. Which modules ship when, module facing and the limits on building are open (8.1) | Klas, 2026-10-09: "Sockets can take other blocks, weapons, cargo containers drone hatches etc. I want a lot of possibilities for expansion. Building and feeling like an inventor is in the very core of the game." | Fixed top-only weapon sockets; bottom sockets left empty; a short closed part list |
 | 2026-10-09 | A cargo container raises the scrap a walker can carry per trip; its capacity, mass and price are still proposals. A drone hatch launches the player's own drones, but it is a far-future idea that may never be built, not in M1 or M2 | Klas, 2026-10-09: cargo containers "Yes"; drone hatches "Yes about drone hatches but don't mind that for a long time. We might not implement it." | Cargo that only protects scrap on death; hatches in M1 as a spotter drone |
+| 2026-10-09 | Build rules from M1: a 4 x 2 layout of 0.7 x 0.5 x 0.3 m blocks (closed sockets where blocks meet, stacking allowed, legs on bottom-layer blocks only in M1); a ladder of 9 leg lengths (0.4-2.5 m, about x1.25 per step) grown or shrunk one step for scrap, extreme lengths unlocked by blueprints; a block is 1/8 of today's chassis (15.625 kg, 12.5 HP, 15 scrap), owned parts re-socket for free; a 60-scrap carry limit, +40 per cargo container; mass against lift is the main limit with no power resource, M1 caps of 12 legs and 4 weapons, weapons aim along the heading on any face, a bottom module costs ground clearance | Klas, 2026-10-09, choosing the game-designer's recommendation on each of four questions | 8 x 1 layout; legs on stacked blocks; more fixed leg parts or a continuous length; paid re-socketing; no carry limit; a power resource; broadside guns |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
