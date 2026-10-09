@@ -1,0 +1,1582 @@
+{
+ "scene": "res://scenes/test/gait_course.tscn",
+ "seed": 1234,
+ "timeout_frames": 7200,
+ "steps": [
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "wall",
+     -9.9
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout wall at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "patch_a",
+     -7.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout patch_a at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -9.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout talus at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_on_boulder_crest",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout boulder crest"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "scout on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "scout on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "scout on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "scout on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "wall",
+     -9.9
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider wall at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "patch_a",
+     -7.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider patch_a at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -9.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider talus at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_on_boulder_crest",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider boulder crest"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "strider on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "strider on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "strider on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "strider on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "wall",
+     -9.9
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler wall at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "patch_a",
+     -7.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler patch_a at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -9.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler talus at spawn"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_on_boulder_crest",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler boulder crest"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tilt_vs_ground_deg",
+    "op": "<=",
+    "value": 5.0
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_back",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "crawler on the toe, move_back"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_left",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "crawler on the toe, strafe_left"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_front_feet_on_toe",
+    "args": [
+     0.12
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_spawn_state",
+    "args": [
+     "crawler on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "strafe_right",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_moved",
+    "args": [
+     "crawler on the toe, strafe_right"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "moved_since_mark",
+    "op": ">",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "walker_overlapping",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
+   "assert_no_errors": true
+  }
+ ]
+}

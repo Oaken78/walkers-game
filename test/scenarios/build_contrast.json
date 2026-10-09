@@ -72,6 +72,30 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.537
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "min_knee_rise_ratio",
     "op": ">=",
     "value": 0.1
@@ -259,6 +283,30 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.359
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
    "call": {
     "node": ".",
     "method": "record_result",
@@ -328,6 +376,30 @@
     "args": [
      "build_contrast crawler flat 4s"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": 0.234
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
    }
   },
   {
@@ -517,6 +589,30 @@
     "args": [
      "build_contrast crawler ledges (climb, step down, stop at the first block it cannot climb)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.294
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
    }
   },
   {

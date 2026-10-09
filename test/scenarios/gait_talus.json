@@ -89,6 +89,38 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.353
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "past_patch",
     "op": "==",
@@ -222,6 +254,38 @@
     "args": [
      "gait_talus crawler climbs the talus (start offset 0.45 m, input 100 %)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.358
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
    }
   },
   {
@@ -363,6 +427,38 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.331
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "past_patch",
     "op": "==",
@@ -496,6 +592,38 @@
     "args": [
      "gait_talus crawler climbs the talus (start offset 0.00 m, input 50 %)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_gap_at_report_m",
+    "op": ">=",
+    "value": -0.348
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 2.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_max_ms",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.4
    }
   },
   {

@@ -94,6 +94,9 @@ const AUTOPILOT_DEAD_DEG: float = 3.0
 ## Foot box limit (GDD 10 rule 1): every foot at least this tall at 1080p (checked by the pitch scenarios).
 @export var min_foot_px_1080: float = 12.0
 
+## The lowest visible-sight-line count (0..5) over all pads at the last log_foot_vis call (chassis and terrain only).
+var min_foot_vis: int = 5
+
 ## Mean slope of the two steep patches over a 2 m disc, in degrees (28-30 and 35-40).
 var patch_a_slope_deg: float = 0.0
 ## Slope of the talus lane between its corner and its edge (measured from the built heights).
@@ -167,6 +170,22 @@ var patch_gap: float:
 		if _lane == LANE_TALUS:
 			return _walker.global_position.z + TALUS_CORNER_ALONG
 		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK)
+## True while any collider of the walker overlaps the world (spawn checks).
+var walker_overlapping: bool:
+	get:
+		return _walker.is_overlapping_world()
+## Angle between the body's up axis and the normal of the plane through all its feet (the ground it stands on; degrees).
+var tilt_vs_ground_deg: float:
+	get:
+		return _tilt_vs_ground()
+## True while the orbit camera recentres behind the walker (a spawn restores it after an abeam view).
+var orbit_recentering: bool:
+	get:
+		return _orbit.recenter_enabled
+## True when the walker steers by the orbit camera (CAMERA_YAW with the rig as its yaw source).
+var steers_by_orbit: bool:
+	get:
+		return _walker.yaw_source == _orbit and _walker.steer_mode == WalkerBody.SteerMode.CAMERA_YAW
 ## True while the orbit camera is the play camera.
 var orbit_active: bool:
 	get:
@@ -201,6 +220,15 @@ var steps_ratio: float:
 	get:
 		return _telemetry.steps_per_s / steps_ref if steps_ref > 0.0 else 0.0
 
+## Frame times (ms between consecutive _process calls) since track_frames(true): in the fixed-step test runs
+## that is the work per frame. Used for the boulder lag gate (no frame over 16.7 ms while walking).
+var frame_max_ms: float:
+	get:
+		return _frame_ms_max
+var frame_p95_ms: float:
+	get:
+		return _frame_percentile(0.95)
+
 var _walker: WalkerBody
 var _telemetry: WalkerTelemetry
 var _camera: Camera3D
@@ -219,6 +247,7 @@ var _first_tick: bool = true
 var _sun: DirectionalLight3D
 var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
+var _freeze_stall: float = -1.0
 var _freeze_tick: int = -1
 var _tick: int = 0
 var _track_clearance: bool = false
@@ -241,6 +270,12 @@ var _yaw_source: Node3D
 var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
+var _tallest_boulder_radius: float = 0.0
+var _tallest_boulder_top: Vector3 = Vector3.ZERO
+var _track_frames: bool = false
+var _frame_last_usec: int = 0
+var _frame_ms: PackedFloat32Array = PackedFloat32Array()
+var _frame_ms_max: float = 0.0
 
 
 func _ready() -> void:
@@ -327,6 +362,12 @@ func _physics_process(delta: float) -> void:
 	_tick += 1
 	if _tick == 5:
 		_nominal_root_y = _walker.global_position.y
+	# Walking into the end of a lane (no ground ahead) is not a stall of the controller.
+	_telemetry.stall_exempt = _walker.global_position.z < -(TALUS_LENGTH - 2.0) and _lane == LANE_TALUS
+	if _walker.gait() != null:
+		foot_rise_max = maxf(foot_rise_max, foot_rise_above_apron)
+		if _tick > 5:
+			root_rise_max = maxf(root_rise_max, root_rise_over_nominal)
 	if _track_clearance and _walker.gait() != null and _on_patch():
 		# The clearance sits on its floor (the push-up holds it there) for a stretch of the crest: take the middle.
 		var clearance: float = _walker.min_hip_clearance()
@@ -339,6 +380,9 @@ func _physics_process(delta: float) -> void:
 	if _freeze_tick >= 0 and _tick >= _freeze_tick:
 		get_tree().paused = true
 		_freeze_tick = -1
+	if _freeze_stall >= 0.0 and _telemetry.current_stall_s >= _freeze_stall:
+		get_tree().paused = true
+		_freeze_stall = -1.0
 	if _freeze_tilt >= 0.0 and _walker.tilt_degrees() >= _freeze_tilt:
 		get_tree().paused = true
 		_freeze_tilt = -1.0
@@ -353,6 +397,13 @@ func _physics_process(delta: float) -> void:
 func _process(_delta: float) -> void:
 	if _walker == null:
 		return
+	if _track_frames:
+		var now_usec: int = Time.get_ticks_usec()
+		if _frame_last_usec > 0:
+			var frame_ms: float = float(now_usec - _frame_last_usec) / 1000.0
+			_frame_ms.append(frame_ms)
+			_frame_ms_max = maxf(_frame_ms_max, frame_ms)
+		_frame_last_usec = now_usec
 	if _hud_label != null:
 		_hud_label.text = "STEER: %s   (T toggles)\n%s" % [steer_mode_name, help_text]
 	if _camera_mode == "orbit":
@@ -433,9 +484,10 @@ func use_build(build_name: String) -> void:
 	_walker.apply_build(build)
 
 
-## Teleports the walker to the start of a lane, facing -Z. Telemetry keeps its numbers (call reset() on it).
-func spawn_at(lane: String, offset_z: float = 0.0) -> void:
-	var origin: Vector3 = _spawn_point(lane) + Vector3(0.0, 0.0, offset_z)
+## Teleports the walker to the start of a lane, facing -Z (turned `heading_deg` to the left, and `offset_x` m to the
+## right of the lane's start). Telemetry keeps its numbers (call reset() on it).
+func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, offset_x: float = 0.0) -> void:
+	var origin: Vector3 = _spawn_point(lane) + Vector3(offset_x, 0.0, offset_z)
 	if origin.y < -100.0:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
@@ -443,15 +495,46 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 	_spawn_offset = offset_z
 	_tick = 0
 	hover_inside_ticks = 0
-	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
+	foot_rise_max = -INF
+	root_rise_max = -INF
+	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane) + deg_to_rad(heading_deg)), origin))
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
+		_orbit.recenter_enabled = true
 		_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), _orbit.pitch_deg)
 		_orbit.snap()
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
 		_last_plant[i] = _walker.foot_position(i)
+	mark()
+
+
+## Prints the distance moved since mark() (report numbers: `MOVED label metres`).
+func log_moved(label: String) -> void:
+	print("MOVED %s %.3f" % [label, moved_since_mark])
+
+
+## Prints whether the walker overlaps the world and how far its tilt is from the ground under it (spawn checks).
+func log_spawn_state(label: String) -> void:
+	print("SPAWNSTATE %s overlapping=%s tilt_vs_ground_deg=%.2f" % [label, str(walker_overlapping), tilt_vs_ground_deg])
+
+
+## Teleports the walker facing the talus toe with its most forward rest foot `depth` m up the face (the face is
+## 40 degrees: the foot stands on over-grip ground, a start the walker must be able to leave).
+func spawn_front_feet_on_toe(depth: float) -> void:
+	var front: float = INF
+	for i in _walker.leg_count():
+		front = minf(front, _walker.rest_local_position(i).z)
+	var foot_z: float = -TALUS_CORNER_ALONG - depth / tan(deg_to_rad(ValleyLayout.TALUS_DEG))
+	spawn_at(LANE_TALUS, foot_z - front - SPAWN_Z)
+
+
+## Teleports the walker onto the crest of the tallest boulder (its feet and body start on the rock).
+func spawn_on_boulder_crest() -> void:
+	_lane = "boulders"
+	_tick = 0
+	_walker.teleport(Transform3D(Basis.IDENTITY, _tallest_boulder_top + Vector3(0.0, 1.0, 0.0)))
 	mark()
 
 
@@ -492,6 +575,11 @@ func arm_swing_freeze(progress: float) -> void:
 ## Pauses the game the first tick the body's tilt reaches `degrees` (a still at the steepest part of a climb).
 func arm_tilt_freeze(degrees: float) -> void:
 	_freeze_tilt = degrees
+
+
+## Pauses the game the first tick the walker's current stall reaches `seconds` (a still at a stall); resume() continues.
+func arm_stall_freeze(seconds: float) -> void:
+	_freeze_stall = seconds
 
 
 ## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.
@@ -550,6 +638,19 @@ func toggle_steer_mode() -> void:
 		_walker.yaw_source = null
 
 
+## Starts (clears) or stops the frame-time record; read frame_max_ms and frame_p95_ms afterwards.
+func track_frames(enabled: bool) -> void:
+	_track_frames = enabled
+	_frame_last_usec = 0
+	if enabled:
+		_frame_ms.resize(0)
+		_frame_ms_max = 0.0
+
+
+func log_frames(label: String) -> void:
+	print("FRAMES %s p95_ms=%.2f max_ms=%.2f n=%d" % [label, frame_p95_ms, frame_max_ms, _frame_ms.size()])
+
+
 func track_camera_bob(enabled: bool) -> void:
 	_track_camera = enabled
 	_cam_y_min = INF
@@ -566,9 +667,9 @@ func log_camera(label: String) -> void:
 
 
 ## For every pad: how many of 5 sight lines (top centre + 4 top corners) from the active camera reach it, against
-## the world (layer 1) and the walker's chassis box. The walker's physics colliders are not used: the stance guard
-## is a big invisible cylinder. Hip balls and the tops are ignored. Reported, not asserted:
-## `FOOTVIS <tag> leg=i visible=k/5`.
+## the world (layer 1) and the walker's chassis box ONLY. Other legs, hip balls, the tops and pad side faces are not
+## tested, so 5/5 does not mean "readable": it means no terrain or chassis is in the way. Logged as
+## `FOOTVIS(chassis+terrain) <tag> leg=i visible=k/5`; the lowest count is kept in `min_foot_vis`.
 func log_foot_vis(tag: String) -> void:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var eye: Vector3 = _active_camera().global_position
@@ -587,6 +688,7 @@ func log_foot_vis(tag: String) -> void:
 	var to_local: Transform3D = chassis.global_transform.affine_inverse()
 	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
 	var rows: Array[String] = []
+	min_foot_vis = 5
 	for i in _walker.leg_count():
 		var foot: Vector3 = _walker.foot_position(i)
 		var seen: int = 0
@@ -601,7 +703,8 @@ func log_foot_vis(tag: String) -> void:
 				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
 			if not blocked:
 				seen += 1
-		rows.append("FOOTVIS %s leg=%d visible=%d/5" % [tag, i, seen])
+		min_foot_vis = mini(min_foot_vis, seen)
+		rows.append("FOOTVIS(chassis+terrain) %s leg=%d visible=%d/5" % [tag, i, seen])
 	for row in rows:
 		print(row)
 
@@ -845,6 +948,22 @@ func _foot_min_height() -> float:
 	return low
 
 
+func _tilt_vs_ground() -> float:
+	var feet := PackedVector3Array()
+	for i in _walker.leg_count():
+		feet.append(_walker.foot_position(i))
+	var plane: Plane = WalkerBody.fit_plane(feet)
+	return rad_to_deg(_walker.body_pose().basis.y.angle_to(plane.normal))
+
+
+func _frame_percentile(fraction: float) -> float:
+	if _frame_ms.is_empty():
+		return 0.0
+	var sorted: PackedFloat32Array = _frame_ms.duplicate()
+	sorted.sort()
+	return sorted[clampi(int(ceil(fraction * float(sorted.size()))) - 1, 0, sorted.size() - 1)]
+
+
 func _camera_height() -> float:
 	var from: Vector3 = _active_camera().global_position
 	var query := PhysicsRayQueryParameters3D.create(from + Vector3.UP * 5.0, from + Vector3.DOWN * 50.0, 1)
@@ -907,6 +1026,9 @@ var foot_rise_above_apron: float:
 			if _walker.gait().state_of(i) == GaitSolver.LegState.PLANTED:
 				rise = maxf(rise, _walker.foot_position(i).y)
 		return rise
+## Running maxima of the two since the last spawn_at (a blocked push is judged over the whole push, not one frame).
+var foot_rise_max: float = -INF
+var root_rise_max: float = -INF
 var root_rise_over_nominal: float:
 	get:
 		if _walker == null:
@@ -1263,6 +1385,9 @@ func _build_boulders() -> void:
 			continue
 		placed += 1
 		var base: float = _terrain_height(lx, along)
+		if radius > _tallest_boulder_radius:
+			_tallest_boulder_radius = radius
+			_tallest_boulder_top = Vector3(LANE_X[LANE_BUMPS] + lx, base + radius * 1.5, -along)
 		var body := StaticBody3D.new()
 		body.collision_layer = 1
 		body.collision_mask = 0
