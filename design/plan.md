@@ -39,7 +39,7 @@ Status: ready, in-progress, review-passed, done.
 | T04 | Orbit camera rig (8 m, lag 0.10 s, zoom, aim, spring-arm collision) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd, test/integration/test_orbit_camera_rig.gd, test/scenarios/camera_orbit.json | 3 | done | worktree-agent-a71d1078987d3e4d0, merged a3954ea |
 | T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, scripts/world/, assets/world/, test/integration/test_valley_geometry.gd, test/scenarios/valley_overview.json | 3 | done | worktree-agent-a919dedea3b3d2cd4, merged 3207acb |
 | T06 | Pulse cannon, projectiles and the aim model (dot + world reticle, aim-up pitch -20), damage contract, risk 8 and 9 spikes | scripts/weapons/, scenes/weapons/, scripts/combat/, ui/aim/, scripts/test/aim_range.gd, scenes/test/aim_range.tscn, test/scenarios/aim_range.json, test/unit/test_weapon.gd, test/unit/test_aim_math.gd, test/unit/test_combat.gd, scripts/camera/orbit_camera.gd (pitch_min only), test/unit/test_orbit_camera.gd, test/scenarios/camera_orbit.json | 3 | done | feat/walkers-pulse-cannon, merged 0d76145 |
-| T07 | Drone enemy: brain, hold-to-shoot telegraph, bolts, leash, encounters (lean; starts after T06 merges) | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/drone_fight.json | 3 | in-progress | feat/walkers-drone |
+| T07 | Drone enemy: brain, hold-to-shoot telegraph, bolts, leash, encounters (lean; starts after T06 merges) | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/drone_fight.json | 3 | done | feat/walkers-drone, merged c961bfb |
 | T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | done | feat/walkers-economy, merged d094bc9 |
 | T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | done | art/walkers-workshop, merged da8819d |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
@@ -131,8 +131,20 @@ Status: ready, in-progress, review-passed, done.
     - Enemy projectile queries on layer 2 use areas only.
     - `impacted` carries `counted`.
     - Keep the bottom-right 40 px around the edge chevron free of HUD.
+  - **Drones (T07):**
+    - Spawn: `DroneField.target = walker`, then `spawn_sites()`; connect `Economy.banked` to `respawn_all()`.
+    - `shot_fired` can arrive up to 0.6 s after `died` (a falling husk still fires). A bolt's `source` can be a husk,
+      or null once that drone is freed.
+    - Scrap drops when the husk lands (0.7-1.1 s after `died`); a respawn in between loses it.
+    - Loose scrap survives `respawn_all` and is removed by `clear_all`. `clear_all` does not yet disable pending
+      husks: copy the `ai_enabled` / `auto_step` disable from `DroneEncounter.clear()`.
+    - Drones have no world collision. Keep DroneSite markers >= 20 m from cliff faces and run drone_fight on the real
+      valley (`perf_4_drones`); a terrain-aware orbit is the follow-up if they still clip.
+    - Feedback on the player: listen to `PlayerHurtbox.hit_taken` for the rim flash and shake.
+    - Juice pass: a bolt-in-flight shot with bolt readability (>= 8 px, >= 0.3 luma against sky and ground).
   - **T11 look pass:** the workshop's camera-mounted chassis light in motion, and the field walker's hull and leg
     tones; the Load "!" may need a row tint.
+- Same-side pad overlap (T13 item 10 / T16 item 6, open): pads still stack on one spot during some climbs and turns (the metric reads its -0.34 floor). The proposals measured cost 13-26 % of flat speed, so none was adopted; revisit with the walker API task or at the M1 climber leg.
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
