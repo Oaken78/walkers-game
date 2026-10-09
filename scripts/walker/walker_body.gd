@@ -60,9 +60,16 @@ const MAX_PUSH_RATE: float = 1.5
 const PITCH_AHEAD_WEIGHT: float = 0.7
 const PITCH_MAX_DEG: float = 12.0
 ## Low-pass time of the ahead plane and its weight.
-const PITCH_AHEAD_SMOOTH_TIME: float = 0.06
+const PITCH_AHEAD_SMOOTH_TIME: float = 0.03
 ## The contact resolve (all counts are upper bounds on its work per candidate pose): passes that re-read the hip rays,
 ## pitch attempts, raises, and the margin added to a raise.
+## The legs keep leading along a wall this many ticks after the last slide tick.
+const SLIDE_MEMORY_TICKS: int = 20
+## Steep ground must reach this far to both sides of a rest foot for the stance to count it as a face.
+const STANCE_FACE_HALF_WIDTH: float = 0.7
+## A slide takes the into-face part of the move out x this (more than 1 backs the body off the face a little, so
+## the legs on the face side keep ground to step on).
+const SLIDE_STANDOFF: float = 1.0
 const RESOLVE_PASSES: int = 3
 const PITCH_PASSES: int = 3
 const RAISE_PASSES: int = 3
@@ -78,7 +85,8 @@ const MIN_PITCH_LEVER: float = 0.25
 const FRACTION_TRIES: int = 5
 const FRACTION_RESOLUTION: float = 0.08
 const FRACTION_SHRINK: float = 0.95
-const MIN_FRACTION: float = 0.02
+const MIN_FRACTION: float = 0.002
+const REACH_SHRINK: float = 0.2
 ## Held for the same reason as last tick: fewer tries, starting from a small fraction (the slow crawl).
 const REPEAT_TRIES: int = 3
 const REPEAT_FRACTION: float = 0.25
@@ -91,7 +99,7 @@ const CONTACT_QUERY_MARGIN: float = 0.001
 ## tick by contact cell and direction.
 const WALL_PROBE_LIFT: float = 0.01
 const WALL_PROBE_BACK: float = 0.05
-const WALL_PROBE_LENGTH: float = 0.5
+const WALL_PROBE_LENGTH: float = 1.2
 const WALL_CACHE_CELLS_PER_M: float = 10.0
 const WALL_CACHE_ANGLES_PER_RAD: float = 4.0
 ## The sight ray from the hip stops this far short of the foothold.
@@ -869,7 +877,7 @@ func _plant_all_at_rest(depth: int = 0) -> void:
 	# Hips clear of the ground and the colliders clear of the terrain (pitch first, raise second), as every tick does.
 	# An overlapping pose is never accepted: ground left over is resolved again; a wall is left to _depenetrate.
 	for attempt in 4:
-		var placed: int = _resolve(_origin, _base_y, _yaw, _tilt_n)
+		var placed: int = _resolve(_origin, _base_y, _yaw, _tilt_n, 10.0, false)
 		if placed == 2:
 			break
 		_origin = _r_origin
@@ -1005,7 +1013,11 @@ func _update_targets() -> float:
 		var leg: WalkerLeg = _legs[i]
 		var leg_state: int = _solver.state_of(i)
 		var rest: Vector3 = gt * leg.rest_local
-		var rest_velocity: Vector3 = _target_velocity + Vector3.UP.cross(rest - gt.origin) * yaw_rad
+		# Sliding along a wall: the feet look ahead along the slide, not into the face.
+		var lead_velocity: Vector3 = _target_velocity
+		if _slide_ticks > 0:
+			lead_velocity = _target_velocity.slide(_slide_n)
+		var rest_velocity: Vector3 = lead_velocity + Vector3.UP.cross(rest - gt.origin) * yaw_rad
 		var rest_speed: float = rest_velocity.length()
 		fastest = maxf(fastest, rest_speed)
 		# Foot lands on a live target; the stance after landing lasts (groups - 1) swings, so the lead covers it.
@@ -1261,6 +1273,38 @@ func _clearance_rise(pose: Transform3D) -> float:
 	return rise
 
 
+## Ground steeper than the grip and taller than the step-up under any rest foot of the pose: the stance would have to
+## stand on a wall, so the body stops (and slides) there, a stance away from the face, and the legs on that side keep
+## apron to step on. Sets `_clear_wall` and `_wall_n` like `_clearance_rise`.
+func _stance_on_wall(pose: Transform3D) -> void:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var ray_up: float = ray_up_ratio * _mean_reach
+	for i in _legs.size():
+		var rest: Vector3 = pose * _legs[i].rest_local
+		_sight.from = Vector3(rest.x, pose.origin.y + ray_up, rest.z)
+		_sight.to = Vector3(rest.x, pose.origin.y + ray_up - ray_length_ratio * _mean_reach - ray_up, rest.z)
+		var hit: Dictionary = space.intersect_ray(_sight)
+		rays_this_tick += 1
+		if not hit.is_empty() and _contact_is_wall(hit["normal"], hit["position"]):
+			# A face, not a rock: steep ground a stance-width to both sides of the foot too (the stance guard
+			# and the collider walls deal with boulders).
+			var flat: Vector3 = _horizontal(hit["normal"], Vector3.ZERO)
+			var along := Vector3(flat.z, 0.0, -flat.x) * STANCE_FACE_HALF_WIDTH
+			if _steep_ground_at(hit["position"] + along, ray_up) and _steep_ground_at(hit["position"] - along, ray_up):
+				_clear_wall = true
+				_wall_n = _horizontal(hit["normal"], _wall_n)
+				return
+
+
+## True when the ground straight below (x, z) of `spot`, found from `ray_up` above its height, is steeper than the grip.
+func _steep_ground_at(spot: Vector3, ray_up: float) -> bool:
+	_sight.from = Vector3(spot.x, spot.y + ray_up, spot.z)
+	_sight.to = Vector3(spot.x, spot.y - ray_up, spot.z)
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(_sight)
+	rays_this_tick += 1
+	return not hit.is_empty() and _is_wall(hit["normal"])
+
+
 ## A surface steeper than the build's grip (plus the round collider's contact slack) is a wall.
 func _is_wall(normal: Vector3) -> bool:
 	return rad_to_deg(normal.angle_to(Vector3.UP)) > _max_slope + CONTACT_SLOPE_MARGIN_DEG
@@ -1455,6 +1499,12 @@ func _apply_move(delta: float) -> void:
 				origin = _b_origin
 				base_y = _b_base
 				tilt = _b_tilt
+		if OS.get_environment("DBG") != "" and not found:
+			var line: String = "DBGHOLD st=%d pos=%s |" % [state, str(cur_pos)]
+			for i in _legs.size():
+				var hip: Vector3 = _pose * _legs[i].hip_local
+				line += " %d:s%d r%.2f v%s e%.2f" % [i, _solver.state_of(i), hip.distance_to(_foot[i]) / _limits[i], "1" if _valid[i] else "0", _errors[i]]
+			print(line)
 		if found:
 			_held_state = 0
 		else:
@@ -1472,6 +1522,11 @@ func _apply_move(delta: float) -> void:
 		velocity_resets += 1
 	elif slid:
 		_velocity_h = actual
+	if slid:
+		_slide_n = _wall_n
+		_slide_ticks = SLIDE_MEMORY_TICKS
+	else:
+		_slide_ticks = maxi(_slide_ticks - 1, 0)
 	velocity = actual
 	var actual_rate: float = rad_to_deg(yaw - _yaw) / delta
 	if wall_hit and absf(_yaw_rate_cmd) > 0.0001:
@@ -1533,6 +1588,9 @@ var _b_rise: float = 0.0
 var _b_pitch: float = 0.0
 ## Why the last tick held the whole pose (a `_try_fraction` code), 0 when it moved.
 var _held_state: int = 0
+## Ticks left of the memory of the last slide, and its wall normal: the legs lead along the face, not into it.
+var _slide_ticks: int = 0
+var _slide_n: Vector3 = Vector3.ZERO
 ## The push-up the last tick applied (telemetry: pop on crests).
 var _push_rise: float = 0.0
 var max_push_rise: float = 0.0
@@ -1547,17 +1605,22 @@ var _ahead_weight: float = PITCH_AHEAD_WEIGHT
 
 ## Hips and colliders against the ground at a pose: raise for hip clearance, then pitch (toward the contact, by the
 ## smallest angle that clears) and raise until nothing overlaps; hips are read again after a pitch or raise. Returns the
-## final overlap state (0 clear, 1 ground, 2 wall) and fills `_r_*`. Ground steeper than the grip never raises the
+## final overlap state (0 clear, 1 ground, 2 wall) and fills `_r_*` (`may_pitch` false raises only: a spawn keeps the
+## tilt of the ground under its feet). Ground steeper than the grip never raises the
 ## body: it is a wall. A rise beyond `rise_cap` is not applied: the state stays 1 and `_r_need` says how much it needs.
-func _resolve(origin: Vector3, base_y: float, yaw: float, tilt: Vector3, rise_cap: float = 10.0) -> int:
+func _resolve(
+	origin: Vector3, base_y: float, yaw: float, tilt: Vector3, rise_cap: float = 10.0, may_pitch: bool = true
+) -> int:
 	var applied: float = 0.0
 	var tilt_in: Vector3 = tilt
 	var state: int = 0
-	var pitched: bool = false
+	var pitched: bool = not may_pitch
 	var across: Vector3 = (Basis(Vector3.UP, yaw) * Vector3.RIGHT).normalized()
 	_r_need = 0.0
 	for pass_index in RESOLVE_PASSES:
 		var rise: float = _clearance_rise(pose_transform(origin, yaw, tilt))
+		if not _clear_wall and pass_index == 0:
+			_stance_on_wall(pose_transform(origin, yaw, tilt))
 		if _clear_wall:
 			_store_resolved(origin, base_y, tilt, tilt_in, applied)
 			return 2
@@ -1691,6 +1754,9 @@ func _search_fraction(first_state: int, first_need: float, rise_cap: float, trie
 		else:
 			high = f
 			var shrink: float = 0.5
+			if state == 4:
+				# Out of reach: the feet allow little, and the smallest fractions are the ones that pass.
+				shrink = REACH_SHRINK
 			if state == 1 and _r_need > rise_cap:
 				shrink = clampf(rise_cap / _r_need * FRACTION_SHRINK, 0.2, 0.9)
 			elif state == 3 and _r_rise > rise_cap:
@@ -1712,7 +1778,7 @@ func _slide_along_wall(cur_pos: Vector3, motion: Vector3, rise_cap: float) -> in
 		var into: float = moved.dot(_wall_n)
 		if into >= 0.0:
 			break
-		moved -= _wall_n * into
+		moved -= _wall_n * into * SLIDE_STANDOFF
 		_g_origin = Vector3(cur_pos.x + moved.x, cur_pos.y, cur_pos.z + moved.z)
 		state = _try_fraction(1.0, rise_cap)
 		if state != 2:

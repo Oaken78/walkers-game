@@ -170,6 +170,14 @@ var patch_gap: float:
 		if _lane == LANE_TALUS:
 			return _walker.global_position.z + TALUS_CORNER_ALONG
 		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK)
+## True while any collider of the walker overlaps the world (spawn checks).
+var walker_overlapping: bool:
+	get:
+		return _walker.is_overlapping_world()
+## Angle between the body's up axis and the normal of the plane through all its feet (the ground it stands on; degrees).
+var tilt_vs_ground_deg: float:
+	get:
+		return _tilt_vs_ground()
 ## True while the orbit camera recentres behind the walker (a spawn restores it after an abeam view).
 var orbit_recentering: bool:
 	get:
@@ -470,9 +478,10 @@ func use_build(build_name: String) -> void:
 	_walker.apply_build(build)
 
 
-## Teleports the walker to the start of a lane, facing -Z. Telemetry keeps its numbers (call reset() on it).
-func spawn_at(lane: String, offset_z: float = 0.0) -> void:
-	var origin: Vector3 = _spawn_point(lane) + Vector3(0.0, 0.0, offset_z)
+## Teleports the walker to the start of a lane, facing -Z (turned `heading_deg` to the left, and `offset_x` m to the
+## right of the lane's start). Telemetry keeps its numbers (call reset() on it).
+func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, offset_x: float = 0.0) -> void:
+	var origin: Vector3 = _spawn_point(lane) + Vector3(offset_x, 0.0, offset_z)
 	if origin.y < -100.0:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
@@ -482,7 +491,7 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 	hover_inside_ticks = 0
 	foot_rise_max = -INF
 	root_rise_max = -INF
-	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
+	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane) + deg_to_rad(heading_deg)), origin))
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
@@ -493,6 +502,16 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 	for i in _walker.leg_count():
 		_last_plant[i] = _walker.foot_position(i)
 	mark()
+
+
+## Prints the distance moved since mark() (report numbers: `MOVED label metres`).
+func log_moved(label: String) -> void:
+	print("MOVED %s %.3f" % [label, moved_since_mark])
+
+
+## Prints whether the walker overlaps the world and how far its tilt is from the ground under it (spawn checks).
+func log_spawn_state(label: String) -> void:
+	print("SPAWNSTATE %s overlapping=%s tilt_vs_ground_deg=%.2f" % [label, str(walker_overlapping), tilt_vs_ground_deg])
 
 
 func mark() -> void:
@@ -898,6 +917,14 @@ func _foot_min_height() -> float:
 	for box in _foot_boxes():
 		low = minf(low, box.size.y * scale_1080)
 	return low
+
+
+func _tilt_vs_ground() -> float:
+	var feet := PackedVector3Array()
+	for i in _walker.leg_count():
+		feet.append(_walker.foot_position(i))
+	var plane: Plane = WalkerBody.fit_plane(feet)
+	return rad_to_deg(_walker.body_pose().basis.y.angle_to(plane.normal))
 
 
 func _frame_percentile(fraction: float) -> float:

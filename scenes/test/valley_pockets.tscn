@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/test/valley_pockets.gd" id="1_pockets"]
+[ext_resource type="PackedScene" path="res://scenes/world/valley.tscn" id="2_valley"]
+[ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="3_walker"]
+[ext_resource type="Script" path="res://scripts/walker/walker_telemetry.gd" id="4_telemetry"]
+
+[node name="ValleyPockets" type="Node3D"]
+script = ExtResource("1_pockets")
+
+[node name="Valley" parent="." instance=ExtResource("2_valley")]
+
+[node name="Walker" parent="." instance=ExtResource("3_walker")]
+unique_name_in_owner = true
+
+[node name="Telemetry" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_telemetry")
+
+[node name="Camera" type="Camera3D" parent="."]
+current = true

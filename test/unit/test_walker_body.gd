@@ -338,3 +338,31 @@ func test_rest_stance_meets_every_gdd_5_target_at_once() -> void:
 		var upper: Vector3 = solution.knee - hip
 		var upper_deg: float = rad_to_deg(atan2(upper.y, Vector2(upper.x, upper.z).length()))
 		assert_gte(upper_deg, 15.0, "upper bone, reach %s" % reach)
+
+
+func test_horizontal_is_the_flat_unit_direction_of_a_normal() -> void:
+	var flat: Vector3 = WalkerBody._horizontal(Vector3(0.6, 0.8, 0.0), Vector3.ZERO)
+	assert_almost_eq(flat.x, 1.0, 0.0001)
+	assert_almost_eq(flat.y, 0.0, 0.0001)
+	assert_almost_eq(flat.z, 0.0, 0.0001)
+
+
+func test_horizontal_falls_back_when_the_normal_points_straight_up() -> void:
+	var fallback := Vector3(0.0, 0.0, 1.0)
+	assert_eq(WalkerBody._horizontal(Vector3.UP, fallback), fallback)
+
+
+func test_telemetry_percentiles_pick_the_sorted_sample_at_that_rank() -> void:
+	var telemetry := WalkerTelemetry.new()
+	for ms in [5.0, 1.0, 3.0, 2.0, 4.0, 10.0, 9.0, 8.0, 7.0, 6.0]:
+		telemetry._tick_ms.append(ms)
+	assert_almost_eq(telemetry.tick_percentile_ms(0.5), 5.0, 0.0001)
+	assert_almost_eq(telemetry.tick_p95_ms, 10.0, 0.0001)
+	assert_almost_eq(telemetry.tick_max_ms, 10.0, 0.0001)
+	telemetry.free()
+
+
+func test_telemetry_percentile_is_zero_without_samples() -> void:
+	var telemetry := WalkerTelemetry.new()
+	assert_eq(telemetry.tick_p99_ms, 0.0)
+	telemetry.free()

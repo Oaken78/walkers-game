@@ -105,3 +105,63 @@ func test_scout_pressed_into_a_wall_backs_off_again() -> void:
 	simulate(walker, 120, 1.0 / 60.0)
 	Input.action_release("move_back")
 	assert_gt(walker.global_position.distance_to(at_wall), 1.0, "moved away from the wall")
+
+
+func _wall_walker(build: WalkerBuild) -> WalkerBody:
+	var root := _world()
+	add_child_autofree(root)
+	var walker: WalkerBody = WALKER_SCENE.instantiate()
+	root.add_child(walker)
+	walker.apply_build(build)
+	return walker
+
+
+func _add_block(walker: WalkerBody, height: float) -> void:
+	var block := StaticBody3D.new()
+	block.collision_layer = 1
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(10.0, height, 4.0)
+	shape.shape = box
+	block.add_child(shape)
+	block.position = Vector3(0.0, height * 0.5, -7.0)
+	walker.get_parent().add_child(block)
+
+
+func test_wall_probe_calls_a_block_taller_than_the_step_up_a_wall() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	_add_block(walker, 1.0)
+	var step_up: float = walker.stats()["step_up"]
+	assert_gt(1.0, step_up, "the block is taller than the Scout's step-up")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	# A contact low on the block's front face (z = -5), normal toward the walker.
+	assert_true(walker._contact_is_wall(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.2, -5.0)))
+
+
+func test_wall_probe_steps_onto_a_block_lower_than_the_step_up() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	_add_block(walker, 0.4)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_false(walker._contact_is_wall(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.2, -5.0)))
+
+
+func test_wall_probe_answers_the_same_for_a_slope_contact_as_for_the_face_above_it() -> void:
+	# The contact's own height is not the obstacle's height: a contact 0.5 m up a 1.0 m face is still a wall.
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	_add_block(walker, 1.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_true(walker._contact_is_wall(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.5, -5.0)))
+	assert_true(walker._contact_is_wall(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.05, -5.0)))
+
+
+func test_overlap_state_is_a_wall_for_a_block_the_body_stands_inside() -> void:
+	var walker: WalkerBody = _wall_walker(WalkerBuild.scout())
+	_add_block(walker, 1.5)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 0.8, -4.0)))
+	walker.global_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 0.8, -5.0))
+	assert_true(walker.is_overlapping_world())
