@@ -55,7 +55,7 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Body turn rate (A/D, tank controls) | 120 deg/s, reached in 0.1 s | 60 - 180 deg/s |
 | Strafe speed | 0.75 x top speed | fixed ratio |
 | Step trigger: foot error from rest target | > 0.5 x leg reach | fixed ratio |
-| Step duration | 0.18 s @ top speed, 0.30 s near idle | scales with speed |
+| Step duration | 0.18 s @ top speed, 0.30 s near idle, x sqrt(mean leg reach / 1.0 m) (Strider about 0.23 s, Crawler about 0.14 s); 4-leg wave steps shorter, tuned at T03 | scales with speed and leg reach |
 | Foot lift height | 0.25 x leg reach | fixed ratio |
 | Planted foot drift (sliding) | <= 2 cm per step | hard limit (Pillar 2) |
 | Legs airborne at once | <= half (6 legs: alternating tripod) | 4 legs: max 1 airborne (wave gait) |
@@ -63,7 +63,7 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Body tilt follows terrain | <= 25 deg, smoothing 0.12 s | |
 | Body bob amplitude while walking | 3-5 cm | |
 | Max walkable slope | 35 deg | 25 - 45 deg |
-| Max step-up height | 0.6 x leg reach (Scout: 0.6 m) | 0.35 - 1.0 m |
+| Max step-up height | 0.6 x leg reach (Scout: 0.6 m); step-down at least as far: the body lowers toward a lower foothold first | 0.35 - 1.0 m |
 | Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
 | Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
@@ -464,6 +464,9 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Camera: rock beats the 2 m arm minimum; with rock closer than 2 m the arm goes shorter | Klas, from the T04 reviews: a camera inside rock reads as a bug, a close-up of your own walker reads as intentional | Keep 2 m always and accept seeing inside rock |
 | 2026-10-09 | Recentring pauses while `aim` is held; its 1.5 s timer restarts on release | Klas, from the T04 playtest review: strafing while waiting out a drone wind-up would swing the view off the drone | Also pause after firing (needs T06); no pause |
 | 2026-10-09 | Accepted for M0: one near foot may leave the frame at aim FOV 50; revisit at the T03/T04 gate | Klas: aiming is about the target, and every foot reads at FOV 70 | Raise or pull back the camera while aiming |
+| 2026-10-09 | Walkers descend what they climb: step-down >= step-up; the body lowers toward a lower foothold before the feet reach for it | Klas, from the T03 code review: with a step-down of about 0.3 x reach a Strider is trapped in the 0.8 m ledge pocket and a Crawler on any 0.3 m boulder | Walk off the edge and drop; keep the limit and give ledges ramps |
+| 2026-10-09 | Step duration scales with the build's mean leg reach: x sqrt(reach / 1.0 m) | Klas, from the T03 playtest review: every build stepped on the same beat; long legs should lope and short legs scuttle (Pillar 1) | One 0.18 s step for every build |
+| 2026-10-09 | The 4-leg wave steps faster, and the 4-leg gait_factor is then set from the measured sustained speed, so the stat panel tells the truth | Klas, from the T03 playtest review: the quad covered about 55 % of its 3.1 m/s stat and lurched at nearly every step | Keep the lurch and only fix the stat; trot (two diagonal pairs) |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
