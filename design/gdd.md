@@ -478,6 +478,11 @@ World palette, from the 50 % style mix (look-test mockup):
 - **Boot:** loads straight into the workshop with a valid Scout build. Main menu comes later (M2).
 - **Workshop:** part list on the left, walker on a stand in the centre, stat panel with deltas on the right,
   and an "Exit [Tab]" button that is disabled with its reason shown when the build is invalid.
+  - **Deltas show better or worse, not just up or down.** A better change has a filled accent mark; a worse change
+    has a hollow neutral-grey mark (>= 0.25 luma apart); the sign keeps the direction. Higher is better for speed,
+    turn, step-up, climb, slope, HP and DPS; lower is better for spread and load.
+  - **A blocked exit answers:** Tab or a click on the disabled exit pulses the reason text for 0.3 s, and the Load row
+    shows a "!" while load is above 1.0.
 - **Field HUD:**
   - **Aim: a camera dot and a world-space weapon reticle.** The camera is free, so the screen centre shows where
     you look, and the reticle shows where the guns will hit. The gap between them is the "turn this way" cue.
@@ -656,6 +661,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | T16 round 2: the support-margin rule is enforced, not only reported: a leg hangs only when the centre of mass stays 0.16 x mean reach (0.12 hysteresis above the 0.1 floor) inside the other feet, the body first moves toward the middle of those feet, and a pose that would cut the margin below its floor is not taken; a leg that waits 1.5 s with the body unable to move goes anyway and is counted (`margin_breaks`) | Lead: the margin gate had been switched off to dodge a Crawler descent deadlock | Report the margin only |
 | 2026-10-09 | T16 round 2: the climb tolerance is 0.66 % of the mean reach (1 cm on the Strider, 0.4 cm on the Crawler), not a flat 3 cm, and a step-down foothold lies 0.30 m (was 0.22) out from the face | A flat 3 cm let the Crawler climb a 0.55 m ledge it cannot step down from (the descent lowers the body 0.32 x reach only); the Crawler's climb is 0.50 m on the 5 cm lane | Lower the body further for the descent |
 | 2026-10-09 | Aim marks: the dashed at-limit ring shows only when the dot is on an enemy or `fire` is held or was released < 0.5 s ago; the ring flashes player body white for 0.06 s on a hit | Lead, from the T06 playtest critique: at the default pitch 20 the dot lands about 6 m ahead and the guns reach the ground only at about 12 m, so the ring was dashed nearly all the time while walking and the state taught nothing; at drone range (12-15 m) the 28 px ring covers most of the target, hiding the target's own hit flash. Klas can tune both at the playtest | Lower the elevation limit to about -25 deg (barrels nod at the feet while walking, changes 8.3); always-on dashed ring; a reduced-opacity limited ring |
+| 2026-10-09 | Workshop stat deltas mark better (filled accent) or worse (hollow grey), with the sign kept for direction; a blocked exit pulses its reason and flags the Load row | Lead, from the T09 playtest critique: with ▲/▼ alone the long-leg pair read ▲▼▲▲▼▲▼ while better/worse was better, worse, better, better, worse, worse, better (spread up is worse, load down is better), so a glance at the trade-off misled; the trade-off read is the point of the workshop (Pillar 1). Klas can tune it at the playtest | Colour-only good/bad (fails grayscale and rule 2); arrows only |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
