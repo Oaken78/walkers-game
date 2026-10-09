@@ -18,6 +18,8 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
   fallback) and adds the `gait_course__pitch_low` / `__pitch_high` shots. Then run `gait_course` and
   `build_contrast` plus a playtest-critic pass, and Klas
   plays the tank controls (fallback: body turns to camera yaw). If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
+- T13 (walker hardening from the T03 review) starts after the gate rig is on main and runs while Klas plays
+  the gate.
 - After the gate: T06, T07, T08 and T09 (max 3 devs at once). Then T11. T12 integrates last, including the HUD.
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
@@ -37,6 +39,7 @@ Status: ready, in-progress, review-passed, done.
 | T08 | Salvage economy, scrap nodes, wreck cache, repair on bank, recall | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd | 3 | | |
 | T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
+| T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | ready | |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 
 ## Notes for packets not yet written (from the T01-T05 reviews, 2026-10-09)
@@ -55,8 +58,8 @@ Status: ready, in-progress, review-passed, done.
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
   Body tilt now follows the slope up to the build's grip (a Crawler climbs the talus at 39 deg), so decide whether the
   turret's pitch limits are body- or world-relative; body-relative -10..45 deg cannot aim level on the talus.
-- T06/T07: the walker's movement collider is a wide cylinder (about 4.3 m across on the Strider with arched legs). Hits use a
-  chassis-sized hurtbox instead, so shots between the legs miss (M0 criterion 5).
+- T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
+  chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
