@@ -38,9 +38,12 @@ const PATCH_ALONG: float = 45.0
 ## Two swells across the whole lane (steady slope the plane fit tilts to; every build can cross them).
 const SWELLS_ALONG: Array[float] = [28.0, 62.0]
 ## Smooth cosine swells: crest height and half-length (steepest flank = crest x PI / (2 x half-length) = ~21 deg).
-const SWELL_CREST: float = 0.0
+const SWELL_CREST: float = 0.88
 const SWELL_FLANK: float = 3.6
-const BOULDER_COUNT: int = 28
+## Boulders (0.3-0.9 m high) fill a strip right of the centre line: a Strider run along it goes through the field.
+const BOULDER_COUNT: int = 30
+const BOULDER_X_MIN: float = 5.5
+const BOULDER_X_MAX: float = 8.5
 const LEDGE_WIDTH: float = 10.0
 const LEDGE_FLAT_RUN: float = 6.0
 const LEDGE_DECK_DEPTH: float = 6.0
@@ -95,10 +98,32 @@ var edge_margin_m: float:
 var stopped_before_face: bool:
 	get:
 		return _stopped_before_face()
-## Highest block the walker ended up on or past, by z (pocket lane: 1 when it is beyond the block).
+## Every foot is past the back face of the pocket block.
 var past_pocket: bool:
 	get:
-		return _walker != null and _walker.global_position.z < _pocket_back_z - 1.0
+		return _all_feet_beyond(_pocket_back_z - 0.5)
+## Every foot is past the far side of the 29 degree patch (A) or the 38 degree patch (B).
+var past_patch: bool:
+	get:
+		return _all_feet_beyond(-(PATCH_ALONG + PATCH_FLANK) - 0.5)
+## Every foot is in front of the wall face (a foot behind a thin wall means a ray started above it).
+var feet_before_wall: bool:
+	get:
+		if _walker == null or _walker.gait() == null:
+			return false
+		for i in _walker.leg_count():
+			if _walker.foot_position(i).z <= WALL_Z + 0.5:
+				return false
+		return true
+## Distance from the walker to the foot of the patch flank (positive while still in front of it).
+var patch_gap: float:
+	get:
+		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK) if _walker != null else 0.0
+## Steps per leg per second of the reference run (record_steps_ref) and the current run's ratio to it.
+var steps_ref: float = 0.0
+var steps_ratio: float:
+	get:
+		return _telemetry.steps_per_s / steps_ref if steps_ref > 0.0 else 0.0
 
 var _walker: WalkerBody
 var _telemetry: WalkerTelemetry
@@ -115,6 +140,8 @@ var _stripe_material: StandardMaterial3D
 var _boulder_material: StandardMaterial3D
 var _noise: FastNoiseLite
 var _first_tick: bool = true
+var _sun: DirectionalLight3D
+var _freeze_at: float = -1.0
 var _camera_mode: String = "follow"
 var _autopilot: bool = false
 var _autopilot_time: float = 0.0
@@ -151,6 +178,12 @@ func _physics_process(delta: float) -> void:
 		_run_autopilot(delta)
 	_track_step_up()
 	_track_yaw_overshoot()
+	if _freeze_at >= 0.0:
+		for i in _walker.leg_count():
+			if _walker.gait().swing_progress(i) >= _freeze_at:
+				get_tree().paused = true
+				_freeze_at = -1.0
+				break
 
 
 func _process(_delta: float) -> void:
@@ -168,8 +201,10 @@ func _process(_delta: float) -> void:
 		return
 	if _camera_mode == "side":
 		# Side-on, level with the legs: a lifted foot shows as a gap under the pad.
-		var side := Vector3(camera_distance, 0.9, 0.0)
-		_camera.global_position = focus + Basis(Vector3.UP, yaw) * side
+		var right: Vector3 = Basis(Vector3.UP, yaw) * Vector3.RIGHT
+		var toward_sun: Vector3 = _sun.global_transform.basis.z
+		var lit_side: float = 1.0 if right.dot(toward_sun) >= 0.0 else -1.0
+		_camera.global_position = focus + right * (camera_distance * lit_side) + Vector3(0.0, 0.9, 0.0)
 		_camera.look_at(focus + Vector3(0.0, 0.3, 0.0), Vector3.UP)
 		return
 	var pitch: float = deg_to_rad(CAMERA_PITCH_DEG)
@@ -226,7 +261,6 @@ func spawn_at(lane: String) -> void:
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
 		_last_plant[i] = _walker.foot_position(i)
-	_autopilot_center = origin.x
 	mark()
 
 
@@ -249,12 +283,28 @@ func release_all() -> void:
 
 
 ## Holds the heading on a slow weave around the lane centre (turns mixed in, lateral drift corrected).
-func autopilot(enabled: bool) -> void:
+func autopilot(enabled: bool, lane_offset: float = 0.0, amplitude_deg: float = 35.0) -> void:
 	_autopilot = enabled
 	_autopilot_time = 0.0
+	autopilot_amplitude_deg = amplitude_deg
+	_autopilot_center = float(LANE_X[LANE_BUMPS]) + lane_offset if enabled and _lane_key() == LANE_BUMPS else _walker.global_position.x
 	if not enabled:
 		Input.action_release("turn_left")
 		Input.action_release("turn_right")
+
+
+## Pauses the game the first tick any leg's swing reaches `progress` (a mid-stride still); resume() continues.
+func arm_swing_freeze(progress: float) -> void:
+	_freeze_at = progress
+
+
+func resume() -> void:
+	get_tree().paused = false
+
+
+## Remembers the current run's steps per leg per second as the reference for steps_ratio.
+func record_steps_ref() -> void:
+	steps_ref = _telemetry.steps_per_s
 
 
 func set_camera_mode(mode: String, distance: float = 8.0) -> void:
@@ -375,13 +425,15 @@ func _spawn_point(lane: String) -> Vector3:
 			return Vector3(LANE_X[LANE_BUMPS] - PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
 		LANE_PATCH_B:
 			return Vector3(LANE_X[LANE_BUMPS] + PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
+		"boulders":
+			return Vector3(LANE_X[LANE_BUMPS] + (BOULDER_X_MIN + BOULDER_X_MAX) * 0.5, SPAWN_Y, -6.0)
 	if not LANE_X.has(lane):
 		return Vector3(0.0, -1000.0, 0.0)
 	return Vector3(LANE_X[lane], SPAWN_Y, SPAWN_Z)
 
 
 func _lane_key() -> String:
-	if _lane == LANE_PATCH_A or _lane == LANE_PATCH_B:
+	if _lane == LANE_PATCH_A or _lane == LANE_PATCH_B or _lane == "boulders":
 		return LANE_BUMPS
 	return _lane
 
@@ -480,6 +532,15 @@ func _run_autopilot(delta: float) -> void:
 		Input.action_release("turn_right")
 
 
+func _all_feet_beyond(z: float) -> bool:
+	if _walker == null or _walker.gait() == null:
+		return false
+	for i in _walker.leg_count():
+		if _walker.foot_position(i).z >= z:
+			return false
+	return true
+
+
 func _remove_pair() -> void:
 	if _pair_walker != null:
 		_pair_walker.queue_free()
@@ -515,6 +576,7 @@ func _build_environment() -> void:
 	world_environment.environment = environment
 	add_child(world_environment)
 	var sun := DirectionalLight3D.new()
+	_sun = sun
 	sun.rotation_degrees = Vector3(-52.0, -35.0, 0.0)
 	sun.light_energy = 1.1
 	sun.shadow_enabled = true
@@ -578,14 +640,11 @@ func _terrain_height(lx: float, along: float) -> float:
 	hills *= smoothstep(3.0, 9.0, along)
 	var mask: float = maxf(_patch_mask(lx, along, -PATCH_X), _patch_mask(lx, along, PATCH_X))
 	var swell: float = 0.0
-	var swell_mask: float = 0.0
 	for centre in SWELLS_ALONG:
 		var gap: float = absf(along - centre)
 		if gap < SWELL_FLANK:
 			swell += SWELL_CREST * 0.5 * (1.0 + cos(PI * gap / SWELL_FLANK))
-		swell_mask = maxf(swell_mask, 1.0 - smoothstep(SWELL_FLANK, SWELL_FLANK + 1.5, gap))
 	swell *= smoothstep(0.0, 4.0, minf(lx + BUMP_WIDTH * 0.5, BUMP_WIDTH * 0.5 - lx))
-	hills *= 1.0 - swell_mask
 	return (
 		swell
 		+ hills * (1.0 - mask)
@@ -595,8 +654,9 @@ func _terrain_height(lx: float, along: float) -> float:
 
 
 func _patch_mask(lx: float, along: float, cx: float) -> float:
-	var across: float = 1.0 - smoothstep(PATCH_HALF_WIDTH, PATCH_HALF_WIDTH + 1.5, absf(lx - cx))
-	var lengthwise: float = 1.0 - smoothstep(PATCH_FLANK, PATCH_FLANK + 1.5, absf(along - PATCH_ALONG))
+	var across: float = 1.0 - smoothstep(PATCH_HALF_WIDTH, PATCH_HALF_WIDTH + 4.0, absf(lx - cx))
+	# Hills fade out over 6 m before the patch (a short fade would leave a ditch at the foot of the flank).
+	var lengthwise: float = 1.0 - smoothstep(PATCH_FLANK, PATCH_FLANK + 6.0, absf(along - PATCH_ALONG))
 	return across * lengthwise
 
 
@@ -677,10 +737,10 @@ func _build_boulders() -> void:
 	rng.seed = TERRAIN_SEED
 	var placed: int = 0
 	while placed < BOULDER_COUNT:
-		var lx: float = rng.randf_range(8.0, BUMP_WIDTH * 0.5 - 1.0) * (1.0 if rng.randf() < 0.5 else -1.0)
+		var lx: float = rng.randf_range(BOULDER_X_MIN, BOULDER_X_MAX)
 		var along: float = rng.randf_range(10.0, BUMP_LENGTH - 4.0)
-		var radius: float = rng.randf_range(0.2, 0.65)
-		if absf(along - PATCH_ALONG) < PATCH_FLANK + 2.0 and absf(absf(lx) - PATCH_X) < PATCH_HALF_WIDTH + 1.5:
+		var radius: float = rng.randf_range(0.2, 0.6)
+		if absf(along - PATCH_ALONG) < PATCH_FLANK + 2.0:
 			continue
 		placed += 1
 		var base: float = _terrain_height(lx, along)

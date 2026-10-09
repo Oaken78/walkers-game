@@ -39,7 +39,9 @@
     "node": ".",
     "method": "autopilot",
     "args": [
-     true
+     true,
+     -9.5,
+     12.0
     ]
    }
   },
@@ -79,6 +81,15 @@
    "wait_frames": 20
   },
   {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_course scout bumps 20s (stat top 4.500)"
+    ]
+   }
+  },
+  {
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "max_drift_m",
@@ -100,6 +111,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
@@ -137,18 +156,17 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "distance_m",
+    "prop": "max_foot_slope_deg",
     "op": ">=",
-    "value": 63.0
+    "value": 28.0
    }
   },
   {
-   "call": {
+   "assert_prop": {
     "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "gait_course scout bumps 20s (stat top 4.500)"
-    ]
+    "prop": "distance_m",
+    "op": ">=",
+    "value": 63.0
    }
   },
   {
@@ -331,6 +349,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
@@ -415,6 +441,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -467,6 +501,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -508,7 +550,9 @@
     "node": ".",
     "method": "autopilot",
     "args": [
-     true
+     true,
+     0.0,
+     20.0
     ]
    }
   },
@@ -548,6 +592,15 @@
    "wait_frames": 20
   },
   {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_course crawler bumps 20s (stat top 3.807)"
+    ]
+   }
+  },
+  {
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "max_drift_m",
@@ -569,6 +622,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
@@ -613,15 +674,6 @@
   },
   {
    "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "gait_course crawler bumps 20s (stat top 3.807)"
-    ]
-   }
-  },
-  {
-   "call": {
     "node": ".",
     "method": "use_build",
     "args": [
@@ -653,7 +705,9 @@
     "node": ".",
     "method": "autopilot",
     "args": [
-     true
+     true,
+     0.0,
+     20.0
     ]
    }
   },
@@ -693,6 +747,15 @@
    "wait_frames": 20
   },
   {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_course quad bumps 20s (stat top 3.124)"
+    ]
+   }
+  },
+  {
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "max_drift_m",
@@ -714,6 +777,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
@@ -749,133 +820,11 @@
    }
   },
   {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "gait_course quad bumps 20s (stat top 3.124)"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "scout_short_pair"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn_at",
-    "args": [
-     "bumps"
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "reset",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "autopilot",
-    "args": [
-     true
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 1200
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "autopilot",
-    "args": [
-     false
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "max_drift_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "airborne_violations",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "max_plant_gap_m",
-    "op": "<=",
-    "value": 0.02
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "edge_margin_m",
+    "prop": "distance_m",
     "op": ">=",
-    "value": 3.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "longest_hold_s",
-    "op": "<",
-    "value": 1.0
-   }
-  },
-  {
-   "call": {
-    "node": "%Telemetry",
-    "method": "report",
-    "args": [
-     "gait_course scout_short_pair bumps 20s (stat top 4.500)"
-    ]
+    "value": 43.736
    }
   },
   {
@@ -985,6 +934,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
@@ -1110,14 +1067,16 @@
    "wait_frames": 150
   },
   {
-   "expect_signal": {
-    "node": "%Walker",
-    "signal": "step_started",
-    "timeout_frames": 60
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
    }
   },
   {
-   "wait_frames": 4
+   "wait_frames": 8
   },
   {
    "screenshot": "midstride"
@@ -1126,6 +1085,13 @@
    "call": {
     "node": ".",
     "method": "log_pads",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
     "args": []
    }
   },
@@ -1151,6 +1117,161 @@
   },
   {
    "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout_short_pair"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "bumps"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     true,
+     0.0,
+     20.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 1200
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "autopilot",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_course scout_short_pair bumps 20s (stat top 4.423)"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_plant_gap_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "edge_margin_m",
+    "op": ">=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_hold_s",
+    "op": "<",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_tilt_deg",
+    "op": ">=",
+    "value": 15.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_tilt_deg",
+    "op": "<=",
+    "value": 25.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "distance_m",
+    "op": ">=",
+    "value": 61.922
+   }
   },
   {
    "assert_no_errors": true

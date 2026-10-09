@@ -36,6 +36,14 @@ var distance_m: float = 0.0
 ## Largest gap between a planted foot and the ground straight below it, measured when the foot plants.
 var max_plant_gap_m: float = 0.0
 var max_rays_per_tick: int = 0
+## Planted foot to hip, over that leg's reach: the 0.99 rule (IK never clamps, so drift alone cannot catch it).
+var max_planted_reach_ratio: float = 0.0
+## Lowest knee above its hip over the run, / reach.
+var min_knee_rise_ratio: float = INF
+## Landings per leg per second since reset.
+var steps_per_s: float = 0.0
+## Steepest ground under any planted foot since reset.
+var max_foot_slope_deg: float = 0.0
 var ticks: int = 0
 
 var walker: WalkerBody
@@ -102,6 +110,10 @@ func reset() -> void:
 	distance_m = 0.0
 	max_plant_gap_m = 0.0
 	max_rays_per_tick = 0
+	max_planted_reach_ratio = 0.0
+	min_knee_rise_ratio = INF
+	steps_per_s = 0.0
+	max_foot_slope_deg = 0.0
 	ticks = 0
 	_was_input = false
 	_move_start_tick = -1
@@ -150,6 +162,10 @@ func report(label: String = "") -> void:
 		"distance_m": snappedf(distance_m, 0.01),
 		"max_plant_gap_m": snappedf(max_plant_gap_m, 0.0001),
 		"max_rays_per_tick": max_rays_per_tick,
+		"max_planted_reach_ratio": snappedf(max_planted_reach_ratio, 0.0001),
+		"min_knee_rise_ratio": snappedf(minf(min_knee_rise_ratio, 9.0), 0.0001),
+		"steps_per_s": snappedf(steps_per_s, 0.001),
+		"max_foot_slope_deg": snappedf(max_foot_slope_deg, 0.01),
 		"ticks": ticks,
 	}
 	if walker != null:
@@ -188,7 +204,10 @@ func _physics_process(delta: float) -> void:
 		_hold_run = 0
 	max_tilt_deg = maxf(max_tilt_deg, walker.tilt_degrees())
 	max_rays_per_tick = maxi(max_rays_per_tick, walker.max_rays_per_tick)
-	_track_height(walker.height_above_plane())
+	max_planted_reach_ratio = maxf(max_planted_reach_ratio, walker.max_planted_reach_ratio())
+	min_knee_rise_ratio = minf(min_knee_rise_ratio, walker.min_knee_rise_ratio())
+	steps_per_s = float(total_steps) / float(maxi(walker.leg_count(), 1)) / (float(ticks) * delta)
+	_track_height(walker.height_above_plane(), walker.last_bob)
 
 
 func _track_timings(delta: float, speed: float, input_now: bool) -> void:
@@ -256,11 +275,11 @@ func _measure_plant_gap(foot: Vector3) -> void:
 	max_plant_gap_m = maxf(max_plant_gap_m, absf(foot.y - ground.y))
 
 
-func _track_height(height: float) -> void:
+func _track_height(height: float, bob: float) -> void:
 	_height_ring[_height_index] = height
 	_height_index = (_height_index + 1) % HEIGHT_WINDOW_TICKS
 	_height_count = mini(_height_count + 1, HEIGHT_WINDOW_TICKS)
-	_bob_ring[_bob_index] = height
+	_bob_ring[_bob_index] = bob
 	_bob_index = (_bob_index + 1) % BOB_WINDOW_TICKS
 	_bob_count = mini(_bob_count + 1, BOB_WINDOW_TICKS)
 	var total: float = 0.0
@@ -289,7 +308,8 @@ func _on_build_applied() -> void:
 	reset()
 
 
-func _on_foot_planted(leg: int, _position: Vector3, _normal: Vector3) -> void:
+func _on_foot_planted(leg: int, _position: Vector3, normal: Vector3) -> void:
 	total_steps += 1
+	max_foot_slope_deg = maxf(max_foot_slope_deg, rad_to_deg(normal.angle_to(Vector3.UP)))
 	if leg < _steps.size():
 		_steps[leg] += 1

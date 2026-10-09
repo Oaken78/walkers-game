@@ -248,3 +248,63 @@ func test_hip_height_for_reach_gives_the_highest_hip_that_still_reaches() -> voi
 	# 1.0 m reach, foothold 0.6 m away horizontally and 0.5 m below the origin: hip may be 0.8 m above it.
 	assert_almost_eq(WalkerBody.hip_height_for_reach(-0.5, 0.6, 1.0), 0.3, 0.0001)
 	assert_eq(WalkerBody.hip_height_for_reach(0.0, 1.2, 1.0), -INF)
+
+
+## Arched leg (GDD 5): hip 0.5 x reach above the foot plane, bones 0.46 + 0.69 x reach, pole up plus 0.8 x the outward rest direction.
+func _arched_knee(reach: float, foot_x: float, foot_z: float) -> Vector3:
+	var hip := Vector3(0.0, 0.5 * reach, 0.0)
+	var foot := Vector3(foot_x * reach, 0.0, foot_z * reach)
+	var pole: Vector3 = Vector3.UP + Vector3.RIGHT * 0.8
+	var solution: TwoBoneIK.Solution = TwoBoneIK.solve(hip, foot, 0.46 * reach, 0.69 * reach, pole)
+	return solution.knee - hip
+
+
+func test_knee_rises_above_the_hip_by_the_gdd_targets_for_reach_0_6_1_0_and_1_6() -> void:
+	for reach in [0.6, 1.0, 1.6]:
+		# At rest: foot 0.5 x reach out from the hip.
+		assert_gte(_arched_knee(reach, 0.5, 0.0).y, 0.15 * reach, "rest, reach %s" % reach)
+		# 0.5 x reach fore-aft of rest.
+		assert_gte(_arched_knee(reach, 0.5, 0.5).y, 0.10 * reach, "forward, reach %s" % reach)
+		assert_gte(_arched_knee(reach, 0.5, -0.5).y, 0.10 * reach, "back, reach %s" % reach)
+		# Foot at 0.99 x reach from the hip (0.5 out, 0.5 down, the rest fore-aft).
+		var along: float = sqrt(0.99 * 0.99 - 0.5 * 0.5 - 0.5 * 0.5)
+		assert_gte(_arched_knee(reach, 0.5, along).y, 0.0, "0.99 reach, reach %s" % reach)
+
+
+func test_knee_never_flips_when_the_foot_passes_under_the_hip() -> void:
+	var reach: float = 1.0
+	var previous_side: float = 0.0
+	for step in range(-6, 7):
+		var foot_x: float = float(step) * 0.05
+		var knee: Vector3 = _arched_knee(reach, foot_x, 0.0)
+		assert_gt(knee.x, 0.0, "knee stays outward of the hip at foot x %s" % foot_x)
+		# The knee sits on the pole side of the hip-to-foot line (up and outward), never on the far side.
+		var hip := Vector3(0.0, 0.5, 0.0)
+		var chord: Vector3 = (Vector3(foot_x, 0.0, 0.0) - hip).normalized()
+		var pole: Vector3 = Vector3.UP + Vector3.RIGHT * 0.8
+		var off_chord: Vector3 = knee - chord * knee.dot(chord)
+		assert_gt(off_chord.dot(pole), 0.0, "pole side at foot x %s" % foot_x)
+		previous_side = signf(knee.x)
+	assert_ne(previous_side, 0.0)
+
+
+func test_foot_directly_below_the_hip_bends_the_knee_outward() -> void:
+	var knee: Vector3 = _arched_knee(1.0, 0.0, 0.0)
+	assert_gt(knee.x, 0.0, "outward")
+	assert_true(knee.is_finite())
+
+
+func test_step_time_is_quantized_to_whole_physics_ticks() -> void:
+	var tick: float = 1.0 / 60.0
+	# 0.139 s is 8.3 ticks: it lands on tick 8, just under so that tick lands it.
+	assert_almost_eq(WalkerBody.quantized_step_time(0.1394, tick), 8.0 * tick, 0.001)
+	assert_lt(WalkerBody.quantized_step_time(0.1394, tick), 8.0 * tick)
+	assert_almost_eq(WalkerBody.quantized_step_time(0.18, tick), 11.0 * tick, 0.001)
+	assert_almost_eq(WalkerBody.quantized_step_time(0.001, tick), tick, 0.001)
+
+
+func test_hip_hangs_half_its_own_reach_above_the_foot_plane() -> void:
+	# Medium body (mean reach 1.0): chassis underside 0.6 above the plane, a medium hip 0.5 above it.
+	assert_almost_eq(WalkerBody.hip_local_y(0.6, 1.0, 0.5, 1.0), -0.1, 0.0001)
+	# A short leg on a body with mean reach 0.867: hip 0.3 above the plane, underside 0.52.
+	assert_almost_eq(WalkerBody.hip_local_y(0.6, 0.867, 0.5, 0.6), -0.22, 0.001)

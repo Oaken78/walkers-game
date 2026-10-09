@@ -186,6 +186,14 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
+   }
+  },
+  {
    "call": {
     "node": "%Telemetry",
     "method": "report",
@@ -380,6 +388,14 @@
     "prop": "max_plant_gap_m",
     "op": "<=",
     "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_planted_reach_ratio",
+    "op": "<=",
+    "value": 0.991
    }
   },
   {
