@@ -72,7 +72,7 @@
                   {
                       "call":  {
                                    "args":  [
-                                                144,
+                                                120,
                                                 0,
                                                 false
                                             ],
@@ -91,7 +91,7 @@
                                }
                   },
                   {
-                      "wait_frames":  360
+                      "wait_frames":  300
                   },
                   {
                       "call":  {
@@ -103,7 +103,7 @@
                                }
                   },
                   {
-                      "wait_frames":  216
+                      "wait_frames":  180
                   },
                   {
                       "call":  {
@@ -117,7 +117,7 @@
                   {
                       "call":  {
                                    "args":  [
-                                                "walk_r144"
+                                                "walk_r120"
                                             ],
                                    "method":  "report",
                                    "node":  "ViewProbe"
@@ -126,11 +126,36 @@
                   {
                       "call":  {
                                    "args":  [
-                                                "walk_r144"
+                                                "walk_r120"
                                             ],
                                    "method":  "report_work",
                                    "node":  "ViewProbe"
                                }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r120"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
                   },
                   {
                       "assert_prop":  {
@@ -163,38 +188,6 @@
                                           "value":  0.1,
                                           "op":  "\u003c="
                                       }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-
-                                            ],
-                                   "method":  "toggle_frame_readout",
-                                   "node":  "/root/DevHarness"
-                               }
-                  },
-                  {
-                      "wait_frames":  12
-                  },
-                  {
-                      "assert_node":  "/root/DevHarness/FrameReadout",
-                      "exists":  true
-                  },
-                  {
-                      "screenshot":  "frame_readout"
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-
-                                            ],
-                                   "method":  "toggle_frame_readout",
-                                   "node":  "/root/DevHarness"
-                               }
-                  },
-                  {
-                      "assert_node":  "/root/DevHarness/FrameReadout",
-                      "exists":  false
                   },
                   {
                       "call":  {
@@ -272,7 +265,7 @@
                       "call":  {
                                    "args":  [
                                                 144,
-                                                0.5,
+                                                0,
                                                 false
                                             ],
                                    "method":  "set_rate",
@@ -316,7 +309,7 @@
                   {
                       "call":  {
                                    "args":  [
-                                                "walk_r144_uneven"
+                                                "walk_r144"
                                             ],
                                    "method":  "report",
                                    "node":  "ViewProbe"
@@ -325,11 +318,36 @@
                   {
                       "call":  {
                                    "args":  [
-                                                "walk_r144_uneven"
+                                                "walk_r144"
                                             ],
                                    "method":  "report_work",
                                    "node":  "ViewProbe"
                                }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r144"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
                   },
                   {
                       "assert_prop":  {
@@ -342,8 +360,282 @@
                   {
                       "assert_prop":  {
                                           "node":  "ViewProbe",
-                                          "prop":  "cam_speed_cv",
-                                          "value":  0.05,
+                                          "prop":  "cam_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "root_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "chassis_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                true
+                                            ],
+                                   "method":  "toggle_frame_readout",
+                                   "node":  "/root/DevHarness"
+                               }
+                  },
+                  {
+                      "wait_frames":  12
+                  },
+                  {
+                      "assert_node":  "/root/DevHarness/FrameReadout",
+                      "exists":  true
+                  },
+                  {
+                      "screenshot":  "frame_readout"
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "toggle_frame_readout",
+                                   "node":  "/root/DevHarness"
+                               }
+                  },
+                  {
+                      "assert_node":  "/root/DevHarness/FrameReadout",
+                      "exists":  false
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                true
+                                            ],
+                                   "method":  "set_paused",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "frames":  2,
+                      "key_tap":  "F9"
+                  },
+                  {
+                      "assert_node":  "/root/DevHarness/FrameReadout",
+                      "exists":  true
+                  },
+                  {
+                      "frames":  2,
+                      "key_tap":  "F9"
+                  },
+                  {
+                      "assert_node":  "/root/DevHarness/FrameReadout",
+                      "exists":  false
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                false
+                                            ],
+                                   "method":  "set_paused",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                165,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  412
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  248
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r165"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r165"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "walk_r165"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "arm_step_max",
+                                          "value":  0.01,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "cam_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "root_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "chassis_dev",
+                                          "value":  0.1,
                                           "op":  "\u003c="
                                       }
                   },
@@ -480,6 +772,31 @@
                                    "method":  "report_work",
                                    "node":  "ViewProbe"
                                }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_r144"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
                   },
                   {
                       "assert_prop":  {
@@ -518,164 +835,6 @@
                                           "node":  "ViewProbe",
                                           "prop":  "yaw_dev",
                                           "value":  0.1,
-                                          "op":  "\u003c="
-                                      }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-
-                                            ],
-                                   "method":  "release_all",
-                                   "node":  "GaitCourse"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                0
-                                            ],
-                                   "method":  "set_mouse",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                60,
-                                                0,
-                                                false
-                                            ],
-                                   "method":  "set_rate",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                0
-                                            ],
-                                   "method":  "set_mouse",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-
-                                            ],
-                                   "method":  "release_all",
-                                   "node":  "GaitCourse"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                "flat"
-                                            ],
-                                   "method":  "spawn_at",
-                                   "node":  "GaitCourse"
-                               }
-                  },
-                  {
-                      "wait_frames":  20
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                20,
-                                                8
-                                            ],
-                                   "method":  "use_orbit_camera",
-                                   "node":  "GaitCourse"
-                               }
-                  },
-                  {
-                      "wait_frames":  20
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                144,
-                                                0.5,
-                                                false
-                                            ],
-                                   "method":  "set_rate",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                400
-                                            ],
-                                   "method":  "set_mouse",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "wait_frames":  360
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                5
-                                            ],
-                                   "method":  "begin",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "wait_frames":  216
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-
-                                            ],
-                                   "method":  "end",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                "turn_r144_uneven"
-                                            ],
-                                   "method":  "report",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "call":  {
-                                   "args":  [
-                                                "turn_r144_uneven"
-                                            ],
-                                   "method":  "report_work",
-                                   "node":  "ViewProbe"
-                               }
-                  },
-                  {
-                      "assert_prop":  {
-                                          "node":  "ViewProbe",
-                                          "prop":  "arm_step_max",
-                                          "value":  0.01,
-                                          "op":  "\u003c="
-                                      }
-                  },
-                  {
-                      "assert_prop":  {
-                                          "node":  "ViewProbe",
-                                          "prop":  "cam_speed_cv",
-                                          "value":  0.05,
-                                          "op":  "\u003c="
-                                      }
-                  },
-                  {
-                      "assert_prop":  {
-                                          "node":  "ViewProbe",
-                                          "prop":  "yaw_speed_cv",
-                                          "value":  0.05,
                                           "op":  "\u003c="
                                       }
                   },
@@ -824,6 +983,242 @@
                                    "method":  "report_work",
                                    "node":  "ViewProbe"
                                }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r144"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "arm_step_max",
+                                          "value":  0.01,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "cam_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "root_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "chassis_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "yaw_dev",
+                                          "value":  0.1,
+                                          "op":  "\u003c="
+                                      }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                60,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                0
+                                            ],
+                                   "method":  "set_mouse",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "release_all",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "flat"
+                                            ],
+                                   "method":  "spawn_at",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                20,
+                                                8
+                                            ],
+                                   "method":  "use_orbit_camera",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  20
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                165,
+                                                0,
+                                                false
+                                            ],
+                                   "method":  "set_rate",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "move_forward",
+                                                true
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "turn_right",
+                                                true,
+                                                0.4
+                                            ],
+                                   "method":  "hold_action",
+                                   "node":  "GaitCourse"
+                               }
+                  },
+                  {
+                      "wait_frames":  412
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                5
+                                            ],
+                                   "method":  "begin",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "wait_frames":  248
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+
+                                            ],
+                                   "method":  "end",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r165"
+                                            ],
+                                   "method":  "report",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r165"
+                                            ],
+                                   "method":  "report_work",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "call":  {
+                                   "args":  [
+                                                "steer_r165"
+                                            ],
+                                   "method":  "report_ticks",
+                                   "node":  "ViewProbe"
+                               }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "frac_range",
+                                          "value":  0.4,
+                                          "op":  "\u003e="
+                                      }
+                  },
+                  {
+                      "assert_prop":  {
+                                          "node":  "ViewProbe",
+                                          "prop":  "ticks_per_frame",
+                                          "value":  0.6,
+                                          "op":  "\u003c="
+                                      }
                   },
                   {
                       "assert_prop":  {

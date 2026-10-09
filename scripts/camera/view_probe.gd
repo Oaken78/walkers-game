@@ -27,6 +27,9 @@ var _skip: int = 0
 var _flip: bool = false
 var random_pacing: bool = false
 var _rng := RandomNumberGenerator.new()
+var _ticks_in_frame: int = 0
+var _tick_counts: PackedInt32Array = PackedInt32Array()
+var _fractions: PackedFloat64Array = PackedFloat64Array()
 var _prev: Dictionary = {}
 var _steps: Dictionary = {}
 var _dts: PackedFloat64Array = PackedFloat64Array()
@@ -71,6 +74,7 @@ var root_raw_dev: float:
 func _ready() -> void:
 	# Mouse look arrives before the camera's _process.
 	process_priority = -100
+	_rng.seed = 1234
 
 
 func _find() -> void:
@@ -89,19 +93,34 @@ func set_rate(hz: float, uneven: float = 0.0, random: bool = false) -> void:
 	_apply_scale()
 
 
+## Pauses or resumes the tree (tests that the F-keys work while paused).
+func set_paused(paused: bool) -> void:
+	get_tree().paused = paused
+
+
 func set_mouse(px_per_s: float) -> void:
 	mouse_px_per_s = px_per_s
 
 
+## Emulates a display at rate_hz on the fixed 60 fps tools: one rendered frame lasts k / rate_hz of GAME time
+## (time_scale = 60 k / rate_hz) and every physics tick lasts 1/60 s of game time, so a frame runs
+## 60 k / rate_hz ticks on average (0.42 at 144 Hz). That needs physics_ticks_per_second = 3600 k / rate_hz
+## (the tick accumulator runs in real time, which is fixed at 1/60 s per frame). k is 1 for even pacing; uneven
+## pacing changes k every frame, which also moves the tick phase.
 func _apply_scale() -> void:
 	if rate_hz <= 0.0:
 		Engine.time_scale = 1.0
+		Engine.physics_ticks_per_second = 60
 		return
 	var k: float = 1.0 + (unevenness if _flip else -unevenness)
 	if random_pacing:
 		k = 1.0 + _rng.randf_range(-unevenness, unevenness)
 	Engine.time_scale = base_fps / rate_hz * k
+	Engine.physics_ticks_per_second = maxi(1, roundi(60.0 * base_fps / rate_hz * k))
 
+
+func _physics_process(_delta: float) -> void:
+	_ticks_in_frame += 1
 
 func _process(delta: float) -> void:
 	_find()
@@ -132,6 +151,10 @@ func mark_process_end() -> void:
 
 
 func _sample() -> void:
+	if _recording and _skip <= 0:
+		_tick_counts.append(_ticks_in_frame)
+		_fractions.append(Engine.get_physics_interpolation_fraction())
+	_ticks_in_frame = 0
 	if not _recording or _orbit == null:
 		return
 	# use_build replaces the legs: look the parts up every sample.
@@ -175,6 +198,8 @@ func begin(skip: int = 10) -> void:
 	for part: String in PARTS:
 		_steps[part] = PackedFloat64Array()
 	_dts.clear()
+	_tick_counts.clear()
+	_fractions.clear()
 	_proc_ms.clear()
 	_tick_ms.clear()
 	_prev = {}
@@ -286,3 +311,49 @@ func report_cold(label: String) -> void:
 		if _wall_log[i] > 10.0 and worst.size() < 8:
 			worst.append("#%d:%.0fms" % [i, _wall_log[i]])
 	print("COLD %s n=%d p50=%.2f p95=%.2f max=%.1f over10ms=%d over33ms=%d first=%.1f spikes=%s" % [label, sorted.size(), _pct(sorted, 0.5), _pct(sorted, 0.95), _pct(sorted, 1.0), over10, over33, first_ms, " ".join(worst)])
+
+## TICKS line: physics ticks per rendered frame (mean and share of frames with 0, 1, 2+ ticks) and the interpolation
+## fraction seen at the end of each frame (range, and how often it fell from one frame to the next = a tick ran).
+## A valid 144 Hz case shows about 0.42 ticks per frame and a fraction that walks through 0..1.
+func report_ticks(label: String) -> void:
+	var n: int = _tick_counts.size()
+	if n == 0:
+		return
+	var zero: int = 0
+	var one: int = 0
+	var two: int = 0
+	var total: int = 0
+	for c in _tick_counts:
+		total += c
+		zero += 1 if c == 0 else 0
+		one += 1 if c == 1 else 0
+		two += 1 if c >= 2 else 0
+	var fmin: float = 1e9
+	var fmax: float = -1e9
+	var wraps: int = 0
+	for i in range(n):
+		fmin = minf(fmin, _fractions[i])
+		fmax = maxf(fmax, _fractions[i])
+		if i > 0 and _fractions[i] < _fractions[i - 1]:
+			wraps += 1
+	print(
+		"TICKS %s frames=%d ticks_per_frame=%.3f share0=%.2f share1=%.2f share2plus=%.2f frac_min=%.2f frac_max=%.2f wraps=%d"
+		% [label, n, float(total) / n, float(zero) / n, float(one) / n, float(two) / n, fmin, fmax, wraps]
+	)
+
+
+## Ticks per frame, as a property for assert_prop.
+var ticks_per_frame: float:
+	get:
+		var total: int = 0
+		for c in _tick_counts:
+			total += c
+		return float(total) / maxi(_tick_counts.size(), 1)
+var frac_range: float:
+	get:
+		var lo: float = 1e9
+		var hi: float = -1e9
+		for v in _fractions:
+			lo = minf(lo, v)
+			hi = maxf(hi, v)
+		return hi - lo if not _fractions.is_empty() else 0.0

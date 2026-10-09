@@ -21,8 +21,9 @@ func test_window_stats_empty_is_zero() -> void:
 func test_text_shows_display_and_frame_numbers() -> void:
 	var frames := PackedFloat64Array([6.9, 6.9, 14.0])
 	var phys := PackedFloat64Array([0.0, 0.3, 0.0])
+	var ticks := PackedInt32Array([0, 1, 0])
 	var text: String = FrameReadout.text_for(
-		59.99, DisplayServer.VSYNC_ENABLED, 1, DisplayServer.WINDOW_MODE_WINDOWED, 144.0, frames, phys
+		59.99, DisplayServer.VSYNC_ENABLED, 1, DisplayServer.WINDOW_MODE_WINDOWED, 144.0, frames, phys, ticks, 2, 0.31
 	)
 	assert_string_contains(text, "screen 1")
 	assert_string_contains(text, "59.99 Hz")
@@ -30,7 +31,34 @@ func test_text_shows_display_and_frame_numbers() -> void:
 	assert_string_contains(text, "windowed")
 	assert_string_contains(text, "now 14.0")
 	assert_string_contains(text, "max 14.0")
+	assert_string_contains(text, "script physics ms")
+	assert_string_contains(text, "engine physics ms  0.31")
+	assert_string_contains(text, "hitches > 25 ms since F9: 2")
+	assert_string_contains(text, "0: 67%  1: 33%  2+: 0%")
 
+
+func test_tick_shares() -> void:
+	var shares: Vector3 = FrameReadout.tick_shares(PackedInt32Array([0, 0, 1, 2]))
+	assert_almost_eq(shares.x, 0.5, 0.001)
+	assert_almost_eq(shares.y, 0.25, 0.001)
+	assert_almost_eq(shares.z, 0.25, 0.001)
+	assert_eq(FrameReadout.tick_shares(PackedInt32Array()), Vector3.ZERO)
+
+
+func test_fixed_text_is_deterministic() -> void:
+	assert_eq(FrameReadout.fixed_text(), FrameReadout.fixed_text())
+	assert_string_contains(FrameReadout.fixed_text(), "144.00 Hz")
+
+
+func test_f11_restores_the_previous_window_mode() -> void:
+	var exclusive: int = DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	assert_eq(FrameReadout.fullscreen_target(DisplayServer.WINDOW_MODE_WINDOWED, DisplayServer.WINDOW_MODE_WINDOWED), exclusive)
+	assert_eq(
+		FrameReadout.fullscreen_target(exclusive, DisplayServer.WINDOW_MODE_MAXIMIZED),
+		DisplayServer.WINDOW_MODE_MAXIMIZED,
+		"back to maximized, not windowed"
+	)
+	assert_eq(FrameReadout.fullscreen_target(exclusive, exclusive), DisplayServer.WINDOW_MODE_WINDOWED)
 
 func test_vsync_cycle_visits_all_four_modes() -> void:
 	var mode: int = DisplayServer.VSYNC_ENABLED
