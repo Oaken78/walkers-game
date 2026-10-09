@@ -7,11 +7,14 @@ Numbers, not adjectives. References in `design/refs/`. Defaults below are for th
 - Store line: Build a spider-legged walking machine from salvage, then stride into a hostile wasteland to scavenge
   parts for a better one.
 - Fantasy: I am an inventor-explorer. The machine under me is my own design, and I can feel every choice I made in
-  how it walks.
+  how it walks. "Building and feeling like an inventor is in the very core of the game" (Klas); exploring is what
+  pays for the next idea.
 
 ## 2. Pillars (max 3)
-1. **Your build is your feel.** Each part change shows in how the walker moves and fights within 5 s of leaving the
-   workshop. *We cut part count before we compromise this.*
+1. **Your build is your feel.** Building and feeling like an inventor is the core of the game. Each part change
+   shows in how the walker moves and fights within 5 s of leaving the workshop. There are no walker types or
+   classes: you evolve your one starting walker to your will, with wide room to expand (blocks and modules, 8.1).
+   *We cut part count before we compromise this.*
 2. **Legs that read.** The walk is the show: feet plant and never slide, and gait is readable at the default
    camera distance. *We cut enemy walkers and VFX polish before we compromise this.*
 3. **Venture and return.** Every trip puts carried salvage at risk, and the further you go the more it pays.
@@ -150,28 +153,52 @@ already allow it.
 ## 8. Systems
 
 ### 8.1 Walker build (data) - `WalkerBuild` (pure, RefCounted)
+- **Build principle: no fixed walker types or classes** (Klas, 2026-10-09: "You evolve your starting Walker to your
+  will. It may be two very long legs or 12 very short for example."). Every later rule serves this one.
+  - Every stat, gait and limit derives from the mounted parts (leg count, each leg's length, placement), never from a
+    build name or type. A formula may use the leg count, but it must hold for any valid count, not a listed set.
+  - A build needs at least 4 legs (Klas, 2026-10-09: "Since 2 legs poses a problem, make it a minimum 4"). Past
+    that, the leg count is the player's choice; 12 very short legs is a build the game must allow.
+  - Scout, Strider and Crawler (below) are test fixtures and example builds, not classes. The game does not label the
+    player's walker with a build name.
+  - **Block chassis** (Klas, 2026-10-09): the chassis is built from blocks that can be expanded like Lego. Each block
+    has 6 sockets, one per direction (left, right, top, bottom, front, back). A socket takes another block or a
+    module. Modules include weapons, cargo containers and drone hatches, and the list is meant to grow: wide room for
+    expansion is a design goal. A cargo container raises the scrap the walker can carry per trip. A drone hatch
+    launches the player's own drones: a far-future idea that may never be built, not in M1 or M2. Legs are the one
+    module limited to a block's left or right socket, never its top, bottom, front or back. Today's medium chassis is
+    the 8-block build; M0 keeps it as one fixed part with its 8 leg sockets (4 per side) and 3 top sockets.
+  - Where an M0 rule narrows the leg count, placement or length (4, 6 or 8 legs, symmetric, three leg lengths), it is
+    an M0 scope limit, not a design rule.
+  - Not yet decided: the 8-block layout; a block's price, mass and HP; whether a socket with a block attached is
+    closed and whether blocks may stack; how many blocks and legs a chassis may have (the upper leg limit, with its
+    cost per tick); which other modules ship when and what they do, and the cargo container's numbers; whether a module's facing matters; the limits that keep
+    building readable and affordable; and whether leg length stays a few discrete parts or is grown.
 - **State:** chassis id; map of socket id to part id.
 - **Rules:**
-  - The chassis defines sockets. M0 medium chassis: 8 leg sockets and 3 top sockets.
+  - The chassis defines sockets. M0 medium chassis (the 8-block build as one fixed part): 8 leg sockets and 3 top
+    sockets.
   - A part fits only its socket kind (leg or top).
   - M0: the build is valid when it has 4, 6 or 8 legs placed symmetrically (equal count per side), and total
     mass <= total leg lift. Leg types may be mixed.
   - M1: uneven builds are allowed. Rules:
     - Legs are sold singly at half the pair price.
-    - A build needs at least 2 legs per side and 4-8 legs in total.
+    - A build needs at least 2 legs per side and at least 4 legs in total. The earlier upper limit of 8 is withdrawn
+      by the build principle (12 legs is Klas's example); whether a cap remains past 12 is open.
     - imbalance = |lift_left - lift_right| / lift.
     - top_speed x (1 - 0.5 x imbalance).
     - spread + 2.0 deg x imbalance.
     - Idle body roll toward the weak side is 10 deg x imbalance (visible sway).
     - Gait groups alternate by socket order, and each group keeps the centre of mass inside the support polygon.
-  - M0 code keeps per-leg data with no pair assumption, so the M1 change is rules only.
+  - M0 code keeps per-leg data with no pair assumption, so uneven builds are a rules change only (the block chassis
+    is more than rules: hips and colliders come from the block layout).
   - Derived stats are computed only from the part list.
 
 **M0 part catalog.** Legs are sold and placed in mirrored pairs (singly from M1).
 
 | Part | Socket | Mass (kg) | Lift (kg) | Reach (m) | Slope grip | Spread (deg) | Other | Price (scrap) |
 |---|---|---|---|---|---|---|---|---|
-| Medium chassis | - | 125 | - | - | - | - | 100 HP, 8 leg + 3 top sockets | start |
+| Medium chassis | - | 125 | - | - | - | - | 100 HP, 8 leg + 3 top sockets; the 8-block build as one fixed part | start |
 | Short leg | leg | 35 | 110 | 0.6 | 45 deg | 0.5 | | 40 / pair |
 | Medium leg | leg | 25 | 75 | 1.0 | 35 deg | 1.0 | | start |
 | Long leg | leg | 20 | 85 | 1.6 | 30 deg | 1.5 | | 70 / pair |
@@ -196,7 +223,7 @@ already allow it.
 | `spread` | 1.0 deg x mean leg spread factor (body sway) |
 | `hp` | chassis hp + armor parts |
 
-**Reference builds** (the unit test fixtures):
+**Reference builds** (unit test fixtures and example builds, not classes; see the build principle above):
 
 | Build | Parts | Load | Speed | Turn | Step-up | Climb | Slope | HP | DPS | Spread |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -204,8 +231,9 @@ already allow it.
 | Strider (A) | 6 long legs, 1 cannon | 0.56 | 6.49 | 134 | 0.96 | 1.44 | 30 | 100 | 60 | 1.5 |
 | Crawler (B) | 8 short legs, 2 cannons, armor | 0.61 | 3.80 | 109 | 0.36 | 0.54 | 45 | 140 | 120 | 0.5 |
 
-- **Niche:** the Strider reaches ledges and escapes. The Crawler grips steep slopes and wins fights:
-  DPS x HP is 2.8x the Strider's, and its spread is tight. Neither build dominates (Pillar 1).
+- **Niche:** niches belong to the parts, and the fixtures show them. Long legs reach ledges and escape (the
+  Strider). Short legs grip steep slopes, and their lift carries the guns and armor that win fights (the Crawler:
+  DPS x HP is 2.8x the Strider's, and its spread is tight). Neither build dominates (Pillar 1).
 - **Edge cases:** removing a leg that makes the build invalid is allowed in the workshop, but the exit is blocked
   with a reason string ("Overloaded: 412/380 kg", "Needs 4, 6 or 8 legs", "Legs unbalanced").
 - **Tests:**
@@ -356,11 +384,11 @@ already allow it.
 ## 9. Content scope per milestone
 | | M0 | M1 vertical slice | M2 |
 |---|---|---|---|
-| Chassis | 1 (medium) | 2 (+light) | 3 (+heavy) |
+| Chassis | 1 (medium, the 8-block build as one fixed part) | 2 (+light); to be restated as blocks (8.1) | 3 (+heavy); to be restated as blocks (8.1) |
 | Legs | 3 (short, medium, long) | 5 (+wide-foot, climber) | 7 |
 | Top parts | 2 (pulse cannon, armor plate) | 5 (+shield, scanner, cargo pod) | 9 |
 | Enemies | 1 drone | + walker sentinel | + drone carrier |
-| Map | The valley (9.1): 400 m long, floor about 200 m wide, rings 0-2, a ledge pocket (Strider) and a talus pocket (Crawler) | 2 zones + terrain gates | 3 zones |
+| Map | The valley (9.1): 400 m long, floor about 200 m wide, rings 0-2, a ledge pocket (climb >= 1.2 m: long legs, e.g. the Strider) and a talus pocket (45 deg grip: short legs, e.g. the Crawler) | 2 zones + terrain gates | 3 zones |
 | Audio | placeholder | footsteps per leg, weapon set | full pass |
 
 ### 9.1 M0 map: the valley
@@ -389,7 +417,7 @@ can see, with no minimap.
 | Workshop | On a bench at the north end, 20-40 m from the head wall. Ring distances are measured from it |
 | Dry wash | A winding riverbed from the workshop down to the far end. It is the main path and the route the test scenarios walk |
 | Ledge pocket | West wall, ring 2, 160-240 m from the workshop. A 1.2 m ledge leads up to it; one 60-scrap node. The Scout (climb 0.90 m) can't climb it, and its front legs paw at the face; the Strider (1.44 m) reaches and hauls up |
-| Talus pocket | East wall, ring 2, 150-220 m from the workshop. A 40 deg talus slope leads up to it; one 60-scrap node. Only the Crawler (45 deg grip) can climb it; the Scout (35 deg) and Strider (30 deg) can't |
+| Talus pocket | East wall, ring 2, 150-220 m from the workshop. A 40 deg talus slope leads up to it; one 60-scrap node. Only a build with 45 deg grip (in M0, all short legs, as on the Crawler) can climb it; the Scout (35 deg) and Strider (30 deg) can't |
 | Far end | Ruins half buried in a dune bank close the valley at 270-300 m, the gate to the M1 zone. The smoke column behind them, at about 350 m, is the down-valley landmark and is visible from the workshop |
 | Scrap nodes | Ring 0: 2 nodes (5 scrap each, no respawn). Ring 1: 3 nodes (10 each). Ring 2: 3 nodes (20 each) plus the two pockets (60 each). Wash nodes are 70-110 m apart, and side nodes fill the gaps, so a node comes into view every 15-25 s of walking (section 5) |
 | Drone encounters | Three sites along the wash at about 140 m (1-2 drones), 190 m (2-3) and 235 m (2-3), plus 1 drone guarding the ledge pocket. The first site at about 140 m keeps "first drone after 45-75 s" (section 5) once ring 0 pickups are counted |
@@ -524,7 +552,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | Draw calls | <= 1000 (outlines add a pass) |
 | Static memory | <= 768 MB |
 | Orphan nodes | 0 |
-| Simulation caps | player walker <= 8 legs; <= 4 active drones; <= 40 live projectiles |
+| Simulation caps | player walker <= 8 legs in M0 (the 8.1 build principle goes past 8; the cap after M0 is open); <= 4 active drones; <= 40 live projectiles |
 | Physics tick | 60 Hz. Gait and IK run in `_physics_process`, visuals interpolated |
 | Platform | Windows PC, KB+M |
 | 3D collision layers | 1 world, 2 player, 3 enemies, 4 player_projectiles, 5 enemy_projectiles, 6 pickups, 7 triggers. Foot raycasts mask world only |
@@ -669,6 +697,11 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Drone details from T07: a drone killed during its wind-up still fires at the end of the 0.6 s wind-up (Klas's "a drone always fires" covers a killing hit); PATROL means drifting back home (entered by the leash or 3 s without sight, which also ends the provoked state); a drone hit inside its leash reacts without sight; it starts a wind-up only with line of sight, and its first shot comes >= 1.5 s after it notices the walker; the 4-drone cap counts engaged drones across the whole field; a dead drone drops its 3-8 scrap as loose 1-scrap pickups; the drone ring has an ink rim that never glows, so the wind-up reads in grayscale against the sky (rule 2) | Lead, from the T07 implementer's interpretations, code review and playtest critique (Klas: keep the drone work light). In grayscale the lit ring (0.50-0.60) matched the sky (0.61), so the telegraph read as the drone fading out | A killing hit cancels the shot (it let the Crawler kill 0.5 s into the wind-up and trade nothing); waiting for the M1 ink outline |
 | 2026-10-09 | Risk 8's heading check (every reference build onto a drone 90 deg off in <= 1.0 s) is measured against a drone that has started its wind-up, because the player turns on the glow; against a drone orbiting away the Scout takes 1.02 s and the Crawler 1.13 s (reported). GDD 13's cap reads 40 live player projectiles plus 8 drone bolts | Lead, from T07: the GDD's own 0.93 s Crawler figure assumes a still target, and the tracker lands 100 % of hold shots, so a player does not feel 0.13 s; the projectile cap was written before drone bolts existed, and the measured cost (0.2 ms p99 for 4 drones and their bolts) leaves room | A longer hold (GDD 16 fallback); a 32 + 8 split of the 40 |
 | 2026-10-09 | A walker climbs or steps down a ledge only when it meets the face within 45 deg of head-on; at a shallower angle it slides along the face, as at one it cannot climb | Klas, from T16 round 6: at 60 deg the walkers slid along the face and never climbed, at 30 deg they climb and descend | Climb at any angle with W into the face |
+| 2026-10-09 | Build principle: no fixed walker types or classes. The player evolves the one starting walker to their will; every stat, gait and limit derives from the mounted parts, never from a build name. Scout, Strider and Crawler are test fixtures and example builds, not classes, and niches belong to the parts (long legs reach, short legs grip and carry). M0 keeps its 4, 6 or 8 symmetric legs and three leg lengths as a scope limit. The M1 upper limit of 8 legs is withdrawn; the cap past 12 and discrete versus grown leg length are open (8.1) | Klas, after the climbing playtest: "I want to make clear that there shall be no fixed type or class of Walkers. You evolve your starting Walker to your will. It may be two very long legs or 12 very short for example." Pillar 1 and the inventor fantasy (section 1): the machine is the player's own design | Named classes with variants (the inventor fantasy shrinks to a pick-list); a fixed range of 4-8 legs (rules out Klas's 12-leg example) |
+| 2026-10-09 | A build needs at least 4 legs | Klas, 2026-10-09: "Since 2 legs poses a problem, make it a minimum 4." With 4 or more legs and one in the air, 3 feet stay planted, so the support rule (centre of mass inside the planted feet by >= 0.1 x mean reach, 8.2) and the climb with a hanging leg hold for every build | 2 or 3 legs (biped balance, a tripod gait) |
+| 2026-10-09 | Block chassis: the chassis is built from blocks that can be expanded like Lego; each block has 6 sockets, one per direction; a leg mounts only on a block's left or right socket. Today's medium chassis is the 8-block build, kept in M0 as one fixed part (8 leg and 3 top sockets). The layout, block price, mass and HP, attachment and stacking, and the block and leg limits are open (8.1) | Klas, 2026-10-09: "My wish is that the chassis is built from blocks that can be expanded like Legos. The corresponding build for the current chassis would be 8 blocks. Each block has 6 sockets, one in each direction." and "Legs can only be placed on left or right side." The body grows with the walker, which serves the build principle and Pillar 1 | A fixed chassis with fixed sockets; a segmented spine of 2-socket segments; legs on any face |
+| 2026-10-09 | Any socket takes another block or a module. Modules include weapons, cargo containers and drone hatches, and the list is meant to grow; legs stay the one module limited to left and right sockets. Wide room for expansion is a design goal, and building is named the core of the game in section 1 and Pillar 1. Which modules ship when, module facing and the limits on building are open (8.1) | Klas, 2026-10-09: "Sockets can take other blocks, weapons, cargo containers drone hatches etc. I want a lot of possibilities for expansion. Building and feeling like an inventor is in the very core of the game." | Fixed top-only weapon sockets; bottom sockets left empty; a short closed part list |
+| 2026-10-09 | A cargo container raises the scrap a walker can carry per trip; its capacity, mass and price are still proposals. A drone hatch launches the player's own drones, but it is a far-future idea that may never be built, not in M1 or M2 | Klas, 2026-10-09: cargo containers "Yes"; drone hatches "Yes about drone hatches but don't mind that for a long time. We might not implement it." | Cargo that only protects scrap on death; hatches in M1 as a spotter drone |
 
 ## 18. Open questions
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
