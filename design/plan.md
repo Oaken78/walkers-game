@@ -26,7 +26,7 @@ Status: ready, in-progress, review-passed, done.
 |---|---|---|---|---|---|
 | T00 | Input map (GDD section 6 names: turn_*, strafe_*, interact on F) + collision layers in project.godot (lead) | project.godot, test/unit/test_input_map.gd | 2 | done | main |
 | T01 | WalkerBuild data, part catalog, stat formulas, validity | scripts/walker/walker_build.gd, scripts/walker/part_catalog.gd, test/unit/test_walker_build.gd | 2 | review-passed | worktree-agent-a21795ac19081cafb |
-| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 2 | in-progress | worktree-agent-ab4347227a88ecff3 |
+| T02 | TwoBoneIK + GaitSolver (pure) | scripts/walker/two_bone_ik.gd, scripts/walker/gait_solver.gd, test/unit/test_two_bone_ik.gd, test/unit/test_gait_solver.gd | 2 | review-passed | worktree-agent-ab4347227a88ecff3 |
 | T03 | Walker body controller + greybox leg rig | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scenes/walker/, scenes/test/gait_course.tscn, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json | 3 | | |
 | T04 | Orbit camera rig (8 m, lag 0.10 s, zoom, aim, spring-arm collision) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd | 3 | | |
 | T05 | Greybox valley map (GDD 9.1): cliff bounds, wash, workshop bench, ledge + talus pockets, node and drone-site markers | scenes/world/, scripts/world/, assets/world/, test/integration/test_valley_geometry.gd, test/scenarios/valley_overview.json | 3 | review-passed | worktree-agent-a919dedea3b3d2cd4 |
@@ -36,3 +36,16 @@ Status: ready, in-progress, review-passed, done.
 | T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
+
+## Notes for packets not yet written (from the T01, T02 and T05 reviews, 2026-10-09)
+- T03: a 4-5 leg wave with one stuck leg stands still until the player steers off (the hovering leg holds the
+  only airborne slot; accepted, judge it at the gate). Turning tripods can make a leg wait about 2.5 step
+  durations. Check stop/start at top speed on a tripod with real 0.25 s acceleration: the fake walker dragged a
+  planted foot to 1.28 x reach. `gait_course` should also run a 4-leg build into a blocked foot.
+- T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
+- T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
+- T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
+- T11: harden the wash (threshold the vertex-colour weight into a flat band), soft smoke with fog back on, sage
+  sky top; `assets/world/ground_streak.tres` is unused and can go.
+- T12: `%WashPath` starts at (2, 8) in front of the workshop; `perf_4_drones` should also measure a ring-2 view
+  looking up-valley.
