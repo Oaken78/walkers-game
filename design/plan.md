@@ -46,7 +46,7 @@ Status: ready, in-progress, review-passed, done.
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
 | T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
 | T17 | View stutter: smooth camera and walker at any refresh rate, F9 frame-time readout (Klas, playtest of 1a777b6) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd, test/scenarios/camera_smooth.json, autoload/dev_harness.gd (readout only) | 3 | done | fix/walkers-view-stutter, merged 38ba789 |
-| T16 | Climbing: reach and haul (climb 0.9 x reach, hanging legs, step-down mirror, ledge pocket 1.2 m), gait_climb scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/walker/walker_build.gd, test/unit/test_walker_build.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, scripts/test/valley_pockets.gd, scenes/test/valley_pockets.tscn, scripts/world/valley_layout.gd (LEDGE_RISE), test/integration/test_valley_geometry.gd, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/ (gait_climb new, gait_*, walk_flat, build_contrast, valley_pockets) | 3 | in-progress | feat/walkers-climbing |
+| T16 | Climbing: reach and haul (climb 0.9 x reach, hanging legs, step-down mirror, ledge pocket 1.2 m), gait_climb scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/walker/walker_build.gd, test/unit/test_walker_build.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, scripts/test/valley_pockets.gd, scenes/test/valley_pockets.tscn, scripts/world/valley_layout.gd (LEDGE_RISE), test/integration/test_valley_geometry.gd, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/ (gait_climb new, gait_*, walk_flat, build_contrast, valley_pockets) | 3 | done | feat/walkers-climbing, merged 2fbad22 |
 | T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, test/scenarios/gait_rig.json, new test/scenarios/gait_*.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | done | fix/walkers-walker-hardening, merged eff475a |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 
@@ -146,6 +146,27 @@ Status: ready, in-progress, review-passed, done.
     - Juice pass: a bolt-in-flight shot with bolt readability (>= 8 px, >= 0.3 luma against sky and ground).
   - **T11 look pass:** the workshop's camera-mounted chassis light in motion, and the field walker's hull and leg
     tones; the Load "!" may need a row tint.
+- Climbing follow-ups (T16 closed at round 7: Klas played ee9ad87 and called it good enough, 2026-10-09; revisit
+  later, not in M0):
+  - Landing jumps: the drawn pad jumps at touchdown, up to 1.4 m on the Strider (`max_landing_snap_m`,
+    `max_landing_slide_m`, reported). The reach branch of `_fit_landing` moves pads between levels; a level-safe
+    fit deadlocks tall descents (a rear leg at full reach on the deck needs a margin shift its own reach forbids).
+    Needs a design call first: let the support shift count a swinging leg's landing, or let that leg step first.
+  - Stride swings clip lips (`pad_inside_stride_ticks`, reported); climb swings read 1-4 `pad_inside_ticks` in four
+    runs (asserted at those values).
+  - The shin clips the lip corner during a reach (the knee is over the top while the pad is still below it;
+    `gait_climb_shots__reach_p55` is its baseline). Add a shin-segment geometry test.
+  - A ledge edge met at more than 45 deg stops with the feet hanging instead of sliding along (GDD 5 "Approach
+    angle"); no scenario covers it.
+  - `_line_return` acts while a leg hangs, against its doc comment; the 0.5 m sideways sway needs a playtest look.
+  - Strafing into a ledge meets it side-on (the 45 deg rule measures the heading), so the walker slides along
+    instead of climbing; Klas may want strafing to climb.
+- Leg-count assumptions in code, for the M1 block chassis (T16 round 7 hand-back, file:line at f1236f1):
+  `gait_solver.gd:47-58` (two halves for 6+ legs, a wave below); `walker_body.gd:1287` (`group_count() > 2` cadence);
+  `walker_build.gd:21,182` (`FOUR_LEGS` gait factor 0.85); `walker_body.gd:485` (default `WalkerBuild.scout()`);
+  `walker_body.gd:1217, 1271-1272` (front leg = first per side, row neighbours by index); `walker_body.gd:1625, 1628,
+  3265, 3330` (planes and support need >= 3 planted feet); `gait_course.gd:775, 1316, 1928` (`leg_reach(0)` as the
+  build's reach).
 - Same-side pad overlap (T13 item 10 / T16 item 6, open): pads still stack on one spot during some climbs and turns (the metric reads its -0.34 floor). The proposals measured cost 13-26 % of flat speed, so none was adopted; revisit with the walker API task or at the M1 climber leg.
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
