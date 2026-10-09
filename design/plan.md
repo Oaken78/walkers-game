@@ -41,7 +41,7 @@ Status: ready, in-progress, review-passed, done.
 | T06 | Pulse cannon, projectiles and the aim model (dot + world reticle, aim-up pitch -20), damage contract, risk 8 and 9 spikes | scripts/weapons/, scenes/weapons/, scripts/combat/, ui/aim/, scripts/test/aim_range.gd, scenes/test/aim_range.tscn, test/scenarios/aim_range.json, test/unit/test_weapon.gd, test/unit/test_aim_math.gd, test/unit/test_combat.gd, scripts/camera/orbit_camera.gd (pitch_min only), test/unit/test_orbit_camera.gd, test/scenarios/camera_orbit.json | 3 | done | feat/walkers-pulse-cannon, merged 0d76145 |
 | T07 | Drone enemy: brain, hold-to-shoot telegraph, bolts, leash, encounters (lean; starts after T06 merges) | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/drone_fight.json | 3 | in-progress | feat/walkers-drone |
 | T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | done | feat/walkers-economy, merged d094bc9 |
-| T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | in-progress | art/walkers-workshop |
+| T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | done | art/walkers-workshop, merged da8819d |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
 | T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
@@ -112,6 +112,27 @@ Status: ready, in-progress, review-passed, done.
   - T12 adds a shot of the talus pocket beam from the wash at about 100 m.
 - T11: the valley ledge face and the cliff wall share one luma (0.277 vs 0.284), and the pocket floor matches the
   valley floor, so the 1.2 m gate reads only by its silhouette. Add a lit band on the ledge lip (T16 critique).
+- T12 wiring notes from the T06, T08 and T09 reviews:
+  - **Workshop:**
+    - `setup(build, inventory, economy)` works before or after add_child and edits build and inventory in place.
+    - `exit_requested(build)` fires once per visit with that very build, never while it is invalid; then the
+      workshop ignores input until the next `setup()`.
+    - After exit, free the workshop or disable and hide it, and make the field camera current: it brings its own
+      Camera3D, WorldEnvironment and two lights (one on render layer 2).
+    - Capture the mouse when the field starts.
+    - The workshop owns its walker. Never put the field walker in it; turning the field walker's input off and back
+      on is T12's job.
+    - Climb on any HUD comes from `BuildStats.of()`.
+  - **Economy:** connect `Economy.banked` to `Health.repair_full()` and the drone respawn. The Collector's
+    `enabled = false` during the death collapse and true after respawn; `RecallHold.recall_requested` goes to
+    `economy.recall(position)` plus the move home.
+  - **Combat:**
+    - PlayerHurtbox is safe before its walker is ready.
+    - Enemy projectile queries on layer 2 use areas only.
+    - `impacted` carries `counted`.
+    - Keep the bottom-right 40 px around the edge chevron free of HUD.
+  - **T11 look pass:** the workshop's camera-mounted chassis light in motion, and the field walker's hull and leg
+    tones; the Load "!" may need a row tint.
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).

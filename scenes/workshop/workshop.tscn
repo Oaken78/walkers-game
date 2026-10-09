@@ -1,0 +1,109 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/workshop/workshop.gd" id="1_workshop"]
+[ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="2_walker"]
+[ext_resource type="Script" path="res://scripts/workshop/workshop_camera.gd" id="3_rig"]
+[ext_resource type="Script" path="res://ui/workshop/workshop_ui.gd" id="4_ui"]
+
+[sub_resource type="Environment" id="Environment_bay"]
+background_mode = 1
+background_color = Color(0.106, 0.114, 0.129, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.78, 0.82, 0.78, 1)
+ambient_light_energy = 0.4
+fog_enabled = true
+fog_light_color = Color(0.106, 0.114, 0.129, 1)
+fog_density = 0.012
+ssao_enabled = true
+ssao_radius = 0.8
+ssao_intensity = 2.5
+
+[sub_resource type="CylinderShape3D" id="Shape_stand"]
+height = 0.6
+radius = 2.6
+
+[sub_resource type="CylinderMesh" id="Mesh_stand"]
+top_radius = 2.6
+bottom_radius = 2.8
+height = 0.6
+radial_segments = 48
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Mat_stand"]
+albedo_color = Color(0.17, 0.19, 0.22, 1)
+roughness = 0.9
+
+[sub_resource type="TorusMesh" id="Mesh_rim"]
+inner_radius = 2.45
+outer_radius = 2.65
+rings = 48
+ring_segments = 6
+
+[sub_resource type="StandardMaterial3D" id="Mat_rim"]
+albedo_color = Color(0.3, 0.32, 0.35, 1)
+roughness = 0.6
+
+[sub_resource type="CylinderMesh" id="Mesh_floor"]
+top_radius = 60.0
+bottom_radius = 60.0
+height = 0.2
+radial_segments = 48
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+albedo_color = Color(0.07, 0.075, 0.085, 1)
+roughness = 1.0
+
+[node name="Workshop" type="Node3D"]
+script = ExtResource("1_workshop")
+
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_bay")
+
+[node name="KeyLight" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-68, -35, 0)
+light_energy = 1.15
+light_color = Color(1, 0.96, 0.9, 1)
+shadow_enabled = true
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-25, 150, 0)
+light_energy = 0.35
+light_color = Color(0.85, 0.9, 1, 1)
+
+[node name="Stand" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Collider" type="CollisionShape3D" parent="Stand"]
+position = Vector3(0, -0.3, 0)
+shape = SubResource("Shape_stand")
+
+[node name="Plate" type="MeshInstance3D" parent="Stand"]
+position = Vector3(0, -0.3, 0)
+mesh = SubResource("Mesh_stand")
+surface_material_override/0 = SubResource("Mat_stand")
+
+[node name="Rim" type="MeshInstance3D" parent="Stand"]
+position = Vector3(0, 0.0, 0)
+mesh = SubResource("Mesh_rim")
+surface_material_override/0 = SubResource("Mat_rim")
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.7, 0)
+mesh = SubResource("Mesh_floor")
+surface_material_override/0 = SubResource("Mat_floor")
+
+[node name="Walker" parent="." instance=ExtResource("2_walker")]
+unique_name_in_owner = true
+
+[node name="Markers" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="OrbitRig" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_rig")
+
+[node name="UI" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_ui")
