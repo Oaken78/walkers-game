@@ -17,9 +17,13 @@ const STALL_LOG_S: float = 0.4
 const PAD_CHECK_LIFT: float = 0.03
 ## Stands for "no gap on this axis" in `box_gap` (the vertical axis is left out of the pad separation).
 const PAD_SEP_NO_AXIS: float = 1000.0
+## Two same-side pads overlap this much fore-aft (m) or more: stacked on one spot (a whole pad length is 0.34).
+const STACKED_OVERLAP_M: float = 0.3
 ## `ahead_rise` scans heights from AHEAD_STEP to AHEAD_MAX in these steps (m).
 const AHEAD_STEP: float = 0.1
 const AHEAD_MAX: float = 3.0
+## How far ahead (m) `ahead_rise` looks: a tall walker stops a reach (up to 2.5 m for a long build) short of a face.
+const AHEAD_DISTANCE: float = 2.5
 
 var top_speed_mps: float = 0.0
 var time_to_top_s: float = UNSET
@@ -30,7 +34,7 @@ var input_to_motion_ticks: int = UNSET_TICKS
 var first_lift_ticks: int = UNSET_TICKS
 var max_drift_m: float = 0.0
 ## Highest a planted pad was lifted above where it was planted (m): the IK folds a leg no tighter than its fold distance and
-## pushes the pad up when the hip comes down on it (a descent). Horizontal sliding is `max_drift_m`.
+## pushes the pad up when the hip comes down on it (a descent). The whole 3D slide is `max_drift_m`.
 var max_fold_lift_m: float = 0.0
 var airborne_violations: int = 0
 var max_airborne: int = 0
@@ -80,6 +84,8 @@ var min_pad_gap_m: float = INF
 ## Smallest separation of two planted pad boxes on one side in 2D, lateral and fore-aft (m): positive = apart, negative = the boxes overlap
 ## (how deep). Unlike `min_pad_gap_m` it counts the sideways offset too, so it does not sit at a -0.34 floor.
 var min_pad_sep_m: float = INF
+## Ticks in which two planted pads of one side stand (almost) on one spot (their fore-aft overlap is at least STACKED_OVERLAP_M).
+var stacked_pad_ticks: int = 0
 ## Longest run of consecutive ticks (seconds) in which the progress along the wanted direction (horizontal, vertical
 ## rise does not count) stayed below STALL_FRACTION of the wanted speed while input is held.
 var longest_input_stall_s: float = 0.0
@@ -211,6 +217,7 @@ func reset() -> void:
 	max_resolve_pitch_deg = 0.0
 	min_pad_gap_m = INF
 	min_pad_sep_m = INF
+	stacked_pad_ticks = 0
 	longest_input_stall_s = 0.0
 	_input_stall_run = 0
 	max_test_motions_per_tick = 0
@@ -317,6 +324,7 @@ func report(label: String = "") -> void:
 		"max_resolve_pitch_deg": snappedf(max_resolve_pitch_deg, 0.01),
 		"min_pad_gap_m": snappedf(minf(min_pad_gap_m, 9.0), 0.001),
 		"min_pad_sep_m": snappedf(minf(min_pad_sep_m, 9.0), 0.001),
+		"stacked_pad_ticks": stacked_pad_ticks,
 		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
 		"max_pitch_deg": snappedf(max_pitch_deg, 0.01),
 		"max_root_rise_tick_m": snappedf(max_root_rise_tick_m, 0.0001),
@@ -479,7 +487,7 @@ func _track_stall(delta: float) -> void:
 
 
 ## Logs a finished stall over STALL_LOG_S: `STALL dur=.. pos=.. ahead_rise=.. causes=..` (ahead_rise: the tallest
-## ground 0.5-1.5 m ahead of the body over the ground under it).
+## ground or face up to AHEAD_DISTANCE ahead of the body over the ground under it).
 func _end_stall() -> void:
 	if float(_stall_run) * _stall_delta > STALL_LOG_S:
 		print(
@@ -501,14 +509,14 @@ func _ahead_rise(from: Vector3) -> float:
 	var forward := Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
 	var under: float = _ground_y(space, from)
 	var tallest: float = 0.0
-	for distance in [0.5, 1.0, 1.5]:
+	for distance in [0.5, 1.0, 1.5, 2.0, 2.5]:
 		tallest = maxf(tallest, _ground_y(space, from + forward * distance) - under)
 	# A vertical face (or an overhang above the body, as in an alcove) hides from the downward rays: horizontal
-	# rays 0.1 m apart in height, 1.5 m ahead, give the tallest height that is blocked.
+	# rays 0.1 m apart in height, AHEAD_DISTANCE ahead, give the tallest height that is blocked.
 	var height: float = AHEAD_STEP
 	while height <= AHEAD_MAX:
 		_gap_ray.from = Vector3(from.x, under + height, from.z)
-		_gap_ray.to = _gap_ray.from + forward * 1.5
+		_gap_ray.to = _gap_ray.from + forward * AHEAD_DISTANCE
 		if not space.intersect_ray(_gap_ray).is_empty():
 			tallest = maxf(tallest, height)
 		height += AHEAD_STEP
@@ -535,6 +543,7 @@ func _track_pad_gap() -> void:
 	var forward: Vector3 = Vector3(-sin(walker.yaw_radians()), 0.0, -cos(walker.yaw_radians()))
 	var right: Vector3 = Vector3(cos(walker.yaw_radians()), 0.0, -sin(walker.yaw_radians()))
 	var count: int = walker.leg_count()
+	var stacked: bool = false
 	for i in count:
 		if gait.state_of(i) != GaitSolver.LegState.PLANTED:
 			continue
@@ -549,6 +558,10 @@ func _track_pad_gap() -> void:
 			# on one spot); pads beside each other by the length of their gaps.
 			var sep: float = apart - WalkerLeg.PAD_SIZE.z if lateral < 0.0 else box_gap(lateral, -PAD_SEP_NO_AXIS, apart - WalkerLeg.PAD_SIZE.z)
 			min_pad_sep_m = minf(min_pad_sep_m, sep)
+			if sep <= -STACKED_OVERLAP_M:
+				stacked = true
+	if stacked and not _teleported_now:
+		stacked_pad_ticks += 1
 
 
 ## Separation of two boxes from their per-axis gaps (centre distance less the summed half sizes): the length of the
@@ -619,7 +632,7 @@ func _track_gait() -> void:
 				_plant_known[i] = 1
 				_measure_plant_gap(foot)
 			else:
-				max_drift_m = maxf(max_drift_m, Vector2(foot.x - _plant_pos[i].x, foot.z - _plant_pos[i].z).length())
+				max_drift_m = maxf(max_drift_m, foot.distance_to(_plant_pos[i]))
 				max_fold_lift_m = maxf(max_fold_lift_m, foot.y - _plant_pos[i].y)
 		fewest = mini(fewest, _steps[i])
 	min_steps_per_leg = 0 if fewest == (1 << 30) else fewest

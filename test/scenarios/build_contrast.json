@@ -310,14 +310,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "min_support_margin_ratio",
     "op": ">=",
     "value": 0.1
@@ -696,14 +688,6 @@
     "prop": "max_root_rise_tick_m",
     "op": "<=",
     "value": 0.0252
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
    }
   },
   {

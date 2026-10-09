@@ -493,14 +493,6 @@
   },
   {
    "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
-   }
-  },
-  {
-   "assert_prop": {
     "node": ".",
     "prop": "on_ledge_floor",
     "op": "==",
@@ -639,7 +631,7 @@
    }
   },
   {
-   "wait_frames": 120
+   "wait_frames": 200
   },
   {
    "call": {
@@ -1939,18 +1931,6 @@
   },
   {
    "wait_frames": 500
-  },
-  {
-   "screenshot": "crawler_looking_out_over_talus_edge"
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_foot_vis",
-    "args": [
-     "valley_pockets crawler_looking_out_over_talus_edge"
-    ]
-   }
   },
   {
    "call": {

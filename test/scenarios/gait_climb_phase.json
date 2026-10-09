@@ -46,7 +46,7 @@
    }
   },
   {
-   "wait_frames": 1650
+   "wait_frames": 2000
   },
   {
    "call": {
@@ -145,6 +145,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 3.0
@@ -214,7 +230,7 @@
    }
   },
   {
-   "wait_frames": 1650
+   "wait_frames": 2000
   },
   {
    "call": {
@@ -313,6 +329,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 3.0
@@ -382,7 +414,7 @@
    }
   },
   {
-   "wait_frames": 1650
+   "wait_frames": 2000
   },
   {
    "call": {
@@ -476,6 +508,22 @@
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
    }
   },
   {

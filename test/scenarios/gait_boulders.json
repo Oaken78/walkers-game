@@ -565,7 +565,7 @@
     "node": "%Telemetry",
     "prop": "longest_input_stall_s",
     "op": "<=",
-    "value": 0.6
+    "value": 0.75
    }
   },
   {

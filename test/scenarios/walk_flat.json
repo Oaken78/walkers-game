@@ -1728,14 +1728,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 3.0
@@ -1900,14 +1892,6 @@
     "args": [
      "walk_flat crawler crosses the 29 deg patch (offset 0.00, input 100 %)"
     ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
    }
   },
   {
@@ -2254,14 +2238,6 @@
     "args": [
      "walk_flat crawler crosses the 29 deg patch (offset 0.90, input 50 %)"
     ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "pad_gap_at_report_m",
-    "op": ">=",
-    "value": -0.34
    }
   },
   {

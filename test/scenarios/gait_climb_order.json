@@ -11,7 +11,7 @@
     "node": ".",
     "method": "use_build",
     "args": [
-     "scout_short_pair"
+     "strider"
     ]
    }
   },
@@ -21,7 +21,76 @@
     "method": "spawn_at",
     "args": [
      "ledges",
-     -7.0
+     -223.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hash_start",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 1650
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hash_record",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -55.0
     ]
    }
   },
@@ -46,7 +115,7 @@
    }
   },
   {
-   "wait_frames": 2700
+   "wait_frames": 1500
   },
   {
    "call": {
@@ -66,7 +135,7 @@
     "node": "%Telemetry",
     "method": "report",
     "args": [
-     "gait_climb scout_short_pair ledges from 0.30 m short pair, climb 0.54"
+     "gait_climb_order scout first"
     ]
    }
   },
@@ -75,21 +144,91 @@
     "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
-    "value": 0.45
+    "value": 0.5
    }
   },
   {
-   "assert_prop": {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledges",
+     -223.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
     "node": "%Telemetry",
-    "prop": "max_climb_m",
-    "op": "<=",
-    "value": 0.51
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hash_start",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 1650
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hash_stop",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_climb_order strider after the scout"
+    ]
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "stopped_before_face",
+    "prop": "hash_matches",
     "op": "==",
     "value": true
    }
@@ -97,17 +236,9 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "max_pitch_deg",
+    "prop": "max_climb_m",
     "op": ">=",
-    "value": 10.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "reach_ups",
-    "op": ">=",
-    "value": 2
+    "value": 1.4
    }
   },
   {
@@ -203,16 +334,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 190
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_stat",
-    "args": [
-     "scout_short_pair"
-    ]
+    "value": 245
    }
   },
   {

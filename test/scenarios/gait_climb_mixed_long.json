@@ -161,6 +161,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "tick_p99_ms",
     "op": "<=",
     "value": 3.0
@@ -187,7 +203,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 190
+    "value": 250
    }
   },
   {

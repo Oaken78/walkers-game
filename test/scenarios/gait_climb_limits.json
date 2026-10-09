@@ -142,7 +142,7 @@
     "node": "%Telemetry",
     "prop": "longest_stall_s",
     "op": "<=",
-    "value": 1.0
+    "value": 0.6
    }
   },
   {
@@ -159,6 +159,22 @@
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
    }
   },
   {
@@ -523,7 +539,7 @@
     "node": "%Telemetry",
     "prop": "longest_stall_s",
     "op": "<=",
-    "value": 1.0
+    "value": 0.6
    }
   },
   {
@@ -540,6 +556,22 @@
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
    }
   },
   {
@@ -571,7 +603,7 @@
     "node": "%Telemetry",
     "prop": "max_shape_queries_per_tick",
     "op": "<=",
-    "value": 324
+    "value": 310
    }
   },
   {
@@ -904,7 +936,7 @@
     "node": "%Telemetry",
     "prop": "longest_stall_s",
     "op": "<=",
-    "value": 1.0
+    "value": 0.6
    }
   },
   {
@@ -921,6 +953,22 @@
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
    }
   },
   {

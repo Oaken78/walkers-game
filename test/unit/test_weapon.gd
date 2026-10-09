@@ -8,6 +8,12 @@ var _hits: int = 0
 
 
 ## Holds the trigger for `ticks` ticks from tick 0. Returns [tick, weapon] for every shot.
+# apply_build waits for the end of the frame inside a physics step: a test starts in a process frame, not in the one the
+# previous test's physics await ended in.
+func before_each() -> void:
+	await get_tree().process_frame
+
+
 func _run(clock: FireClock, ticks: int, held_at: Callable = Callable()) -> Array[Vector2i]:
 	var shots: Array[Vector2i] = []
 	for tick in ticks:

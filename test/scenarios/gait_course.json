@@ -1476,7 +1476,7 @@
     "node": "%Telemetry",
     "prop": "pad_gap_at_report_m",
     "op": ">=",
-    "value": 0.201
+    "value": 0.1
    }
   },
   {

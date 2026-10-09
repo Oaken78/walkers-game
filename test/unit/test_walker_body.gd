@@ -438,3 +438,32 @@ func test_support_advance_keeps_the_back_off_input_while_a_leg_waits() -> void:
 	var strafe: Vector3 = WalkerBody.support_advance(Vector3(3.0, 0, -4.0), facing, Vector3.ZERO, 1.8)
 	assert_gt(strafe.x, 1.0, "strafe input is kept")
 
+
+
+func _fold_rig() -> Array:
+	# One hip 1.0 m above a planted foot, fold distance 0.4: poses are plain translations.
+	var hips := PackedVector3Array([Vector3.ZERO])
+	var feet := PackedVector3Array([Vector3(0, -1.0, 0)])
+	var planted := PackedByteArray([1])
+	var limits := PackedFloat32Array([1.5])
+	var folds := PackedFloat32Array([0.4])
+	return [hips, feet, planted, limits, folds]
+
+
+func test_a_hip_may_not_come_inside_the_fold_distance_of_its_planted_foot() -> void:
+	var r: Array = _fold_rig()
+	var now := Transform3D.IDENTITY
+	var near := Transform3D(Basis.IDENTITY, Vector3(0, -0.5, 0))
+	assert_true(WalkerBody.feet_in_reach(near, now, r[0], r[1], r[2], r[3], r[4]), "0.5 m above the foot is outside 0.4")
+	var inside := Transform3D(Basis.IDENTITY, Vector3(0, -0.7, 0))
+	assert_false(WalkerBody.feet_in_reach(inside, now, r[0], r[1], r[2], r[3], r[4]), "0.3 m above the foot is inside the fold distance")
+	assert_true(WalkerBody.feet_in_reach(inside, now, r[0], r[1], r[2], r[3]), "without fold distances the old rule holds")
+
+
+func test_a_hip_already_inside_the_fold_distance_may_only_move_away_from_its_foot() -> void:
+	var r: Array = _fold_rig()
+	var inside := Transform3D(Basis.IDENTITY, Vector3(0, -0.7, 0))
+	var away := Transform3D(Basis.IDENTITY, Vector3(0, -0.65, 0))
+	assert_true(WalkerBody.feet_in_reach(away, inside, r[0], r[1], r[2], r[3], r[4]), "moving away is always allowed")
+	var closer := Transform3D(Basis.IDENTITY, Vector3(0, -0.75, 0))
+	assert_false(WalkerBody.feet_in_reach(closer, inside, r[0], r[1], r[2], r[3], r[4]), "nearer would push the pad out and up")

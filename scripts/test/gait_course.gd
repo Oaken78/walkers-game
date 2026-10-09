@@ -276,6 +276,15 @@ var _freeze_at: float = -1.0
 var _freeze_tilt: float = -1.0
 var _freeze_stall: float = -1.0
 var _freeze_reach: bool = false
+var _freeze_descend: bool = false
+const BACKOFF_PROBE_TICKS: int = 6
+## The descent still waits for a front foot this far (m) below the top of the block.
+const DESCEND_FREEZE_BELOW: float = 0.3
+## How far the walker moved in the 0.1 s of the back-off probe (-1 until it has run).
+var backoff_moved_m: float = -1.0
+var _backoff_state: int = 0
+var _backoff_ticks: int = 0
+var _backoff_from: Vector3 = Vector3.ZERO
 var _freeze_paw: float = -1.0
 var _freeze_margin: float = -1.0
 var _freeze_tick: int = -1
@@ -402,6 +411,7 @@ func _physics_process(delta: float) -> void:
 	if _hash_on:
 		# A rolling hash of the walker's state each tick (position, the leg that waits, contacts): two identical runs must agree.
 		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker._hang_wait * 7 + _walker._contact_count) & 0x3FFFFFFFFFFF
+	_run_backoff_probe()
 	_track_step_up()
 	_track_lateral_flips()
 	_track_yaw_overshoot()
@@ -706,6 +716,41 @@ func track_clearance(enabled: bool) -> void:
 ## Pauses the game at tick `offset` ticks from the recorded minimum-clearance tick (a deterministic replay).
 func arm_freeze_at_clearance(offset: int) -> void:
 	_freeze_tick = clearance_tick + offset
+
+
+## Arms the back-off probe: the first tick a leg waits in a support shift, the forward key is let go and S is pressed for
+## BACKOFF_PROBE_TICKS ticks (0.1 s); backoff_moved_m is how far the walker moved in that time (GDD 8.2: the player can always
+## back off).
+func arm_backoff_probe() -> void:
+	_backoff_state = 1
+	backoff_moved_m = -1.0
+
+
+## True once the probe has run its 0.1 s.
+var backoff_done: bool:
+	get:
+		return _backoff_state == 3
+
+
+func _run_backoff_probe() -> void:
+	if _backoff_state == 1 and _walker.is_waiting_for_support():
+		_backoff_state = 2
+		_backoff_ticks = 0
+		_backoff_from = _walker.global_position
+		Input.action_release("move_forward")
+		Input.action_press("move_back")
+	elif _backoff_state == 2:
+		_backoff_ticks += 1
+		if _backoff_ticks >= BACKOFF_PROBE_TICKS:
+			backoff_moved_m = _walker.global_position.distance_to(_backoff_from)
+			Input.action_release("move_back")
+			_backoff_state = 3
+
+
+## Pauses the game the first tick a front foot plants below the lip of the climb lane's block after the walker has climbed
+## it (a still at the start of the descent); resume() continues.
+func arm_descend_freeze() -> void:
+	_freeze_descend = true
 
 
 func resume() -> void:
@@ -1231,9 +1276,20 @@ func _track_lateral_flips() -> void:
 	_lateral_flips_max = maxi(_lateral_flips_max, _lateral_flip_ticks.size())
 
 
+## True for a leg whose hip is in the front half of the body.
+func _is_front_leg(leg: int) -> bool:
+	var forward := Vector3(-sin(_walker.yaw_radians()), 0.0, -cos(_walker.yaw_radians()))
+	return (_walker.hip_position(leg) - _walker.global_position).dot(forward) > 0.2
+
+
 func _on_foot_planted(leg: int, position: Vector3, _normal: Vector3) -> void:
 	if leg < _last_plant.size():
 		_last_plant[leg] = position
+	if _freeze_descend and _blocks.has(LANE_CLIMB) and _is_front_leg(leg):
+		var top: float = float(_blocks[LANE_CLIMB][0]["h"])
+		if _telemetry.max_climb_m >= 0.9 * top and position.y < top - DESCEND_FREEZE_BELOW:
+			get_tree().paused = true
+			_freeze_descend = false
 	if _freeze_reach and position.y > REACH_FREEZE_MIN_Y and _walker.reach_ups > 0:
 		# The first foot a reach-up puts down on a top: the still of "front foot on the lip, knee above the hip".
 		get_tree().paused = true
