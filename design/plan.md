@@ -41,7 +41,7 @@ Status: ready, in-progress, review-passed, done.
 | T06 | Pulse cannon, projectiles and the aim model (dot + world reticle, aim-up pitch -20), damage contract, risk 8 and 9 spikes | scripts/weapons/, scenes/weapons/, scripts/combat/, ui/aim/, scripts/test/aim_range.gd, scenes/test/aim_range.tscn, test/scenarios/aim_range.json, test/unit/test_weapon.gd, test/unit/test_aim_math.gd, test/unit/test_combat.gd, scripts/camera/orbit_camera.gd (pitch_min only), test/unit/test_orbit_camera.gd | 3 | in-progress | feat/walkers-pulse-cannon |
 | T07 | Drone enemy: state machine, telegraph, leash | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, test/scenarios/drone_fight.json | 3 | | |
 | T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | in-progress | feat/walkers-economy |
-| T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
+| T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | ready | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
 | T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
@@ -93,6 +93,8 @@ Status: ready, in-progress, review-passed, done.
   lean (Klas, 2026-10-09: not much effort on the drone design now): build GDD 8.4 as written, no new design rounds.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
+- Walker API (after T16 merges, one small task owning walker_body.gd): the read-only hooks T06 and T09 ask for (top-socket and
+  leg-socket transforms, a flag to skip drawing cannons, a switch that stops field input on the workshop stand).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
 - T08: pocket pickups at least 0.5 m tall or with a vertical beam (the talus scrap sits behind a 4.1 m lip).
 - T09: a vertical home landmark on the bench, at least 20 m tall (toward_home has nothing to steer to).
