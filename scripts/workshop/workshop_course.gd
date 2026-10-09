@@ -20,6 +20,10 @@ var exit_leg_count: int = -1
 var exit_latency_frames: int:
 	get:
 		return workshop.last_exit_emit_frame - workshop.last_exit_key_frame
+## Frames between the release of the last click and exit_requested (0 = the same frame): a click on Exit leaves at once.
+var click_exit_latency_frames: int:
+	get:
+		return workshop.last_exit_emit_frame - _last_release_frame
 ## Frames in which the exit button's state differed from the build's validity (must stay 0).
 var exit_mismatch_frames: int = 0
 ## Result of the last check_* call: true when everything matched, else what did not.
@@ -36,6 +40,7 @@ var click_usec_max: int = 0
 var click_usec_last: int = 0
 
 var _snapshot: Dictionary = {}
+var _last_release_frame: int = -1
 var _old_economy: Economy
 var _old_inventory: Inventory
 var _setup_build: WalkerBuild
@@ -212,8 +217,16 @@ func _process(_delta: float) -> void:
 # --- Pointer helpers (real input events) ------------------------------------------------------------------------
 
 
-func move_mouse(x: float, y: float) -> void:
-	_dispatch(_motion(Vector2(x, y)))
+## Moves the cursor to (x, y); `rel_x` and `rel_y` are the motion the event reports (what a drag reads).
+func move_mouse(x: float, y: float, rel_x: float = 0.0, rel_y: float = 0.0) -> void:
+	var moved := _motion(Vector2(x, y))
+	moved.relative = get_viewport().get_final_transform().basis_xform(Vector2(rel_x, rel_y))
+	_dispatch(moved)
+
+
+## Presses or releases the middle button at the screen centre.
+func middle_button(pressed: bool) -> void:
+	_dispatch(_button(Vector2(640.0, 360.0), MOUSE_BUTTON_MIDDLE, pressed))
 
 
 ## Moves the cursor onto a socket's mark.
@@ -303,12 +316,17 @@ func shift_socket_under_panel(socket_id: String) -> void:
 	for attempt in 8:
 		var at := workshop.socket_screen_position(id)
 		if at.distance_to(target) < 6.0:
-			return
+			break
 		var metres_per_px := 2.0 * rig.distance * tan(deg_to_rad(cam.fov * 0.5)) / screen_height
 		var wanted := target - at
 		var cam_basis := cam.global_transform.basis
 		rig.look_at_point += (cam_basis.x * -wanted.x + cam_basis.y * wanted.y) * metres_per_px
 		rig.set_view(rig.yaw_deg, rig.pitch_deg, rig.distance)
+	var problems: PackedStringArray = PackedStringArray()
+	var landed := workshop.socket_screen_position(id)
+	if not workshop.ui().is_over_panel(landed):
+		problems.append("%s is at %s, not under the panel" % [socket_id, landed])
+	_finish_check(problems)
 
 
 ## Puts the look-at point back on the walker.
@@ -493,6 +511,9 @@ func _links(changed_signal: Signal) -> int:
 
 ## Runs a dispatch and keeps the time it took (microseconds): the click path from the event to the redrawn UI state.
 func _timed_dispatch(event: InputEvent) -> void:
+	var release := event as InputEventMouseButton
+	if release != null and not release.pressed:
+		_last_release_frame = Engine.get_process_frames()
 	var started := Time.get_ticks_usec()
 	_dispatch(event)
 	click_usec_last = Time.get_ticks_usec() - started

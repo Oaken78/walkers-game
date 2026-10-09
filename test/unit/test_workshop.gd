@@ -708,3 +708,32 @@ func test_a_new_inventory_changes_the_owned_labels() -> void:
 	ui.refresh_parts(build, &"")
 	assert_eq(ui.shown_owned(SHORT), "Own 4")
 	assert_eq(ui.shown_scrap(), "55")
+
+
+func test_turning_the_camera_input_off_ends_a_drag_in_progress() -> void:
+	var rig := _camera()
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_MIDDLE
+	press.pressed = true
+	rig._unhandled_input(press)
+	assert_true(rig.is_dragging())
+	rig.input_enabled = false
+	assert_false(rig.is_dragging())
+	rig.input_enabled = true
+	var motion := InputEventMouseMotion.new()
+	motion.relative = Vector2(100.0, 0.0)
+	var yaw := rig.yaw_deg
+	rig._input(motion)
+	assert_almost_eq(rig.yaw_deg, yaw, TOL)
+
+
+func test_setup_before_the_workshop_is_in_the_tree_works_and_leaves_input_on() -> void:
+	var scene: PackedScene = load("res://scenes/workshop/workshop.tscn")
+	var workshop := scene.instantiate() as Workshop
+	workshop.setup(build, inventory, economy)
+	add_child_autofree(workshop)
+	assert_false(workshop.has_exited())
+	assert_true(workshop.camera_rig().input_enabled)
+	assert_eq(workshop.ui().shown_scrap(), "200")
+	assert_eq(workshop.current_build(), build)
+	assert_true(workshop.is_exit_enabled())

@@ -31,8 +31,13 @@ const BODY_LAYER_MASK: int = 2
 
 ## While true the automatic orbit holds still (the cursor is on a socket or a panel).
 var orbit_paused: bool = false
-## False while the workshop ignores input (after it handed the build out): no drag, no zoom.
-var input_enabled: bool = true
+## False while the workshop ignores input (after it handed the build out): no drag, no zoom. Turning it off ends a drag
+## in progress, so a button release the workshop never saw cannot leave the camera stuck to the mouse.
+var input_enabled: bool = true:
+	set(value):
+		input_enabled = value
+		if not value:
+			_dragging = false
 var yaw_deg: float = 0.0
 var pitch_deg: float = 0.0
 

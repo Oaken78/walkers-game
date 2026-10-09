@@ -13,6 +13,8 @@ extends Node3D
 ## - It brings its own Camera3D (made current), two DirectionalLight3Ds and a WorldEnvironment. Once the visit is over
 ##   T12 must free the workshop, or set `process_mode = PROCESS_MODE_DISABLED`, hide it and make its own camera
 ##   current: an unused workshop would still own the current camera and the environment.
+## - The workshop owns its walker (%Walker, set to ignore field input for good in _ready): never put the field walker in
+##   it, and never reuse the workshop walker in the field.
 ## - The workshop never changes scenes, banks scrap or repairs.
 
 ## The player pressed Tab or the exit button on a valid build.
@@ -144,7 +146,6 @@ func setup(build: WalkerBuild, inventory: Inventory, economy: Economy) -> void:
 	_economy.changed.connect(_on_economy_changed)
 	_inventory.changed.connect(_refresh_all)
 	_exited = false
-	_camera.input_enabled = true
 	_build_version += 1
 	_replant_pending = true
 	if armed_part != &"":
@@ -267,6 +268,9 @@ func is_socket_pickable(socket_id: StringName) -> bool:
 
 func _start() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_camera.input_enabled = true
+	# The cursor may have moved while the workshop was latched and ignoring input: no stale hover from the last visit.
+	_mouse_pos = get_viewport().get_mouse_position()
 	_ui.setup(_inventory, _economy)
 	_apply_build_to_walker()
 	_refresh_all()
@@ -278,6 +282,12 @@ func _latch() -> void:
 	_camera.input_enabled = false
 	_camera.orbit_paused = true
 	_ui.show_tip("", _mouse_pos)
+	hover_socket = &""
+	hover_mode = HoverMode.NONE
+	hover_reason = ""
+	hover_preview = {}
+	_hover_signature = ""
+	_ui.clear_deltas("")
 	for id: StringName in _markers:
 		(_markers[id] as SocketMarker).set_state(SocketMarker.State.HIDDEN)
 
