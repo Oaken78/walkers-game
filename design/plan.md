@@ -42,7 +42,8 @@ Status: ready, in-progress, review-passed, done.
 ## Notes for packets not yet written (from the T01-T05 reviews, 2026-10-09)
 - Gate (lead): give the camera an un-bobbed anchor (its 0.1 s lag only half-filters the 2.8 Hz body bob). Judge
   `start_pitch` facing down-valley (the critic suggests 12-15 deg). With a fixed 1.5 m `target_offset` the Crawler's
-  camera sits 0.47 m off the ground at pitch -10; consider a per-build offset.
+  camera sits 0.47 m off the ground at pitch -10; consider a per-build offset. Include a walker tilted 30-39 deg in
+  the feet-in-frame check (criterion 8): from behind and above, its uphill feet tuck under the chassis.
 - Lead follow-ups from the T03 review: set the 4-leg gait_factor in GDD 8.1 and walker_build.gd from T03's
   measured quad speed; TwoBoneIK.solve allocates a Solution per leg per tick (T02 code), so reuse one if the
   perf budget needs it. Arched knees and the shortest-leg cadence are approved (GDD log 2026-10-09) and built in
@@ -52,6 +53,8 @@ Status: ready, in-progress, review-passed, done.
   durations. Check stop/start at top speed on a tripod with real 0.25 s acceleration: the fake walker dragged a
   planted foot to 1.28 x reach. `gait_course` should also run a 4-leg build into a blocked foot.
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
+  Body tilt now follows the slope up to the build's grip (a Crawler climbs the talus at 39 deg), so decide whether the
+  turret's pitch limits are body- or world-relative; body-relative -10..45 deg cannot aim level on the talus.
 - T06/T07: the walker's movement collider is a wide cylinder (about 4.3 m across on the Strider with arched legs). Hits use a
   chassis-sized hurtbox instead, so shots between the legs miss (M0 criterion 5).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.
