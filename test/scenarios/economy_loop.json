@@ -13,6 +13,8 @@
     {"wait_frames": 40},
     {"assert_prop": {"node": ".", "prop": "carried", "op": "==", "value": 0}},
     {"screenshot": "node"},
+    {"wait_frames": 36},
+    {"screenshot": "node_peak"},
     {"call": {"node": ".", "method": "teleport_to_site", "args": ["ScrapSite_R1_Wash", 2.7]}},
     {"wait_frames": 40},
     {"assert_prop": {"node": ".", "prop": "carried", "op": "==", "value": 0}},
