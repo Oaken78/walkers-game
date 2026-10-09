@@ -357,6 +357,7 @@ var _climb_session: bool = false
 ## The leg that waits to hang until the body has made a support margin (-1 when none).
 var _hang_wait: int = -1
 var _hang_wait_ticks: int = 0
+var _margin_hold_ticks: int = 0
 ## Ticks a leg went past the support-margin rule because the body could not make the margin (telemetry).
 var margin_breaks: int = 0
 var _front: PackedByteArray = PackedByteArray()
@@ -2471,11 +2472,18 @@ func _apply_move(delta: float) -> void:
 			yaw = lerpf(_yaw, des_yaw, fraction)
 			tilt = des_n if fraction >= 1.0 else _tilt_n.slerp(des_n, fraction)
 			base_y = lerpf(_base_y, des_base, fraction)
+	# The margin rule has held the body for a second and a half with nothing it can still change: the move goes ahead (each
+	# such tick is counted in `margin_breaks`; a run shows it).
+	var margin_free: bool = _margin_hold_ticks >= HANG_WAIT_BREAK_TICKS
+	var margin_cut: bool = false
 	if is_hanging():
 		# While a leg hangs the centre of mass stays inside the planted feet's polygon by 0.1 x mean reach: a move that
 		# would break it is shortened like a move that would break reach (GDD 8.2).
 		var needed: float = minf(SUPPORT_MARGIN_RATIO * _mean_reach + 0.008, _margin_at(_pose))
-		if _margin_at(pose_transform(origin, yaw, tilt)) < needed - 0.0001:
+		if _margin_at(pose_transform(origin, yaw, tilt)) < needed - 0.0001 and margin_free:
+			margin_breaks += 1
+		elif _margin_at(pose_transform(origin, yaw, tilt)) < needed - 0.0001:
+			margin_cut = true
 			var low: float = 0.0
 			var high: float = 1.0
 			for step in 6:
@@ -2669,7 +2677,10 @@ func _apply_move(delta: float) -> void:
 		# The pitch the ground contacts added after the margin check above moves the centre too: a pose that would cut the
 		# margin below what it is now (and the 0.1 floor) is not taken; the body holds the pose it had.
 		var floor_margin: float = minf(SUPPORT_MARGIN_RATIO * _mean_reach + 0.008, _margin_at(_pose))
-		if _margin_at(pose_transform(origin, yaw, tilt)) < floor_margin - 0.0001:
+		if _margin_at(pose_transform(origin, yaw, tilt)) < floor_margin - 0.0001 and margin_free:
+			margin_breaks += 1
+		elif _margin_at(pose_transform(origin, yaw, tilt)) < floor_margin - 0.0001:
+			margin_cut = true
 			origin = cur_pos
 			base_y = _base_y
 			tilt = _tilt_n
@@ -2691,6 +2702,10 @@ func _apply_move(delta: float) -> void:
 			_:
 				block_cause = "legs"
 	var actual := Vector3((origin.x - cur_pos.x) / delta, 0.0, (origin.z - cur_pos.z) / delta)
+	if margin_cut and actual.length() < 0.02:
+		_margin_hold_ticks += 1
+	elif actual.length() >= 0.02 or not is_hanging():
+		_margin_hold_ticks = 0
 	var commanded_len: float = _velocity_h.length()
 	# A hold by the legs keeps the commanded speed (the body resumes at speed, no climb back up the ramp); a slide
 	# keeps the commanded speed too (each tick removes its into-face part again; a collapsed speed would pin the walker

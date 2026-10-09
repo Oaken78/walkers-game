@@ -277,6 +277,7 @@ var _freeze_tilt: float = -1.0
 var _freeze_stall: float = -1.0
 var _freeze_reach: bool = false
 var _freeze_paw: float = -1.0
+var _freeze_margin: float = -1.0
 var _freeze_tick: int = -1
 var _tick: int = 0
 var _track_clearance: bool = false
@@ -429,6 +430,9 @@ func _physics_process(delta: float) -> void:
 	if _freeze_stall >= 0.0 and _telemetry.current_stall_s >= _freeze_stall:
 		get_tree().paused = true
 		_freeze_stall = -1.0
+	if _freeze_margin >= 0.0 and _walker.support_margin_ratio() < _freeze_margin:
+		get_tree().paused = true
+		_freeze_margin = -1.0
 	if _freeze_paw >= 0.0:
 		for i in _walker.leg_count():
 			if _walker.is_leg_hanging(i) and _walker.foot_position(i).y >= _freeze_paw * _walker.leg_reach(i):
@@ -677,6 +681,12 @@ func arm_reach_freeze() -> void:
 ## Pauses the game the first tick a hanging pad is `ratio` x its reach above the floor (the top of a paw); resume() continues.
 func arm_paw_freeze(ratio: float) -> void:
 	_freeze_paw = ratio
+
+
+## Pauses the game the first tick the support margin (over the mean reach) falls below `ratio` while a leg hangs: a still at
+## the lowest margin of a run that cannot keep 0.1. resume() continues.
+func arm_margin_freeze(ratio: float) -> void:
+	_freeze_margin = ratio
 
 
 ## Starts (or resets) the search for the tick of the lowest hip clearance; read clearance_tick afterwards.

@@ -98,22 +98,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "min_support_margin_ratio",
-    "op": ">=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "margin_breaks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
@@ -133,6 +117,14 @@
     "prop": "tick_max_ms",
     "op": "<=",
     "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 2.5
    }
   },
   {
@@ -227,22 +219,6 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
-    "prop": "min_support_margin_ratio",
-    "op": ">=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
-    "prop": "margin_breaks",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%Telemetry",
     "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
@@ -262,6 +238,30 @@
     "prop": "tick_max_ms",
     "op": "<=",
     "value": 8.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "margin_breaks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.6
    }
   },
   {
