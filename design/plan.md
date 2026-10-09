@@ -60,5 +60,7 @@ Status: ready, in-progress, review-passed, done.
 - T11: harden the wash (threshold the vertex-colour weight into a flat band), soft smoke with fog back on, sage
   sky top; `assets/world/ground_streak.tres` is unused and can go.
   In grayscale the orange foot tops sit only 0.08 luma below the floor (0.61 vs 0.69); give the contact decal a dark value.
+  On the T03 course, lit pads (#F38741, luma 0.60) match the dark ground stripes (0.60-0.63), so pads read by hue
+  alone. Klas decides at the gate, from the pitch shots, whether pads need a luminance cue before the M1 outline.
 - T12: `%WashPath` starts at (2, 8) in front of the workshop; `perf_4_drones` should also measure a ring-2 view
   looking up-valley.
