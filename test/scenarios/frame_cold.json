@@ -1,0 +1,13 @@
+{
+ "scene": "res://scenes/camera/view_probe.tscn",
+ "seed": 1234,
+ "timeout_frames": 1200,
+ "steps": [
+  {"call": {"node": "GaitCourse", "method": "use_orbit_camera", "args": [20.0, 8.0]}},
+  {"call": {"node": "GaitCourse", "method": "hold_action", "args": ["move_forward", true]}},
+  {"wait_frames": 500},
+  {"call": {"node": "ViewProbe", "method": "report_cold", "args": ["walk"]}},
+  {"call": {"node": "GaitCourse", "method": "release_all", "args": []}},
+  {"assert_no_errors": true}
+ ]
+}

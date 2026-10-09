@@ -152,7 +152,9 @@ func _process(delta: float) -> void:
 	if is_aiming():
 		_idle_s = 0.0
 	if recenter_enabled and is_instance_valid(target):
-		var behind: float = OrbitMath.behind_yaw(-target.global_basis.z)
+		# The interpolated heading: the raw one only changes on physics ticks, so the recentring yaw would step
+		# at 60 Hz (zero steps, then double steps) on any display faster than 60 Hz while the walker turns.
+		var behind: float = OrbitMath.behind_yaw(-target.get_global_transform_interpolated().basis.z)
 		yaw_deg = OrbitMath.recenter_step(
 			yaw_deg,
 			behind,

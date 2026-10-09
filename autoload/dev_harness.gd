@@ -69,11 +69,40 @@ func _init() -> void:
 	OS.add_logger(_counter)
 
 
+## F9 toggles the frame-time readout, F10 cycles the vsync mode, F11 toggles exclusive fullscreen: in every build
+## (dev or release), scenario or not. Nothing changes until a key is pressed.
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key: InputEventKey = event
+		if key.pressed and not key.echo:
+			match key.physical_keycode:
+				KEY_F9:
+					toggle_frame_readout()
+				KEY_F10:
+					FrameReadout.cycle_vsync()
+				KEY_F11:
+					FrameReadout.toggle_fullscreen()
+
+
+## Shows or frees the FrameReadout overlay (also callable from scenarios). Off by default; nothing is created
+## until the first toggle, so no shot changes while it is off. fixed_sample shows fixed demo numbers (screenshots).
+func toggle_frame_readout(fixed_sample: bool = false) -> void:
+	var existing: Node = get_node_or_null("FrameReadout")
+	if existing != null:
+		existing.queue_free()
+		return
+	var readout := FrameReadout.new()
+	readout.name = "FrameReadout"
+	readout.fixed_sample = fixed_sample
+	add_child(readout)
+
+
 func _ready() -> void:
+	# Always: the F-keys must work while the game is paused (Esc in the gait course pauses the tree).
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if not _active:
 		set_process(false)
 		return
-	process_mode = Node.PROCESS_MODE_ALWAYS
 	if _out_dir.is_empty():
 		_out_dir = ProjectSettings.globalize_path("res://.reports/last")
 	DirAccess.make_dir_recursive_absolute(_out_dir)
