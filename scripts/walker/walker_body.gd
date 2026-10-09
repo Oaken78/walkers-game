@@ -108,8 +108,6 @@ const HANG_SHIFT_GAIN: float = 10.0
 const HANG_NEED_SLACK: float = 0.04
 ## A support shift looks along the line of the walk, this many probes of this length (m) to each side, for the margin it wants.
 const SHIFT_PROBES: int = 6
-## How far (m) a support shift may take the body sideways of the line it was walking.
-const SHIFT_LATERAL_MAX_M: float = 1.0
 const SHIFT_PROBE_STEP: float = 0.1
 ## Back on the line within this many metres; the walker turning more than LINE_TURN_DEG drops the line.
 const LINE_DONE_M: float = 0.03
@@ -628,6 +626,11 @@ func leg_reach(leg: int) -> float:
 ## True while a leg waits for the body to shift toward the middle of the feet that would stay planted (a support wait).
 func is_waiting_for_support() -> bool:
 	return _hang_wait >= 0
+
+
+## True while leg `leg` stands where a reach-up or a step-up put it (its last landing was a ledge landing).
+func leg_reached_up(leg: int) -> bool:
+	return leg >= 0 and leg < _climbed.size() and _climbed[leg] != 0 and _solver.state_of(leg) == GaitSolver.LegState.PLANTED
 
 
 ## True while a leg hangs for a rise or a drop beyond a stride (it counts as airborne and paws).
@@ -3145,13 +3148,6 @@ func _support_shift(without: int, target_margin: float) -> Vector3:
 			best_step = step
 	if best_along >= target_margin - 0.02:
 		toward = along * float(signi(best_step)) * toward.length()
-	if _line_set:
-		# The sideways part never takes the body more than SHIFT_LATERAL_MAX_M from its line.
-		var right_line := Vector2(cos(_line_yaw), -sin(_line_yaw))
-		var off_now: float = (_origin - _line_origin).dot(Vector3(right_line.x, 0.0, right_line.y))
-		var side_speed: float = toward.dot(right_line)
-		if absf(off_now) >= SHIFT_LATERAL_MAX_M and signf(side_speed) == signf(off_now):
-			toward -= right_line * side_speed
 	if absf(toward.dot(Vector2(cos(_yaw), -sin(_yaw)))) > 0.0001 and not _line_set:
 		# The shift has a sideways part (a ledge met at an angle, or feet that sit to one side): remember the line the walker
 		# was on, to come back to it once the leg has hung (`_line_return`).

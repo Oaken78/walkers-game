@@ -94,6 +94,8 @@ var longest_input_stall_s: float = 0.0
 ## Since reset: reach-up swings, step-up swings, and ticks with a leg hanging for a rise or drop beyond a stride.
 ## Largest nose-up or nose-down pitch of the body (degrees), and the largest rise of the body root in one tick (m).
 var max_pitch_deg: float = 0.0
+## The most nose-down pitch (negative degrees; 0 when the body never pitched down): the descent's lean.
+var min_pitch_deg: float = 0.0
 var max_root_rise_tick_m: float = 0.0
 ## Smallest centre-of-mass margin inside the planted feet's polygon over the mean reach, over ticks with a leg hanging.
 var min_support_margin_ratio: float = INF
@@ -256,6 +258,7 @@ func reset() -> void:
 	step_ups = 0
 	hang_ticks = 0
 	max_pitch_deg = 0.0
+	min_pitch_deg = 0.0
 	max_root_rise_tick_m = 0.0
 	min_support_margin_ratio = INF
 	pad_inside_ticks = 0
@@ -335,6 +338,7 @@ func report(label: String = "") -> void:
 		"stacked_pad_ticks": stacked_pad_ticks,
 		"longest_input_stall_s": snappedf(longest_input_stall_s, 0.01),
 		"max_pitch_deg": snappedf(max_pitch_deg, 0.01),
+		"min_pitch_deg": snappedf(min_pitch_deg, 0.01),
 		"max_root_rise_tick_m": snappedf(max_root_rise_tick_m, 0.0001),
 		"min_support_margin_ratio": snappedf(minf(min_support_margin_ratio, 9.0), 0.001),
 		"pad_inside_ticks": pad_inside_ticks,
@@ -417,6 +421,7 @@ func _physics_process(delta: float) -> void:
 ## Pitch, root rise per tick, support margin, pads inside geometry and the height of hanging feet (T16).
 func _track_climb(_delta: float) -> void:
 	max_pitch_deg = maxf(max_pitch_deg, absf(walker.pitch_degrees()))
+	min_pitch_deg = minf(min_pitch_deg, walker.pitch_degrees())
 	var root_y: float = walker.global_position.y
 	if not _teleported_now and ticks > 1:
 		max_root_rise_tick_m = maxf(max_root_rise_tick_m, root_y - _last_root_y)
@@ -426,7 +431,7 @@ func _track_climb(_delta: float) -> void:
 		min_support_margin_ratio = minf(min_support_margin_ratio, margin)
 	if _pad_shape == null:
 		_pad_shape = BoxShape3D.new()
-		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x * 0.95, 0.12, WalkerLeg.PAD_SIZE.z * 0.95)
+		_pad_shape.size = Vector3(WalkerLeg.PAD_SIZE.x, 0.12, WalkerLeg.PAD_SIZE.z)
 		_pad_query = PhysicsShapeQueryParameters3D.new()
 		_pad_query.shape = _pad_shape
 		_pad_query.collision_mask = 1
@@ -437,9 +442,10 @@ func _track_climb(_delta: float) -> void:
 	for i in walker.leg_count():
 		var foot: Vector3 = walker.foot_position(i)
 		var near_face: bool = walker.is_leg_hanging(i)
-		if (near_face or walker.is_leg_climbing(i)) and not _teleported_now:
-			# Only the pads that reach, step up, step down or hang are checked, with the box tilted to the pad's ground
-			# normal (a pad on a slope lies on it; a stride pad may touch a rock it is stepping onto).
+		if (near_face or walker.is_leg_climbing(i) or walker.leg_reached_up(i)) and not _teleported_now:
+			# Only the pads that reach, step up, step down or hang (and the planted pads a reach-up put down) are checked, with the whole
+			# pad's footprint (corners included) tilted to the pad's ground normal (a pad on a slope lies on it; a stride pad may touch a
+			# rock it is stepping onto).
 			var up: Vector3 = walker.foot_normal(i)
 			var tilt: Basis = Basis(Quaternion(Vector3.UP, up)) * basis
 			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + 0.06))
