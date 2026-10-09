@@ -49,6 +49,22 @@ func test_a_cache_pull_in_flight_cannot_reclaim_the_cache_the_same_death_makes()
 	assert_eq(eco.carried_scrap, 0)
 	assert_eq(eco.lost, 20)
 	assert_true(eco.is_conserved())
+	await wait_frames(2)
+
+
+func test_a_retired_cache_in_flight_delivers_nothing_even_without_a_death() -> void:
+	_setup()
+	eco.collect_loose(20)
+	eco.die(Vector3(30, 0, 0))
+	await wait_frames(2)
+	var old: WreckCache = field.cache()
+	collector.global_position = Vector3(30, 0, 0)
+	assert_true(collector.try_claim(old))
+	_tick(old, 5)
+	old.retire()
+	_tick(old, 30)
+	assert_eq(eco.cache_amount, 20, "the ledger still holds the cache")
+	assert_eq(eco.carried_scrap, 0)
 
 
 func test_a_stale_cache_id_cannot_reclaim_a_newer_cache() -> void:
@@ -61,6 +77,7 @@ func test_a_stale_cache_id_cannot_reclaim_a_newer_cache() -> void:
 	assert_eq(eco.reclaim(old_id), 0)
 	assert_eq(eco.cache_amount, 5)
 	assert_eq(eco.reclaim(eco.cache_id), 5)
+	await wait_frames(2)
 
 
 func test_a_pull_in_flight_is_cancelled_by_a_death_and_the_node_stays_collectable() -> void:

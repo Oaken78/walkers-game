@@ -2,7 +2,8 @@ class_name Collector
 extends Area3D
 ## Picks up pickups (layer 6) within 2.5 m of the chassis and pulls them in over 0.3 s. It follows
 ## WalkerBody.body_pose() from outside the walker: add it as a sibling of the walker, set `target` and `economy`.
-## T12 sets `enabled = false` during the death collapse. On a death or recall (Economy.dropped) the pulls in flight are
+## No target, no scan. T12 sets `enabled = false` during the death collapse and back to true once the walker has
+## respawned: the fresh-cache grace below only lifts while the collector scans. On a death or recall (Economy.dropped) the pulls in flight are
 ## cancelled, and a wreck cache dropped inside the pickup range stays unclaimable until the collector has left that
 ## range once (so a walker that dies on the spot cannot reclaim its own cache).
 
@@ -55,7 +56,7 @@ func _physics_process(_delta: float) -> void:
 	var started: int = Time.get_ticks_usec() if record_timing else 0
 	if target != null and target.gait() != null:
 		global_transform = target.body_pose()
-	if enabled and (target == null or target.gait() != null):
+	if enabled and target != null and target.gait() != null:
 		_scan()
 	if record_timing:
 		tick_usec.append(Time.get_ticks_usec() - started + Pickup.profile_usec)

@@ -40,6 +40,14 @@ func setup(ledger: Economy) -> void:
 	_on_cache_changed()
 
 
+## A cache that was never added (the field is freed before the deferred add runs) would leak.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		if _cache != null and is_instance_valid(_cache) and not _cache.is_inside_tree():
+			_cache.free()
+		_cache = null
+
+
 func pickup_for(site_name: String) -> ScrapPickup:
 	return _pickups.get(site_name)
 

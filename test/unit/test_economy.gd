@@ -243,3 +243,12 @@ func test_a_freed_target_does_not_break_the_recall() -> void:
 	watch_signals(hold)
 	_run(hold, true, 3.0)
 	assert_signal_emit_count(hold, "recall_requested", 1)
+
+
+func test_a_hold_a_hair_under_0_3_s_plus_epsilon_is_still_a_cancelled_hold() -> void:
+	var hold := _hold()
+	watch_signals(hold)
+	hold.step(true, 0.3 - 0.000001)
+	hold.step(false, 0.0)
+	assert_signal_emitted(hold, "cancelled")
+	assert_signal_not_emitted(hold, "tapped")
