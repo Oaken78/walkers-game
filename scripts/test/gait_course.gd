@@ -67,6 +67,10 @@ const LEDGE_COUNT: int = 27
 ## The climb lane: one block of a height the scenario sets (set_climb_height), a flat run in front and a deck behind it.
 const CLIMB_FLAT_RUN: float = 8.0
 const CLIMB_DECK_DEPTH: float = 10.0
+## The along-face slide is measured while the walker's origin is within this (m) of the climb block's face and this far (m) from
+## its ends.
+const FACE_SLIDE_BAND: float = 2.5
+const FACE_SLIDE_END_MARGIN: float = 1.0
 const POCKET_HEIGHT: float = 0.8
 ## A foot planted this high (m) above the floor is on a top (the reach-freeze).
 const REACH_FREEZE_MIN_Y: float = 0.3
@@ -425,6 +429,7 @@ func _physics_process(delta: float) -> void:
 	_track_lateral_flips()
 	_track_yaw_overshoot()
 	_track_hover_inside()
+	_track_face_slide(delta)
 	_tick += 1
 	if _tick == 5:
 		_nominal_root_y = _walker.global_position.y
@@ -592,6 +597,11 @@ func spawn_at(lane: String, offset_z: float = 0.0, heading_deg: float = 0.0, off
 	_spawn_origin = origin
 	_spawn_heading = _spawn_yaw(lane) + deg_to_rad(heading_deg)
 	lateral_offset_max = 0.0
+	face_slide_speed_mps = 0.0
+	face_slide_time_s = 0.0
+	_slide_dist = 0.0
+	_slide_last_x = INF
+	_slide_gap_min = INF
 	if _camera_mode == "orbit":
 		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
 		_walker.reset_physics_interpolation()
@@ -1827,7 +1837,7 @@ func set_wedge(half_angle_deg: float) -> void:
 
 
 ## Rebuilds the climb lane's single block with this height (m): a flat run, the block, then flat ground.
-func set_climb_height(height: float) -> void:
+func set_climb_height(height: float, width: float = LEDGE_WIDTH) -> void:
 	if _climb_block != null:
 		_climb_block.queue_free()
 		_climb_block = null
@@ -1835,10 +1845,51 @@ func set_climb_height(height: float) -> void:
 	var z_back: float = z_front - CLIMB_DECK_DEPTH
 	_climb_block = _add_box(
 		Vector3(LANE_X[LANE_CLIMB], height * 0.5, (z_front + z_back) * 0.5),
-		Vector3(LEDGE_WIDTH, height, CLIMB_DECK_DEPTH),
+		Vector3(width, height, CLIMB_DECK_DEPTH),
 		_block_material
 	)
-	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back}]
+	_blocks[LANE_CLIMB] = [{"h": height, "z_front": z_front, "z_back": z_back, "w": width}]
+
+
+## Mean speed (m/s) along the climb block's front face while the walker walks beside it on the floor: its origin within
+## FACE_SLIDE_BAND of the face and more than FACE_SLIDE_END_MARGIN from its ends. Over the stat top speed times the cosine of the
+## angle between the heading and the face (the along-face part of full speed) it is `face_slide_ratio` (GDD 8.2: a shallow
+## approach slides along at full along-face speed). `face_slide_time_s` says how long the walker was beside the face.
+var face_slide_speed_mps: float = 0.0
+var face_slide_time_s: float = 0.0
+var face_slide_ratio: float:
+	get:
+		var along: float = absf(sin(_spawn_heading - _spawn_yaw(LANE_CLIMB)))
+		var full: float = float(_walker.stats()["top_speed"]) * along
+		return face_slide_speed_mps / full if full > 0.001 else 0.0
+var _slide_dist: float = 0.0
+var _slide_last_x: float = INF
+var _slide_gap_min: float = INF
+
+
+func _track_face_slide(delta: float) -> void:
+	if _lane != LANE_CLIMB or not _blocks.has(LANE_CLIMB) or _walker.gait() == null:
+		return
+	var block: Dictionary = _blocks[LANE_CLIMB][0]
+	var at: Vector3 = _walker.global_position
+	var gap: float = at.z - float(block["z_front"])
+	var half: float = float(block.get("w", LEDGE_WIDTH)) * 0.5 - FACE_SLIDE_END_MARGIN
+	var beside: bool = (
+		gap > 0.0 and gap < FACE_SLIDE_BAND and absf(at.x - float(LANE_X[LANE_CLIMB])) < half
+		and at.y < 0.6 * float(_walker.stats()["reach"]) + 0.15 and _walker.move_input_active
+	)
+	if beside:
+		_slide_gap_min = minf(_slide_gap_min, gap)
+	if beside and _slide_last_x != INF:
+		_slide_dist += absf(at.x - _slide_last_x)
+		face_slide_time_s += delta
+		face_slide_speed_mps = _slide_dist / face_slide_time_s
+	_slide_last_x = at.x if beside else INF
+
+
+## Prints the along-face slide (`FACESLIDE label speed ratio time closest`).
+func log_face_slide(label: String) -> void:
+	print("FACESLIDE %s speed=%.3f ratio=%.3f time=%.2f closest=%.2f" % [label, face_slide_speed_mps, face_slide_ratio, face_slide_time_s, _slide_gap_min])
 
 
 ## Rolling hash of the run since `hash_start()`, and the one `hash_record()` kept for the run before.

@@ -83,6 +83,22 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "climb_time_s",
     "op": ">=",
@@ -282,6 +298,22 @@
     "args": [
      "gait_climb strider climbs a ledge 0.75 x climb tall (1.080 m)"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -489,6 +521,22 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "climb_time_s",
     "op": ">=",
@@ -680,6 +728,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": "==",
     "value": 0.0
@@ -866,6 +930,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": "==",
     "value": 0.0
@@ -1047,6 +1127,22 @@
     "args": [
      "gait_climb crawler blocked at a 0.550 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

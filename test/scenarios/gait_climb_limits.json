@@ -84,6 +84,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.879
@@ -277,6 +293,22 @@
     "args": [
      "gait_climb scout blocked at a 0.910 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -481,6 +513,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.523
@@ -674,6 +722,22 @@
     "args": [
      "gait_climb crawler blocked at a 0.546 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -878,6 +942,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 1.4130000000000003
@@ -1071,6 +1151,22 @@
     "args": [
      "gait_climb strider blocked at a 1.456 m face"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

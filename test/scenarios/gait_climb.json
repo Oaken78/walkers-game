@@ -73,6 +73,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.85
@@ -301,6 +317,22 @@
     "args": [
      "gait_climb crawler ledges from 0.30 m up and down 0.30-0.50, blocked at 0.55"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

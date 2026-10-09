@@ -467,3 +467,37 @@ func test_a_hip_already_inside_the_fold_distance_may_only_move_away_from_its_foo
 	assert_true(WalkerBody.feet_in_reach(away, inside, r[0], r[1], r[2], r[3], r[4]), "moving away is always allowed")
 	var closer := Transform3D(Basis.IDENTITY, Vector3(0, -0.75, 0))
 	assert_false(WalkerBody.feet_in_reach(closer, inside, r[0], r[1], r[2], r[3], r[4]), "nearer would push the pad out and up")
+
+
+func test_a_climb_swing_settles_onto_its_landing_with_no_step_at_either_end() -> void:
+	assert_almost_eq(WalkerBody.ease_settle(0.0), 0.0, 0.000001)
+	assert_almost_eq(WalkerBody.ease_settle(1.0), 1.0, 0.000001)
+	# Flat at the end: the last tick of a 21-tick swing leaves under 1 % of the settle (smoothstep leaves about 3 %).
+	assert_lt(1.0 - WalkerBody.ease_settle(0.9), 0.01)
+	var last: float = 0.0
+	for k in 21:
+		var value: float = WalkerBody.ease_settle(float(k) / 20.0)
+		assert_gte(value, last, "monotone at %d" % k)
+		last = value
+
+
+func test_a_ledge_is_climbed_within_45_deg_of_head_on_and_slid_along_beyond() -> void:
+	var body := WalkerBody.new()
+	# Heading -Z (yaw 0); a face ahead points its normal out toward the walker (+Z).
+	for case in [[0.0, true], [30.0, true], [44.0, true], [46.0, false], [60.0, false], [90.0, false]]:
+		var out := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(out, false), case[1], "up a face %s deg off head-on" % case[0])
+	# Stepping down: the edge's face points out of the higher ground, along the heading.
+	for case in [[0.0, true], [40.0, true], [50.0, false]]:
+		var out_down := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(case[0]))
+		assert_eq(body._approach_ok(out_down, true), case[1], "down an edge %s deg off head-on" % case[0])
+	body.free()
+
+
+func test_a_climb_under_way_finishes_whatever_the_heading() -> void:
+	var body := WalkerBody.new()
+	var shallow := Vector3(0.0, 0.0, 1.0).rotated(Vector3.UP, deg_to_rad(70.0))
+	assert_false(body._approach_ok(shallow, false))
+	body._climb_session = true
+	assert_true(body._approach_ok(shallow, false), "a foot is up: the climb finishes")
+	body.free()

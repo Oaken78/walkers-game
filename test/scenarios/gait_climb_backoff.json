@@ -91,6 +91,22 @@
   },
   {
    "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
     "node": ".",
     "prop": "backoff_done",
     "op": "==",
@@ -202,6 +218,22 @@
     "args": [
      "gait_climb_backoff strider: S during a support wait"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

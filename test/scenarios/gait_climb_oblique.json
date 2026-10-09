@@ -20,7 +20,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     0.675
+     0.675,
+     30.0
     ]
    }
   },
@@ -87,6 +88,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.664
@@ -143,6 +152,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -170,7 +187,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     0.675
+     0.675,
+     30.0
     ]
    }
   },
@@ -237,6 +255,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.664
@@ -293,6 +319,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "<=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -320,7 +354,375 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     0.675
+     0.675,
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "climb",
+     -3.5,
+     40.0,
+     2.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 700
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_climb_oblique scout 40 deg (left) over a 0.675 m block"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": ">=",
+    "value": 0.664
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "descended_climb",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "<=",
+    "value": 4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_pitch_deg",
+    "op": "<=",
+    "value": 25.01
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_climb_height",
+    "args": [
+     0.675,
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "climb",
+     -3.5,
+     50.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "reset",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 420
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": "%Telemetry",
+    "method": "report",
+    "args": [
+     "gait_climb_oblique scout 50 deg (left) over a 0.675 m block"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_face_slide",
+    "args": [
+     "gait_climb_oblique scout 50 deg (left) over a 0.675 m block"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_time_s",
+    "op": ">=",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_ratio",
+    "op": ">=",
+    "value": 0.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "longest_stall_s",
+    "op": "<=",
+    "value": 0.6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "min_support_margin_ratio",
+    "op": ">=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_drift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_fold_lift_m",
+    "op": "<=",
+    "value": 0.02
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_pitch_deg",
+    "op": "<=",
+    "value": 25.01
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "tick_p99_ms",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_climb_height",
+    "args": [
+     0.675,
+     30.0
     ]
    }
   },
@@ -360,7 +762,7 @@
    }
   },
   {
-   "wait_frames": 700
+   "wait_frames": 420
   },
   {
    "call": {
@@ -385,12 +787,60 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
    "call": {
     "node": ".",
-    "method": "log_moved",
+    "method": "log_face_slide",
     "args": [
-     "oblique grazing"
+     "gait_climb_oblique scout 60 deg (left) over a 0.675 m block"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_time_s",
+    "op": ">=",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_ratio",
+    "op": ">=",
+    "value": 0.9
    }
   },
   {
@@ -436,6 +886,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -463,7 +921,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     0.675
+     0.675,
+     30.0
     ]
    }
   },
@@ -503,7 +962,7 @@
    }
   },
   {
-   "wait_frames": 700
+   "wait_frames": 420
   },
   {
    "call": {
@@ -528,12 +987,60 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
    "call": {
     "node": ".",
-    "method": "log_moved",
+    "method": "log_face_slide",
     "args": [
-     "oblique grazing"
+     "gait_climb_oblique scout 60 deg (right) over a 0.675 m block"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_time_s",
+    "op": ">=",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_ratio",
+    "op": ">=",
+    "value": 0.9
    }
   },
   {
@@ -579,6 +1086,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -606,7 +1121,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     1.08
+     1.08,
+     30.0
     ]
    }
   },
@@ -673,9 +1189,17 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
-    "value": 1.0690000000000002
+    "value": 1.069
    }
   },
   {
@@ -729,6 +1253,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -756,7 +1288,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     1.08
+     1.08,
+     30.0
     ]
    }
   },
@@ -823,9 +1356,17 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
-    "value": 1.0690000000000002
+    "value": 1.069
    }
   },
   {
@@ -879,6 +1420,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -906,7 +1455,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     1.08
+     1.08,
+     30.0
     ]
    }
   },
@@ -946,7 +1496,7 @@
    }
   },
   {
-   "wait_frames": 700
+   "wait_frames": 420
   },
   {
    "call": {
@@ -971,12 +1521,60 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
    "call": {
     "node": ".",
-    "method": "log_moved",
+    "method": "log_face_slide",
     "args": [
-     "oblique grazing"
+     "gait_climb_oblique strider 60 deg (left) over a 1.080 m block"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_time_s",
+    "op": ">=",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_ratio",
+    "op": ">=",
+    "value": 0.9
    }
   },
   {
@@ -1022,6 +1620,14 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_pitch_deg",
     "op": "<=",
     "value": 25.01
@@ -1049,7 +1655,8 @@
     "node": ".",
     "method": "set_climb_height",
     "args": [
-     1.08
+     1.08,
+     30.0
     ]
    }
   },
@@ -1089,7 +1696,7 @@
    }
   },
   {
-   "wait_frames": 700
+   "wait_frames": 420
   },
   {
    "call": {
@@ -1114,12 +1721,60 @@
    }
   },
   {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
    "call": {
     "node": ".",
-    "method": "log_moved",
+    "method": "log_face_slide",
     "args": [
-     "oblique grazing"
+     "gait_climb_oblique strider 60 deg (right) over a 1.080 m block"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "reach_ups",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "hang_ticks",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "max_climb_m",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_time_s",
+    "op": ">=",
+    "value": 1.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "face_slide_ratio",
+    "op": ">=",
+    "value": 0.9
    }
   },
   {
@@ -1158,6 +1813,14 @@
    "assert_prop": {
     "node": "%Telemetry",
     "prop": "airborne_violations",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
     "op": "==",
     "value": 0
    }

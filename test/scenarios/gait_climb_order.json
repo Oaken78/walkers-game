@@ -142,6 +142,22 @@
   {
    "assert_prop": {
     "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "<=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
     "prop": "max_climb_m",
     "op": ">=",
     "value": 0.5
@@ -223,6 +239,22 @@
     "args": [
      "gait_climb_order strider after the scout"
     ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "landing_level_changes",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "%Telemetry",
+    "prop": "pad_inside_ticks",
+    "op": "==",
+    "value": 0
    }
   },
   {

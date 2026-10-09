@@ -72,6 +72,8 @@ var max_push_rise_m: float = 0.0
 var max_landing_snap_m: float = 0.0
 var max_landing_slide_m: float = 0.0
 var landings_moved: int = 0
+## Landings whose drawn pad rose or dropped more than the leg's stride step-up in the touchdown tick: a landing that changed level.
+var landing_level_changes: int = 0
 ## Largest tick-to-tick tilt change, and the slowest physics tick (ms) since the last reset.
 var max_tilt_step_deg: float = 0.0
 var max_physics_ms: float = 0.0
@@ -115,9 +117,12 @@ var min_pitch_deg: float = 0.0
 var max_root_rise_tick_m: float = 0.0
 ## Smallest centre-of-mass margin inside the planted feet's polygon over the mean reach, over ticks with a leg hanging.
 var min_support_margin_ratio: float = INF
-## Ticks on which a pad (a box 3 cm above its foot point) overlapped the world: a reaching or hanging pad must never.
+## Ticks on which a pad that reaches, steps up or down or hangs (swinging or not), or a planted pad a reach-up put down, overlapped
+## the world with its drawn box (from 1 cm above its foot to its top, corners included): GDD 5, never.
 var pad_inside_ticks: int = 0
-## Prints the first PADIN lines (debugging).
+## Ticks on which a swinging stride pad's drawn box overlapped the world (a stride over a lip or past a rock grazes it; reported,
+## the round-7 follow-up).
+var pad_inside_stride_ticks: int = 0
 ## Highest a hanging foot got above the ground below it, over its reach (hanging legs only).
 var max_hang_rise_ratio: float = 0.0
 var reach_ups: int = 0
@@ -287,7 +292,11 @@ func reset() -> void:
 	max_root_rise_tick_m = 0.0
 	min_support_margin_ratio = INF
 	pad_inside_ticks = 0
+	pad_inside_stride_ticks = 0
 	max_hang_rise_ratio = 0.0
+	landing_level_changes = 0
+	if walker != null:
+		walker.landing_level_changes = 0
 
 
 ## Fraction of ticks the body was held by rule 5 (0..1).
@@ -354,6 +363,7 @@ func report(label: String = "") -> void:
 		"max_landing_snap_m": snappedf(max_landing_snap_m, 0.001),
 		"max_landing_slide_m": snappedf(max_landing_slide_m, 0.001),
 		"landings_moved": walker.landings_moved if walker != null else 0,
+		"landing_level_changes": landing_level_changes,
 		"max_tilt_step_deg": snappedf(max_tilt_step_deg, 0.01),
 		"max_physics_ms": snappedf(max_physics_ms, 0.01),
 		"velocity_resets": velocity_resets,
@@ -372,6 +382,7 @@ func report(label: String = "") -> void:
 		"max_root_rise_tick_m": snappedf(max_root_rise_tick_m, 0.0001),
 		"min_support_margin_ratio": snappedf(minf(min_support_margin_ratio, 9.0), 0.001),
 		"pad_inside_ticks": pad_inside_ticks,
+		"pad_inside_stride_ticks": pad_inside_stride_ticks,
 		"max_hang_rise_ratio": snappedf(max_hang_rise_ratio, 0.001),
 		"reach_ups": reach_ups,
 		"step_ups": step_ups,
@@ -437,6 +448,7 @@ func _physics_process(delta: float) -> void:
 	max_push_rise_m = maxf(max_push_rise_m, walker.max_push_rise)
 	max_landing_snap_m = maxf(max_landing_snap_m, walker.max_landing_snap)
 	max_landing_slide_m = maxf(max_landing_slide_m, walker.max_landing_slide)
+	landing_level_changes = walker.landing_level_changes
 	max_tilt_step_deg = maxf(max_tilt_step_deg, walker.max_tilt_step_deg)
 	max_resolve_pitch_deg = maxf(max_resolve_pitch_deg, walker.max_resolve_pitch_deg)
 	_track_stall(delta)
@@ -469,19 +481,23 @@ func _track_climb(_delta: float) -> void:
 	var basis := Basis(Vector3.UP, walker.yaw_radians())
 	var gait: GaitSolver = walker.gait()
 	var inside: bool = false
+	var stride_inside: bool = false
 	for i in walker.leg_count():
 		var foot: Vector3 = walker.foot_position(i)
 		var near_face: bool = walker.is_leg_hanging(i)
 		var flying: bool = gait.state_of(i) == GaitSolver.LegState.SWINGING
-		if (near_face or walker.is_leg_climbing(i) or walker.leg_reached_up(i)) and not flying and not _teleported_now:
-			# Only the pads that reach, step up, step down or hang (and the planted pads a reach-up put down) are checked while they stand or hover (a pad in mid-swing may graze a corner on its way), with the whole
-			# pad's footprint (corners included) tilted to the pad's ground normal (a pad on a slope lies on it; a stride pad may touch a
-			# rock it is stepping onto).
-			var up: Vector3 = walker.foot_normal(i)
+		var climbing: bool = walker.is_leg_climbing(i)
+		if (near_face or flying or walker.leg_reached_up(i)) and not _teleported_now:
+			# The whole pad's footprint (corners included). A pad in the air is drawn level (yaw only), so it is checked level; a
+			# standing or hanging pad is checked tilted to its ground normal (a pad on a slope lies on it).
+			var up: Vector3 = Vector3.UP if flying else walker.foot_normal(i)
 			var tilt: Basis = Basis(Quaternion(Vector3.UP, up)) * basis
 			_pad_query.transform = Transform3D(tilt, foot + up * (PAD_CHECK_LIFT + _pad_shape.size.y * 0.5))
 			if not space.intersect_shape(_pad_query, 1).is_empty():
-				inside = true
+				if flying and not climbing:
+					stride_inside = true
+				else:
+					inside = true
 		if near_face:
 			_gap_ray.from = foot + Vector3.UP * 0.5
 			_gap_ray.to = foot + Vector3.DOWN * 3.0
@@ -490,6 +506,8 @@ func _track_climb(_delta: float) -> void:
 				max_hang_rise_ratio = maxf(max_hang_rise_ratio, (foot.y - hit["position"].y) / walker.leg_reach(i))
 	if inside:
 		pad_inside_ticks += 1
+	if stride_inside:
+		pad_inside_stride_ticks += 1
 
 
 ## Progress counts vertical rise too (a slow haul up a ledge is not a stall): the speed of the body root in 3D.
