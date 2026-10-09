@@ -496,6 +496,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Pitch-ahead leans only toward footholds the build can stand on (rise <= step-up, slope <= grip) | Lead, from the T03 round-5 code review: leaning toward any ray hit tilted a blocked Scout 12.7 deg up a face it cannot climb and the Strider 10.6 deg at a wall, on flat ground | Lean toward any surface |
 | 2026-10-09 | End legs fan 0.05 x reach fore-aft (from 0.06, set earlier today) | T03 round-6 tuning: at 0.06 the short pair's planted knee rise fell to 0.099 against the 0.10 bar; 0.05 keeps fore-aft room at 0.69 and the shin about 1 deg outward | Loosen the knee bar |
 | 2026-10-09 | Over-grip ground blocks only where it stands taller than the build's step-up; a lower steep obstacle (a boulder, a small ledge) is stepped onto | Lead, from T03 round 6: blocking every over-grip contact turned 0.9 m boulders into walls for the Strider (step-up about 1.0 m), though a ledge of that height is not one; step-up already says what a leg can climb onto. Strider boulder run 22.2 -> 31.5 m | Hysteresis on the contact slope alone |
+| 2026-10-09 | The 4-leg gait_factor stays 0.85 | Lead, measured on main after the T03 merge: with the faster 4-leg wave the quad sustains 31.58 m in 10.2 s on flat ground (0.99 of its 3.124 m/s stat) with no leg holds, so the stat panel already tells the truth | Raise the factor (untested above 0.85) |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).

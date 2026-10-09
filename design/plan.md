@@ -14,12 +14,11 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 - T00 (lead) first.
 - Then T01, T02 and T05 in parallel. T03 (which owns its own test course) and T04 start after T01 and T02
   merge.
-- **Gate:** after T03 and T04, the lead puts T04's rig into `gait_course` (with `WalkerBody.yaw_source` for the
+- **Gate:** after T03 and T04, T14 puts T04's rig into `gait_course` (with `WalkerBody.yaw_source` for the
   fallback) and adds the `gait_course__pitch_low` / `__pitch_high` shots. Then run `gait_course` and
   `build_contrast` plus a playtest-critic pass, and Klas
   plays the tank controls (fallback: body turns to camera yaw). If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
-- T13 (walker hardening from the T03 review) starts after the gate rig is on main and runs while Klas plays
-  the gate.
+- T13 (walker hardening from the T03 review) starts after T14 merges and runs while Klas plays the gate.
 - After the gate: T06, T07, T08 and T09 (max 3 devs at once). Then T11. T12 integrates last, including the HUD.
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
@@ -39,6 +38,7 @@ Status: ready, in-progress, review-passed, done.
 | T08 | Salvage economy, scrap nodes, wreck cache, repair on bank, recall | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd | 3 | | |
 | T09 | Workshop scene + build UI | scenes/workshop/, ui/workshop/, scripts/workshop/, test/scenarios/workshop_edit.json | 3 | | |
 | T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
+| T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | ready | |
 | T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | ready | |
 | T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
 
@@ -47,8 +47,8 @@ Status: ready, in-progress, review-passed, done.
   `start_pitch` facing down-valley (the critic suggests 12-15 deg). With a fixed 1.5 m `target_offset` the Crawler's
   camera sits 0.47 m off the ground at pitch -10; consider a per-build offset. Include a walker tilted 30-39 deg in
   the feet-in-frame check (criterion 8): from behind and above, its uphill feet tuck under the chassis.
-- Lead follow-ups from the T03 review: set the 4-leg gait_factor in GDD 8.1 and walker_build.gd from T03's
-  measured quad speed; TwoBoneIK.solve allocates a Solution per leg per tick (T02 code), so reuse one if the
+- Lead follow-ups from the T03 review: the 4-leg gait_factor stays 0.85 (the quad sustains 0.99 of its stat,
+  GDD log 2026-10-09); TwoBoneIK.solve allocates a Solution per leg per tick (T02 code), so reuse one if the
   perf budget needs it. Arched knees and the shortest-leg cadence are approved (GDD log 2026-10-09) and built in
   T03 round 2.
 - T03: a 4-5 leg wave with one stuck leg stands still until the player steers off (the hovering leg holds the
