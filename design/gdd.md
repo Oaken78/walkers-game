@@ -108,9 +108,11 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
   idle and pauses while `aim` is held; this is a tuning knob for the gate.
-- On a descent, where the ground behind the walker rises steeper than about 25 deg, the camera holds a pitch floor
-  of that slope minus 5 deg (about 35 deg on the 40 deg talus), so the edge behind never hides the walker. It eases
-  in and out; on flatter ground the camera returns to the player's own pitch. Gamepad is out of scope until M2, but the action names
+- On a descent, where the ground behind the walker rises steeper than about 25 deg for at least 1.5 m (a slope, not
+  a boulder or a single ledge), or drops that steeply just ahead, the camera holds a pitch floor of that slope
+  minus 5 deg (about 35 deg on the 40 deg talus), so the edge behind never hides the walker. It eases in over about
+  0.45 s and out over about 0.8 s; on flatter ground the camera returns to the player's own pitch. The floor lets go
+  while `aim` is held. Gamepad is out of scope until M2, but the action names
 already allow it.
 
 ## 7. Failure, success, difficulty curve
@@ -503,6 +505,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | The 4-leg gait_factor stays 0.85 | Lead, measured on main after the T03 merge: with the faster 4-leg wave the quad sustains 31.58 m in 10.2 s on flat ground (0.99 of its 3.124 m/s stat) with no leg holds, so the stat panel already tells the truth | Raise the factor (untested above 0.85) |
 | 2026-10-09 | Readability rule 1: side-on, the far row of feet may hide behind the chassis; seen from behind, every foot stays clear of the chassis and the ground | Klas at the gate ("it is acceptable"), from the T14 playtest review: at pitch 20 abeam the chassis hides the whole far row (Crawler 4 pads, Scout 3), as in the approved midstride view, while the near row carries the whole gait. Showing it would need pitch >= 42-47 deg or a lower chassis (M1) | Raise the camera side-on; lower the chassis now |
 | 2026-10-09 | On descents steeper than about 25 deg the camera holds a pitch floor of the slope minus 5 deg (about 35 on the talus), easing in and out | Klas at the gate ("yes"), from the T14 playtest review: walking down the talus at pitch 20 the shelf edge cuts the line of sight, and recentring puts the camera there on every trip back from the talus pocket (Pillar 3). At pitch 35 every foot is clear. Numbers to confirm with mid-face and foot shots | Global minimum pitch of 35 (loses the look-out range); leave it to the player |
+| 2026-10-09 | Descent floor refined: only sustained slopes (>= 1.5 m of ground steeper than 25 deg, more than a step-up tall) trigger it, it also looks ahead for a drop, it eases in over about 0.45 s and out over about 0.8 s, it lets go while aiming, and it stays slope minus 5 | Lead, from the T15 reviews (code-reviewer and playtest-critic): the steepest-single-sample measure lifted the camera to 45-50 deg at every boulder and ledge, where nothing can hide the walker; the lift started 0.4 s after the edge and snapped in 0.23 s. A 12 m zoom needs slope minus 5 (slope minus 10 hides the feet). Aiming is deliberate, as with recentring. Klas can overrule the aim rule | Steepest single sample; slope minus 10; floor while aiming |
 
 ## 18. Open questions
 - Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
