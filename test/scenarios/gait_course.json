@@ -1473,6 +1473,197 @@
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "bumps"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 70
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     -10.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_active",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "arm_length",
+    "op": ">=",
+    "value": 7.9
+   }
+  },
+  {
+   "screenshot": "pitch_low"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout pitch_low"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "feet_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_min_height_px",
+    "op": ">=",
+    "value": 12.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     60.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "assert_prop": {
+    "node": "OrbitCamera",
+    "prop": "arm_length",
+    "op": ">=",
+    "value": 7.9
+   }
+  },
+  {
+   "screenshot": "pitch_high"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "scout pitch_high"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "feet_in_frame",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "foot_min_height_px",
+    "op": ">=",
+    "value": 12.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 5
+  },
+  {
    "assert_no_errors": true
   }
  ]

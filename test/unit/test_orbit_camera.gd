@@ -213,3 +213,11 @@ func _check_footprint(xs: Array[float], zs: Array[float], origin_h: float, label
 func test_every_foot_is_in_frame_and_at_least_12_px_tall_at_1080p() -> void:
 	_check_footprint(STRIDER_FEET_X, STRIDER_FEET_Z, 0.96, "strider")
 	_check_footprint(CRAWLER_FEET_X, CRAWLER_FEET_Z, 0.36, "crawler")
+
+
+func test_rig_exposes_its_camera_after_ready() -> void:
+	var rig: OrbitCamera = load("res://scenes/camera/orbit_camera.tscn").instantiate()
+	rig.capture_mouse = false
+	add_child_autofree(rig)
+	assert_not_null(rig.camera(), "camera() hands out the Camera3D at the end of the arm")
+	assert_true(rig.camera() is Camera3D)

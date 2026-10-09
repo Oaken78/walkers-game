@@ -2,7 +2,9 @@ class_name GaitCourse
 extends Node3D
 ## The gait test course (T03): flat, bumps, ledges, wall and pocket lanes on one big ground plane, built in code
 ## from a fixed seed, plus the helpers the scenarios call (use_build, spawn_at, hold_action, record_result,
-## show_pair, autopilot, camera modes, yaw source). One plain camera follows the walker; T04's rig replaces it later.
+## show_pair, autopilot, camera modes, yaw source). The scripted shot cameras (follow, pair, side, crest) stay for the
+## baselines; T04's OrbitCamera is the play camera (T14 gate rig): it follows the walker node itself, which sits at the
+## un-bobbed base height, so the 2.8 Hz body bob never reaches the view. Run without a scenario (F6) for free play.
 
 const WALKER_SCENE: PackedScene = preload("res://scenes/walker/walker.tscn")
 const GROUND_COLOR: Color = Color("CAB294")
@@ -81,6 +83,16 @@ const AUTOPILOT_CENTERING: float = 0.12
 const AUTOPILOT_DEAD_DEG: float = 3.0
 
 @export var camera_distance: float = 8.0
+## Key list shown in the free-play label (kept next to the key handling below).
+@export_multiline var help_text: String = (
+	"W/S drive   A/D turn   Q/E strafe   mouse look   wheel zoom   RMB aim\n"
+	+ "T  steer mode TANK <-> CAMERA_YAW\n"
+	+ "1 Scout  2 Strider  3 Crawler  4 Quad  5 Short-pair Scout\n"
+	+ "F1 flat  F2 bumps  F3 talus (40 deg)  F4 ledges  F5 29 deg slope  F6 wall  F7 pocket  R respawn\n"
+	+ "Esc frees the mouse, click captures it again"
+)
+## Foot box limit (GDD 10 rule 1): every foot at least this tall at 1080p (checked by the pitch scenarios).
+@export var min_foot_px_1080: float = 12.0
 
 ## Mean slope of the two steep patches over a 2 m disc, in degrees (28-30 and 35-40).
 var patch_a_slope_deg: float = 0.0
@@ -155,6 +167,34 @@ var patch_gap: float:
 		if _lane == LANE_TALUS:
 			return _walker.global_position.z + TALUS_CORNER_ALONG
 		return _walker.global_position.z + (PATCH_ALONG - PATCH_FLANK)
+## True while the orbit camera is the play camera.
+var orbit_active: bool:
+	get:
+		return _camera_mode == "orbit"
+## "TANK" or "CAMERA_YAW".
+var steer_mode_name: String:
+	get:
+		return "CAMERA_YAW" if _walker.steer_mode == WalkerBody.SteerMode.CAMERA_YAW else "TANK"
+## Peak-to-peak height of the play camera since track_camera_bob(true) (m).
+var camera_bob_p2p_m: float:
+	get:
+		return _cam_y_max - _cam_y_min if _cam_y_max >= _cam_y_min else 0.0
+## Height of the play camera above the ground straight below it (m).
+var camera_height_m: float:
+	get:
+		return _camera_height()
+## Tilt of the walker body from level (degrees).
+var tilt_deg: float:
+	get:
+		return _walker.tilt_degrees()
+## Every foot box is inside the viewport (and in front of the camera).
+var feet_in_frame: bool:
+	get:
+		return _feet_in_frame()
+## Smallest foot box height over all feet, scaled to a 1080 p tall viewport (px).
+var foot_min_height_px: float:
+	get:
+		return _foot_min_height()
 ## Steps per leg per second of the reference run (record_steps_ref) and the current run's ratio to it.
 var steps_ref: float = 0.0
 var steps_ratio: float:
@@ -187,6 +227,13 @@ var clearance_tick: int = -1
 var clearance_min: float = INF
 var _clearance_first: int = -1
 var _camera_mode: String = "follow"
+var _orbit: OrbitCamera
+var _free_play: bool = false
+var _hud_label: Label
+var _track_camera: bool = false
+var _cam_y_min: float = INF
+var _cam_y_max: float = -INF
+var _cam_samples: int = 0
 var _autopilot: bool = false
 var _autopilot_time: float = 0.0
 var _autopilot_center: float = 0.0
@@ -202,6 +249,8 @@ func _ready() -> void:
 	_camera = get_node("Camera")
 	# The camera moves in _process from interpolated poses: it must not be interpolated itself.
 	_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_orbit = get_node("OrbitCamera")
+	_free_play = not _scenario_run()
 	_make_materials()
 	_build_environment()
 	_build_ground()
@@ -213,7 +262,55 @@ func _ready() -> void:
 	_build_talus()
 	_telemetry.observe(_walker)
 	_walker.foot_planted.connect(_on_foot_planted)
+	if _free_play:
+		_orbit.capture_mouse = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_build_hud()
+		_camera_mode = "orbit"
+		_set_orbit_active(true)
+	else:
+		_set_orbit_active(false)
 	spawn_at(LANE_FLAT)
+
+
+func _input(event: InputEvent) -> void:
+	if not _free_play or not event is InputEventKey:
+		return
+	var key: InputEventKey = event
+	if not key.pressed or key.echo:
+		return
+	match key.keycode:
+		KEY_T:
+			toggle_steer_mode()
+		KEY_1:
+			use_build("scout")
+		KEY_2:
+			use_build("strider")
+		KEY_3:
+			use_build("crawler")
+		KEY_4:
+			use_build("quad")
+		KEY_5:
+			use_build("scout_short_pair")
+		KEY_F1:
+			spawn_at(LANE_FLAT)
+		KEY_F2:
+			spawn_at(LANE_BUMPS)
+		KEY_F3:
+			spawn_at(LANE_TALUS, -8.0)
+		KEY_F4:
+			spawn_at(LANE_LEDGES)
+		KEY_F5:
+			spawn_at(LANE_PATCH_A)
+		KEY_F6:
+			spawn_at(LANE_WALL)
+		KEY_F7:
+			spawn_at(LANE_POCKET)
+		KEY_R:
+			spawn_at(_lane)
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 
 func _physics_process(delta: float) -> void:
@@ -254,6 +351,15 @@ func _physics_process(delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	if _walker == null:
+		return
+	if _hud_label != null:
+		_hud_label.text = "STEER: %s   (T toggles)\n%s" % [steer_mode_name, help_text]
+	if _camera_mode == "orbit":
+		if _track_camera:
+			var y: float = _orbit.camera().global_position.y
+			_cam_y_min = minf(_cam_y_min, y)
+			_cam_y_max = maxf(_cam_y_max, y)
+			_cam_samples += 1
 		return
 	var walker_pose: Transform3D = _walker.get_global_transform_interpolated()
 	var focus: Vector3 = walker_pose.origin
@@ -336,6 +442,11 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 	_tick = 0
 	hover_inside_ticks = 0
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
+	if _camera_mode == "orbit":
+		# The interpolated pose would still show the old spot: drop it, and put the camera behind the walker.
+		_walker.reset_physics_interpolation()
+		_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), _orbit.pitch_deg)
+		_orbit.snap()
 	_last_plant.resize(_walker.leg_count())
 	for i in _walker.leg_count():
 		_last_plant[i] = _walker.foot_position(i)
@@ -409,8 +520,62 @@ func set_shadows(enabled: bool) -> void:
 
 
 func set_camera_mode(mode: String, distance: float = 8.0) -> void:
+	_set_orbit_active(mode == "orbit")
 	_camera_mode = mode
 	camera_distance = distance
+
+
+## Switches the play camera to the orbit rig at a pitch (degrees) and distance (m), behind the walker.
+func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0) -> void:
+	_set_orbit_active(true)
+	_camera_mode = "orbit"
+	_orbit.distance = distance
+	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), pitch_deg)
+	_walker.reset_physics_interpolation()
+	_orbit.snap()
+
+
+## Flips the walker between tank steering and heading-follows-camera (the gate question).
+func toggle_steer_mode() -> void:
+	if _walker.steer_mode == WalkerBody.SteerMode.TANK:
+		_walker.yaw_source = _orbit
+		_yaw_source = _orbit
+		_walker.steer_mode = WalkerBody.SteerMode.CAMERA_YAW
+	else:
+		_walker.steer_mode = WalkerBody.SteerMode.TANK
+		_walker.yaw_source = null
+		_yaw_source = null
+
+
+func track_camera_bob(enabled: bool) -> void:
+	_track_camera = enabled
+	_cam_y_min = INF
+	_cam_y_max = -INF
+	_cam_samples = 0
+
+
+## Prints the camera height above the ground and the bob left on it (report numbers).
+func log_camera(label: String) -> void:
+	print(
+		"CAMERA %s pitch=%.1f arm=%.2f height_m=%.3f bob_p2p_m=%.4f samples=%d"
+		% [label, _orbit.pitch_deg, _orbit.arm_length, _camera_height(), camera_bob_p2p_m, _cam_samples]
+	)
+
+
+## Prints every foot's screen box (viewport px) and its height scaled to 1080 p.
+func log_foot_boxes(label: String) -> void:
+	var scale_1080: float = 1080.0 / get_viewport().get_visible_rect().size.y
+	var boxes: Array[Rect2] = _foot_boxes()
+	for i in boxes.size():
+		var box: Rect2 = boxes[i]
+		print(
+			"FOOTBOX %s leg=%d x=%.0f..%.0f y=%.0f..%.0f h_1080=%.1f"
+			% [label, i, box.position.x, box.end.x, box.position.y, box.end.y, box.size.y * scale_1080]
+		)
+	print(
+		"FOOTBOX %s viewport=%s min_h_1080=%.1f tilt=%.1f"
+		% [label, str(get_viewport().get_visible_rect().size), _foot_min_height(), _walker.tilt_degrees()]
+	)
 
 
 ## Steer by a node rotated `degrees` about Y (CAMERA_YAW mode, the gate fallback).
@@ -550,6 +715,90 @@ func log_pair_extents() -> void:
 
 
 # --- Measurements ------------------------------------------------------------------------------------------------
+
+
+## True for any run started with --scenario= (free play only when there is none).
+func _scenario_run() -> bool:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--scenario="):
+			return true
+	return false
+
+
+## Makes the orbit rig (processing, input, current camera) or the scripted camera the play camera.
+func _set_orbit_active(active: bool) -> void:
+	_orbit.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	if active:
+		_orbit.camera().make_current()
+	else:
+		_camera.make_current()
+
+
+func _build_hud() -> void:
+	var layer := CanvasLayer.new()
+	_hud_label = Label.new()
+	_hud_label.position = Vector2(12.0, 8.0)
+	_hud_label.add_theme_font_size_override("font_size", 16)
+	_hud_label.add_theme_color_override("font_color", Color.WHITE)
+	_hud_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	_hud_label.add_theme_constant_override("outline_size", 6)
+	layer.add_child(_hud_label)
+	add_child(layer)
+
+
+func _active_camera() -> Camera3D:
+	return _orbit.camera() if _camera_mode == "orbit" else _camera
+
+
+## Screen box (viewport px) of every foot pad: the 8 corners of the pad box, yaw-aligned like the drawn pad.
+func _foot_boxes() -> Array[Rect2]:
+	var boxes: Array[Rect2] = []
+	var camera: Camera3D = _active_camera()
+	var basis := Basis(Vector3.UP, _walker.yaw_radians())
+	var half := WalkerLeg.PAD_SIZE * 0.5
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		var lo := Vector2(INF, INF)
+		var hi := Vector2(-INF, -INF)
+		var behind: bool = false
+		for sx: float in [-1.0, 1.0]:
+			for sy: float in [0.0, 1.0]:
+				for sz: float in [-1.0, 1.0]:
+					var corner: Vector3 = foot + basis * Vector3(sx * half.x, sy * WalkerLeg.PAD_SIZE.y, sz * half.z)
+					if camera.is_position_behind(corner):
+						behind = true
+						continue
+					var px: Vector2 = camera.unproject_position(corner)
+					lo = Vector2(minf(lo.x, px.x), minf(lo.y, px.y))
+					hi = Vector2(maxf(hi.x, px.x), maxf(hi.y, px.y))
+		if behind:
+			boxes.append(Rect2(Vector2(-1.0e6, -1.0e6), Vector2(2.0e6, 2.0e6)))
+		else:
+			boxes.append(Rect2(lo, hi - lo))
+	return boxes
+
+
+func _feet_in_frame() -> bool:
+	var view: Rect2 = get_viewport().get_visible_rect()
+	for box in _foot_boxes():
+		if not view.encloses(box):
+			return false
+	return true
+
+
+func _foot_min_height() -> float:
+	var scale_1080: float = 1080.0 / get_viewport().get_visible_rect().size.y
+	var low: float = INF
+	for box in _foot_boxes():
+		low = minf(low, box.size.y * scale_1080)
+	return low
+
+
+func _camera_height() -> float:
+	var from: Vector3 = _active_camera().global_position
+	var query := PhysicsRayQueryParameters3D.create(from + Vector3.UP * 5.0, from + Vector3.DOWN * 50.0, 1)
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	return from.y - (hit["position"].y if not hit.is_empty() else 0.0)
 
 
 func _spawn_point(lane: String) -> Vector3:
@@ -728,7 +977,8 @@ func _remove_pair() -> void:
 	if _pair_walker != null:
 		_pair_walker.queue_free()
 		_pair_walker = null
-	set_camera_mode("follow", 8.0)
+	if _camera_mode != "orbit":
+		set_camera_mode("follow", 8.0)
 
 
 # --- Course construction ---------------------------------------------------------------------------------------

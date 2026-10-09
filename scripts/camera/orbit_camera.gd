@@ -161,6 +161,11 @@ func zoom(steps: int) -> void:
 	distance = OrbitMath.zoom_distance(distance, steps, zoom_step, min_distance, max_distance)
 
 
+## The rendered Camera3D at the end of the arm (screen projection, make_current).
+func camera() -> Camera3D:
+	return _camera
+
+
 func is_aiming() -> bool:
 	return Input.is_action_pressed("aim")
 
