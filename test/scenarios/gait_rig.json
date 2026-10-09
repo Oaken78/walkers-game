@@ -85,12 +85,18 @@
    }
   },
   {
-   "screenshot": "crawler_tilted"
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "crawler tilted pitch 50"
+    ]
+   }
   },
   {
    "call": {
     "node": ".",
-    "method": "log_foot_boxes",
+    "method": "log_foot_vis",
     "args": [
      "crawler tilted pitch 50"
     ]
@@ -527,6 +533,580 @@
   },
   {
    "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p20"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V1 crawler descending behind pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V1 crawler descending behind pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     35.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p35"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V1 crawler descending behind pitch 35"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V1 crawler descending behind pitch 35"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "screenshot": "crawler_abeam_flat"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V2 crawler flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V2 crawler flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_swing_freeze",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 8
+  },
+  {
+   "screenshot": "scout_abeam_flat"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V2 scout flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V2 scout flat abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus",
+     -8.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     33.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 560
+  },
+  {
+   "screenshot": "crawler_climb_abeam"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V3 crawler climbing abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V3 crawler climbing abeam pitch 20"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "talus_top"
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     45.0,
+     8.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "arm_tilt_freeze",
+    "args": [
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "screenshot": "crawler_descend_p45"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_boxes",
+    "args": [
+     "V4 crawler descending behind pitch 45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "V4 crawler descending behind pitch 45"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "resume",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
   },
   {
    "assert_no_errors": true

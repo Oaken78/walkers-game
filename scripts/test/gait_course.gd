@@ -117,7 +117,7 @@ var wall_gap: float:
 ## Yaw error to the yaw source in degrees (CAMERA_YAW checks).
 var yaw_error_deg: float:
 	get:
-		if _walker == null or _yaw_source == null:
+		if _walker == null or _steer_source() == null:
 			return 0.0
 		return rad_to_deg(wrapf(_yaw_target() - _walker.yaw_radians(), -PI, PI))
 ## Distance from the walker to the nearest edge of the current lane's driving area.
@@ -238,6 +238,7 @@ var _autopilot: bool = false
 var _autopilot_time: float = 0.0
 var _autopilot_center: float = 0.0
 var _yaw_source: Node3D
+var _spawn_offset: float = 0.0
 var _yaw_start_sign: float = 0.0
 var _pocket_back_z: float = 0.0
 
@@ -307,7 +308,7 @@ func _input(event: InputEvent) -> void:
 		KEY_F7:
 			spawn_at(LANE_POCKET)
 		KEY_R:
-			spawn_at(_lane)
+			spawn_at(_lane, _spawn_offset)
 		_:
 			return
 	get_viewport().set_input_as_handled()
@@ -317,7 +318,7 @@ func _physics_process(delta: float) -> void:
 	if _first_tick:
 		# The static bodies are registered with the physics server by now: plant on the real ground.
 		_first_tick = false
-		spawn_at(_lane)
+		spawn_at(_lane, _spawn_offset)
 	if _autopilot:
 		_run_autopilot(delta)
 	_track_step_up()
@@ -439,6 +440,7 @@ func spawn_at(lane: String, offset_z: float = 0.0) -> void:
 		push_error("GaitCourse.spawn_at: unknown lane %s" % lane)
 		return
 	_lane = lane
+	_spawn_offset = offset_z
 	_tick = 0
 	hover_inside_ticks = 0
 	_walker.teleport(Transform3D(Basis(Vector3.UP, _spawn_yaw(lane)), origin))
@@ -526,11 +528,14 @@ func set_camera_mode(mode: String, distance: float = 8.0) -> void:
 
 
 ## Switches the play camera to the orbit rig at a pitch (degrees) and distance (m), behind the walker.
-func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0) -> void:
+## yaw_offset_deg turns the camera that far around the walker (90 = abeam); a non-zero offset also switches the
+## rig's recentring off so the view holds while the walker moves.
+func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0, yaw_offset_deg: float = 0.0) -> void:
 	_set_orbit_active(true)
 	_camera_mode = "orbit"
 	_orbit.distance = distance
-	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z), pitch_deg)
+	_orbit.recenter_enabled = is_zero_approx(yaw_offset_deg)
+	_orbit.set_angles(OrbitMath.behind_yaw(-_walker.global_basis.z) + yaw_offset_deg, pitch_deg)
 	_walker.reset_physics_interpolation()
 	_orbit.snap()
 
@@ -539,12 +544,10 @@ func use_orbit_camera(pitch_deg: float = 20.0, distance: float = 8.0) -> void:
 func toggle_steer_mode() -> void:
 	if _walker.steer_mode == WalkerBody.SteerMode.TANK:
 		_walker.yaw_source = _orbit
-		_yaw_source = _orbit
 		_walker.steer_mode = WalkerBody.SteerMode.CAMERA_YAW
 	else:
 		_walker.steer_mode = WalkerBody.SteerMode.TANK
 		_walker.yaw_source = null
-		_yaw_source = null
 
 
 func track_camera_bob(enabled: bool) -> void:
@@ -562,6 +565,47 @@ func log_camera(label: String) -> void:
 	)
 
 
+## For every pad: how many of 5 sight lines (top centre + 4 top corners) from the active camera reach it, against
+## the world (layer 1) and the walker's chassis box. The walker's physics colliders are not used: the stance guard
+## is a big invisible cylinder. Hip balls and the tops are ignored. Reported, not asserted:
+## `FOOTVIS <tag> leg=i visible=k/5`.
+func log_foot_vis(tag: String) -> void:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var eye: Vector3 = _active_camera().global_position
+	var basis := Basis(Vector3.UP, _walker.yaw_radians())
+	var half := WalkerLeg.PAD_SIZE * 0.5
+	var top: float = WalkerLeg.PAD_SIZE.y
+	var offsets: Array[Vector3] = [
+		Vector3(0.0, top, 0.0),
+		Vector3(-half.x, top, -half.z),
+		Vector3(half.x, top, -half.z),
+		Vector3(-half.x, top, half.z),
+		Vector3(half.x, top, half.z)
+	]
+	var chassis: MeshInstance3D = _walker.get_node("Chassis")
+	var box: BoxMesh = chassis.mesh as BoxMesh
+	var to_local: Transform3D = chassis.global_transform.affine_inverse()
+	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
+	var rows: Array[String] = []
+	for i in _walker.leg_count():
+		var foot: Vector3 = _walker.foot_position(i)
+		var seen: int = 0
+		for offset in offsets:
+			var point: Vector3 = foot + basis * offset
+			var toward: Vector3 = (point - eye).normalized()
+			# Stop 2 cm short of the pad: the pad itself has no collider, but the ground under it is close.
+			var end: Vector3 = point - toward * 0.02
+			var query := PhysicsRayQueryParameters3D.create(eye, end, 1)
+			var blocked: bool = not space.intersect_ray(query).is_empty()
+			if not blocked and box != null:
+				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
+			if not blocked:
+				seen += 1
+		rows.append("FOOTVIS %s leg=%d visible=%d/5" % [tag, i, seen])
+	for row in rows:
+		print(row)
+
+
 ## Prints every foot's screen box (viewport px) and its height scaled to 1080 p.
 func log_foot_boxes(label: String) -> void:
 	var scale_1080: float = 1080.0 / get_viewport().get_visible_rect().size.y
@@ -573,8 +617,15 @@ func log_foot_boxes(label: String) -> void:
 			% [label, i, box.position.x, box.end.x, box.position.y, box.end.y, box.size.y * scale_1080]
 		)
 	print(
-		"FOOTBOX %s viewport=%s min_h_1080=%.1f tilt=%.1f"
-		% [label, str(get_viewport().get_visible_rect().size), _foot_min_height(), _walker.tilt_degrees()]
+		"FOOTBOX %s viewport=%s min_h_1080=%.1f tilt=%.1f along_z=%.2f arm=%.2f"
+		% [
+			label,
+			str(get_viewport().get_visible_rect().size),
+			_foot_min_height(),
+			_walker.tilt_degrees(),
+			_walker.global_position.z,
+			_orbit.arm_length
+		]
 	)
 
 
@@ -803,6 +854,10 @@ func _camera_height() -> float:
 
 func _spawn_point(lane: String) -> Vector3:
 	match lane:
+		"talus_top":
+			# On the shelf above the face, 3 m back from the edge, facing +Z down the face.
+			var along: float = TALUS_CORNER_ALONG + ValleyLayout.TALUS_SLOPE_LEN + 3.0
+			return Vector3(LANE_X[LANE_TALUS], _talus_height(along) + SPAWN_Y, -along)
 		LANE_PATCH_A:
 			return Vector3(LANE_X[LANE_BUMPS] - PATCH_X, SPAWN_Y, -(PATCH_ALONG - 7.0))
 		"crest":
@@ -816,6 +871,8 @@ func _spawn_point(lane: String) -> Vector3:
 
 func _spawn_yaw(lane: String) -> float:
 	# The crest lane starts on the crest line, facing +X (along the ridge, toward the block face).
+	if lane == "talus_top":
+		return PI
 	return -PI * 0.5 if lane == "crest" else 0.0
 
 
@@ -865,6 +922,8 @@ func _on_patch() -> bool:
 
 
 func _lane_key() -> String:
+	if _lane == "talus_top":
+		return LANE_TALUS
 	if _lane == LANE_PATCH_A or _lane == "boulders" or _lane == "crest":
 		return LANE_BUMPS
 	return _lane
@@ -931,10 +990,16 @@ func _track_step_up() -> void:
 			_telemetry.max_step_up_m = maxf(_telemetry.max_step_up_m, height)
 
 
+## The node the walker steers to in CAMERA_YAW (the orbit rig after toggle_steer_mode, else the scripted YawSource).
+func _steer_source() -> Node3D:
+	return _walker.yaw_source if is_instance_valid(_walker.yaw_source) else null
+
+
 func _yaw_target() -> float:
-	if _yaw_source == null:
+	var source: Node3D = _steer_source()
+	if source == null:
 		return 0.0
-	var heading: Vector3 = -_yaw_source.global_transform.basis.z
+	var heading: Vector3 = -source.global_transform.basis.z
 	return atan2(-heading.x, -heading.z)
 
 

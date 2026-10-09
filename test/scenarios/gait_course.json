@@ -1252,6 +1252,15 @@
   {
    "call": {
     "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "midstride"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "log_pads",
     "args": []
    }
@@ -1560,6 +1569,15 @@
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "scout pitch_low"
+    ]
+   }
+  },
+  {
    "assert_prop": {
     "node": ".",
     "prop": "feet_in_frame",
@@ -1622,6 +1640,15 @@
    "call": {
     "node": ".",
     "method": "log_foot_boxes",
+    "args": [
+     "scout pitch_high"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
     "args": [
      "scout pitch_high"
     ]

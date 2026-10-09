@@ -605,6 +605,15 @@
   {
    "call": {
     "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "build_contrast a_vs_b"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "log_pair_extents",
     "args": []
    }

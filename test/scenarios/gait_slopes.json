@@ -938,6 +938,15 @@
   {
    "call": {
     "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_slopes crawler_crest_b"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "log_hips",
     "args": []
    }
@@ -1089,6 +1098,15 @@
   {
    "call": {
     "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_slopes crawler_talus_edge"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "log_hips",
     "args": []
    }
@@ -1185,6 +1203,15 @@
   },
   {
    "screenshot": "steep"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_foot_vis",
+    "args": [
+     "gait_slopes steep"
+    ]
+   }
   },
   {
    "call": {
