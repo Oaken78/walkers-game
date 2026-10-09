@@ -18,6 +18,8 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
   fallback) and adds the `gait_course__pitch_low` / `__pitch_high` shots. Then run `gait_course` and
   `build_contrast` plus a playtest-critic pass, and Klas
   plays the tank controls (fallback: body turns to camera yaw). If risk 1, 2 or 3 from GDD section 16 fails, stop and redesign before content work.
+  **Passed 2026-10-09:** Klas kept tank steering (weapons follow the body's heading and the camera's pitch; GDD log),
+  the gait and build contrast hold; the climbing redesign (T16) came out of the gate feedback.
 - T13 (walker hardening from the T03 review, boulder lag first) and T15 (descent camera, Klas's gate decision)
   run in parallel after T14 merges, while Klas plays the gate.
 - T16 (climbing, reach and haul: Klas's gate decision) starts after T13 merges. The climb pose check (GDD 16 risk 7)
@@ -81,8 +83,8 @@ Status: ready, in-progress, review-passed, done.
   reset should read the project setting; the hitch label should print `hitch_ms`. Uneven frame pacing is covered only
   by real-hardware play (the fixed-fps tools cannot emulate it).
 - T06: the crosshair and any HUD Control at screen centre use `mouse_filter = IGNORE`, so they never swallow mouse look.
-  Body tilt now follows the slope up to the build's grip (a Crawler climbs the talus at 39 deg), so decide whether the
-  turret's pitch limits are body- or world-relative; body-relative -10..45 deg cannot aim level on the talus.
+  Aim model decided at the gate: weapons point along the body's heading and follow the camera's pitch (no turret yaw);
+  the game-designer writes it into GDD 6 and 8.3 before the T06 packet.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
 - T07: the ledge-guard drone site sits in the west wall's shadow strip; check the fight reads there.

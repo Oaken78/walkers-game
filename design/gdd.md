@@ -474,7 +474,8 @@ World palette, from the 50 % style mix (look-test mockup):
 2. **Builds feel different enough** (section 4). Spike: the `build_contrast` scenario with A/B metrics, checked
    before any content work.
 3. **Tank controls feel clunky with a free camera** (driving one way while looking another). Fallback: the body
-   turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate.
+   turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate. Decided 2026-10-09: tank kept;
+   weapons follow the body's heading and the camera's pitch (Decisions log).
 4. **Toon outline cost** on a 400 m terrain. The outline is built in M1; measure its draw calls there.
    M0 ships the toon ramp without it.
 5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T00 (section 13).
@@ -551,9 +552,12 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-09 | Descent floor refined: only sustained slopes (>= 1.5 m of ground steeper than 25 deg, more than a step-up tall) trigger it, it also looks ahead for a drop, it eases in over about 0.45 s and out over about 0.8 s, it lets go while aiming, and it stays slope minus 5 | Lead, from the T15 reviews (code-reviewer and playtest-critic): the steepest-single-sample measure lifted the camera to 45-50 deg at every boulder and ledge, where nothing can hide the walker; the lift started 0.4 s after the edge and snapped in 0.23 s. A 12 m zoom needs slope minus 5 (slope minus 10 hides the feet). Aiming is deliberate, as with recentring. Klas can overrule the aim rule | Steepest single sample; slope minus 10; floor while aiming |
 | 2026-10-09 | The descent floor triggers only when the steep slope stands in the line of sight from the camera to the walker's feet (replacing a fixed 1.5 m start limit), uses the steepest full sample segment, and eases its target too | Lead, from the T15 round-2 reviews: averaging over a partial segment made the floor pop 2-3 deg every 0.75 m down the face; a fixed start limit missed a Crawler waiting 1.5-2.6 m from the talus foot at pitch 17-20 with the camera over the face | Fixed 1.5 m start limit; mean slope |
 | 2026-10-09 | The descent floor stays at slope minus 5 (the walker stays visible; on the 40 deg talus the pads stack per side) | Klas, from the T15 mid-face shots at 35, 45 and 50 deg: slope plus 10 (50 deg) reads 2-3 pads per side instead of 1 but doubles the camera move and takes the horizon and drones out of frame (Pillar 3); the player can still pitch up by hand | Slope plus 10 |
+| 2026-10-09 | Gate (risk 3): tank steering stays, Q/E strafe kept. Weapons point where the walker faces horizontally and follow the camera's pitch vertically; no free turret yaw. Section 6 and 8.3 to be rewritten for this aim model | Klas at the T03/T04 gate, after playtesting the Windows build: "Keep tank steering. Any weapon is pointed where the walker is directed horizontally and follows the camera vertically. Keep strafing". Turning the body is now how you aim sideways, so the turn rate is felt in every fight (Pillar 1) | Camera-yaw fallback (body turns to camera yaw); hybrid (camera-yaw while aiming); free turret +/- 150 deg |
+| 2026-10-09 | After play: the descent camera floor stays as built, sliding along an unclimbable face keeps full along-face speed, the start pitch stays 20 deg | Klas at the gate, from the playtest build | Softer or no descent floor; slide damped to 70 %; start pitch 15 deg |
 
 ## 18. Open questions
-- Do tank controls hold up with a free camera? Klas feels it at the T03/T04 gate (fallback in section 16).
+- Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
+  and the camera's pitch (Decisions log).
 - Blueprints are kept on death (current default). Should they instead be carried like scrap, for more stakes?
 - The economy is estimated, not simulated: about 90 scrap per trip. Check real income in `loop_full` and retune
   prices before M1.
