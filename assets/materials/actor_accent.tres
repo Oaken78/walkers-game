@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/actor_toon.gdshader" id="1_shader"]
+
+[resource]
+resource_name = "actor_accent"
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(1, 0.5412, 0.23922, 1)
+shader_parameter/lit_gain = 1.0
+shader_parameter/lit_lift = 0.25
+shader_parameter/lit_cap = 1.0
+shader_parameter/shadow_gain = 0.45
+shader_parameter/lit_threshold = 0.72
+shader_parameter/shadow_threshold = -0.05
+shader_parameter/emission_energy = 0.0

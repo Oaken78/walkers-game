@@ -1,15 +1,23 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/world/valley.gd" id="1_valley"]
+[ext_resource type="Shader" path="res://shaders/valley_sky.gdshader" id="2_sky"]
+[ext_resource type="Shader" path="res://shaders/film_grain.gdshader" id="3_grain"]
 
-[sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
-sky_top_color = Color(0.56471, 0.62745, 0.57255, 1)
-sky_horizon_color = Color(0.8549, 0.81176, 0.71373, 1)
-sky_curve = 0.5
-ground_bottom_color = Color(0.72, 0.66, 0.56, 1)
-ground_horizon_color = Color(0.8549, 0.81176, 0.71373, 1)
-ground_curve = 0.05
-sun_angle_max = 1.0
+[sub_resource type="ShaderMaterial" id="SkyMat_1"]
+shader = ExtResource("2_sky")
+shader_parameter/top_color = Color(0.56471, 0.62745, 0.57255, 1)
+shader_parameter/horizon_color = Color(0.8549, 0.81176, 0.71373, 1)
+shader_parameter/ground_color = Color(0.72, 0.66, 0.56, 1)
+shader_parameter/curve = 0.5
+shader_parameter/mottle_amount = 0.025
+shader_parameter/mottle_scale = 6.0
+
+[sub_resource type="ShaderMaterial" id="GrainMat_1"]
+shader = ExtResource("3_grain")
+shader_parameter/opacity = 0.045
+shader_parameter/contrast = 0.35
+shader_parameter/refresh_hz = 24.0
 
 [sub_resource type="Sky" id="Sky_1"]
 sky_material = SubResource("SkyMat_1")
@@ -22,6 +30,13 @@ ambient_light_color = Color(0.78, 0.82, 0.78, 1)
 ambient_light_energy = 0.4
 reflected_light_source = 1
 tonemap_mode = 0
+glow_enabled = true
+glow_intensity = 0.8
+glow_strength = 1.0
+glow_bloom = 0.0
+glow_blend_mode = 1
+glow_hdr_threshold = 1.05
+glow_hdr_scale = 2.0
 fog_enabled = true
 fog_mode = 1
 fog_light_color = Color(0.8549, 0.81176, 0.71373, 1)
@@ -44,12 +59,19 @@ script = ExtResource("1_valley")
 environment = SubResource("Env_1")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-45, 270, 0)
+rotation_degrees = Vector3(-55, 250, 0)
 light_color = Color(1, 0.98, 0.95, 1)
 light_energy = 1.0
 shadow_enabled = true
 shadow_opacity = 0.7
 directional_shadow_max_distance = 150.0
+
+[node name="LedgeFill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -104, 4.6, 190)
+light_energy = 1.0
+shadow_enabled = false
+omni_range = 24.0
+omni_attenuation = 0.0
 
 [node name="WorkshopSite" type="Marker3D" parent="."]
 unique_name_in_owner = true
@@ -97,3 +119,15 @@ collision_mask = 0
 
 [node name="Smoke" type="MeshInstance3D" parent="."]
 cast_shadow = 0
+
+[node name="Grain" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="GrainRect" type="ColorRect" parent="Grain"]
+material = SubResource("GrainMat_1")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

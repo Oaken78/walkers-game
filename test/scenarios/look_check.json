@@ -1,0 +1,21 @@
+{
+ "scene": "res://scenes/test/valley_pockets.tscn",
+ "seed": 1234,
+ "timeout_frames": 3600,
+ "steps": [
+  {"wait_frames": 10},
+  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
+  {"call": {"node": ".", "method": "spawn_at", "args": ["talus"]}},
+  {"wait_frames": 90},
+  {"call": {"node": ".", "method": "use_orbit_camera", "args": [20.0, 8.0, 45.0]}},
+  {"wait_frames": 20},
+  {"screenshot": "walker_bands"},
+  {"metrics": {"name": "look_walker", "frames": 120}},
+  {"call": {"node": ".", "method": "use_orbit_camera", "args": [8.0, 14.0, 90.0]}},
+  {"wait_frames": 20},
+  {"screenshot": "rock_bands"},
+  {"call": {"node": ".", "method": "use_orbit_camera", "args": [20.0, 8.0, 45.0]}},
+  {"wait_frames": 20},
+  {"assert_no_errors": true}
+ ]
+}

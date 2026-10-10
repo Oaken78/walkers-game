@@ -26,6 +26,8 @@ const THREAT_COLOR: Color = Color("E8345A")
 const RING_COLOR: Color = Color("181A1F")
 ## The ink rim behind the ring (GDD 10 rule 2): unshaded, never glows, so the ring keeps a dark edge in grayscale.
 const RIM_COLOR: Color = Color("14161A")
+## Additive lit-band pass chained after the ring material (third toon band).
+const LIT_BAND_PASS: Material = preload("res://assets/materials/drone_lit_band.tres")
 ## The rim torus is squashed to this share of its thickness along the ring's axis and sits this far behind the ring, so
 ## the whole ring stays in front of it and only a dark edge shows round the ring.
 const RIM_FLATTEN: float = 0.25
@@ -123,7 +125,12 @@ func _ready() -> void:
 	top_level = true
 	_ring_material = StandardMaterial3D.new()
 	_ring_material.albedo_color = RING_COLOR
-	_ring_material.roughness = 0.7
+	# Toon diffuse with a hard edge gives the shadow and base bands; the next pass adds the lit band (GDD 10 toon ramp).
+	# The ring stays a StandardMaterial3D because its glow and flash are driven through these properties.
+	_ring_material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	_ring_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_ring_material.roughness = 0.0
+	_ring_material.next_pass = LIT_BAND_PASS
 	_ring_material.emission_enabled = true
 	_ring_material.emission = THREAT_COLOR
 	_ring_material.emission_energy_multiplier = 0.0

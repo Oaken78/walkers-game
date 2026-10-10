@@ -1,0 +1,15 @@
+{
+ "scene": "res://scenes/test/drone_fight.tscn",
+ "seed": 1234,
+ "timeout_frames": 1800,
+ "steps": [
+  {"wait_frames": 10},
+  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
+  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
+  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 8.0, 3.0, "dormant"]}},
+  {"call": {"node": ".", "method": "look_at_drone", "args": []}},
+  {"wait_frames": 60},
+  {"screenshot": "drone_bands"},
+  {"assert_no_errors": true}
+ ]
+}

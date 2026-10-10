@@ -1,0 +1,17 @@
+{
+ "scene": "res://scenes/world/valley_preview.tscn",
+ "seed": 1234,
+ "timeout_frames": 1800,
+ "steps": [
+  {"wait_frames": 5},
+  {"assert_node": "Valley", "exists": true},
+  {"set_prop": {"node": ".", "prop": "workshop_camera_fov", "value": 100.0}},
+  {"call": {"node": ".", "method": "show_view", "args": ["talus_pocket"]}},
+  {"wait_frames": 20},
+  {"screenshot": "rock_bands"},
+  {"call": {"node": ".", "method": "show_view", "args": ["from_workshop"]}},
+  {"wait_frames": 20},
+  {"screenshot": "fog_100m"},
+  {"assert_no_errors": true}
+ ]
+}

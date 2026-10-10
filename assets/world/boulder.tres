@@ -1,6 +1,11 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/world_bands.gdshader" id="1_shader"]
 
 [resource]
 resource_name = "world_boulder"
-albedo_color = Color(0.20784, 0.17647, 0.15686, 1)
-roughness = 1.0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(0.20784, 0.17647, 0.15686, 1)
+shader_parameter/lit_color = Color(0.30196, 0.2549, 0.22745, 1)
+shader_parameter/shadow_color = Color(0.13333, 0.11373, 0.10196, 1)
+
