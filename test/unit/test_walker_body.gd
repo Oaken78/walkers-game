@@ -692,3 +692,12 @@ func test_telemetry_accessors_read_the_private_counters() -> void:
 	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
 	assert_eq(walker.hang_wait(), walker._hang_wait)
 	assert_eq(walker.contact_count(), walker._contact_count)
+
+
+func test_deferred_apply_build_keeps_allow_invalid() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	walker._in_tick = true
+	walker.apply_build(_two_leg_build(), true)
+	walker._in_tick = false
+	await get_tree().process_frame
+	assert_eq(walker.leg_count(), 2, "the queued rebuild drew the invalid build")

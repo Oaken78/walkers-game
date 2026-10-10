@@ -268,3 +268,13 @@ func test_a_bolt_that_queries_layer_2_with_bodies_hits_the_walker_but_areas_only
 	assert_eq(hit["collider"], walker)
 	var areas_only: Dictionary = _ray(from, to, CombatLayers.PLAYER)
 	assert_true(areas_only.is_empty(), "areas only (the contract): only the hurtbox can be hit, and it is not up here")
+
+
+func test_the_player_hurtbox_is_at_the_walker_before_the_first_physics_frame() -> void:
+	var walker: WalkerBody = preload("res://scenes/walker/walker.tscn").instantiate()
+	walker.position = Vector3(5.0, 0.0, 5.0)
+	add_child_autofree(walker)
+	var box := PlayerHurtbox.new()
+	box.walker = walker
+	add_child_autofree(box)
+	assert_lt(box.global_position.distance_to(walker.global_position), 1.0, "not at the world origin")

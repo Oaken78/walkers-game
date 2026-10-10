@@ -498,6 +498,8 @@ func _ready() -> void:
 	else:
 		_origin = global_position
 		_base_y = global_position.y
+	# body_pose() is right from here on, not only after the first tick (a field walker spawns away from the origin).
+	_pose = pose_transform(_origin, _yaw, _tilt_n)
 	if _build == null:
 		# Static bodies added in the same frame cannot be queried yet: plant on the first physics tick.
 		_defer_plant = true
@@ -666,6 +668,7 @@ func teleport(xform: Transform3D) -> void:
 	else:
 		_teleport_pending = true
 	_tilt_n = Vector3.UP
+	_pose = pose_transform(_origin, _yaw, _tilt_n)
 	_velocity_h = Vector3.ZERO
 	velocity = Vector3.ZERO
 	yaw_rate_dps = 0.0
