@@ -701,3 +701,66 @@ func test_deferred_apply_build_keeps_allow_invalid() -> void:
 	walker._in_tick = false
 	await get_tree().process_frame
 	assert_eq(walker.leg_count(), 2, "the queued rebuild drew the invalid build")
+
+
+# --- collapse (T12) ---------------------------------------------------------------------------------------------
+
+
+func _walker_on_floor() -> WalkerBody:
+	var floor_body := StaticBody3D.new()
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(60.0, 1.0, 60.0)
+	shape.shape = box
+	floor_body.add_child(shape)
+	floor_body.position = Vector3(0.0, -0.5, 0.0)
+	add_child_autofree(floor_body)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var walker: WalkerBody = WALKER_SCENE.instantiate()
+	add_child_autofree(walker)
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0)))
+	await get_tree().physics_frame
+	return walker
+
+
+func _tick(walker: WalkerBody, ticks: int) -> void:
+	for i in ticks:
+		walker._physics_process(DT)
+
+
+func test_collapse_takes_one_second_and_ends_on_the_ground_with_input_off() -> void:
+	var walker: WalkerBody = await _walker_on_floor()
+	var start_y: float = walker.body_pose().origin.y
+	var finished: Array = [0]
+	walker.collapse_finished.connect(func() -> void: finished[0] += 1)
+	walker.collapse(1.0)
+	assert_false(walker.input_enabled, "input off at once")
+	_tick(walker, 59)
+	assert_true(walker.is_collapsing(), "still falling after 59 ticks")
+	assert_eq(finished[0], 0)
+	_tick(walker, 1)
+	assert_true(walker.is_collapsed(), "down after 60 ticks")
+	assert_eq(finished[0], 1)
+	var end_y: float = walker.body_pose().origin.y
+	assert_lt(end_y, start_y - 0.2, "the chassis settled")
+	assert_almost_eq(end_y, WalkerBody.COLLAPSE_REST_GAP, 0.01, "chassis underside on the ground")
+	assert_false(walker.input_enabled)
+
+
+func test_collapsed_walker_stays_down_until_apply_build_and_teleport() -> void:
+	var walker: WalkerBody = await _walker_on_floor()
+	walker.collapse(1.0)
+	_tick(walker, 70)
+	var down_y: float = walker.body_pose().origin.y
+	_tick(walker, 30)
+	assert_almost_eq(walker.body_pose().origin.y, down_y, 0.0001, "no tick lifts it")
+	walker.apply_build(WalkerBuild.scout())
+	assert_false(walker.is_collapsed(), "a build stands it up")
+	walker.input_enabled = true
+	_tick(walker, 30)
+	assert_gt(walker.body_pose().origin.y, 0.2, "chassis back at standing height")
+	walker.collapse(1.0)
+	_tick(walker, 70)
+	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(2.0, 1.0, 0.0)))
+	assert_false(walker.is_collapsed(), "a teleport stands it up")

@@ -3,11 +3,14 @@
   "seed": 1234,
   "timeout_frames": 3600,
   "steps": [
-    {"wait_frames": 5},
-    {"assert_prop": {"node": "Player", "prop": "position:x", "op": "==", "value": 640}},
-    {"action_press": "ui_right", "frames": 30},
-    {"assert_prop": {"node": "Player", "prop": "position:x", "op": ">", "value": 700}},
-    {"screenshot": "after_move"},
+    {"wait_frames": 10},
+    {"assert_prop": {"node": ".", "prop": "_in_field", "op": "==", "value": false}},
+    {"key_tap": "Tab", "frames": 3},
+    {"wait_frames": 90},
+    {"assert_prop": {"node": ".", "prop": "_in_field", "op": "==", "value": true}},
+    {"call": {"node": ".", "method": "mark_walker", "args": []}},
+    {"action_press": "move_forward", "frames": 120},
+    {"assert_prop": {"node": ".", "prop": "moved_since_mark", "op": ">", "value": 3.0}},
     {"assert_no_errors": true}
   ]
 }

@@ -12,6 +12,8 @@ extends CharacterBody3D
 signal foot_planted(leg: int, position: Vector3, normal: Vector3)
 signal step_started(leg: int)
 signal build_applied
+## The collapse (death) finished: the chassis lies on the ground. A later apply_build or teleport stands the walker up.
+signal collapse_finished
 
 enum SteerMode { TANK, CAMERA_YAW }
 ## What a foothold is: a stride (ordinary), a front foot reaching up onto a higher top, a follow-on foot stepping up
@@ -307,6 +309,20 @@ const SIGHT_MARGIN: float = 0.1
 @export var pad_edge_gap: float = -1.0
 
 var input_enabled: bool = true
+
+## The legs fold while the chassis settles to the ground (death, GDD 7). See collapse().
+const COLLAPSE_REST_GAP: float = 0.04
+## How far in toward the chassis axis a folded foot ends (share of the hip's offset).
+const COLLAPSE_FOLD_IN: float = 0.45
+var _collapsing: bool = false
+var _collapsed: bool = false
+var _collapse_total: float = 1.0
+var _collapse_time: float = 0.0
+var _collapse_from_y: float = 0.0
+var _collapse_to_y: float = 0.0
+var _collapse_from_tilt: Vector3 = Vector3.UP
+var _collapse_from_feet: PackedVector3Array = PackedVector3Array()
+var _collapse_to_feet: PackedVector3Array = PackedVector3Array()
 ## False hides the pulse-cannon pieces on top (WeaponRig draws its own barrels). The nodes stay, so socket_transform and
 ## top_mounts answer the same.
 var draw_cannons: bool = true:
@@ -531,6 +547,7 @@ func apply_build(build: WalkerBuild, allow_invalid: bool = false) -> void:
 			_apply_pending_build.call_deferred()
 		return
 	_in_apply = true
+	_stand_up()
 	_build = build.copy()
 	_stats = _build.stats()
 	_rebuild()
@@ -659,6 +676,7 @@ func stats() -> Dictionary:
 
 
 func teleport(xform: Transform3D) -> void:
+	_stand_up()
 	var forward: Vector3 = -xform.basis.z
 	_yaw = atan2(-forward.x, -forward.z)
 	_origin = xform.origin
@@ -682,6 +700,78 @@ func teleport(xform: Transform3D) -> void:
 	_needs_plant = true
 	if is_inside_tree():
 		_plant_all_at_rest()
+
+
+## Death: input goes off at once, the legs fold and the chassis settles to the ground over `duration` seconds, then
+## `collapse_finished` fires and the walker stays down (ticks do nothing) until apply_build() or teleport() stands it up.
+func collapse(duration: float = 1.0) -> void:
+	if _legs.is_empty() or _collapsing:
+		return
+	input_enabled = false
+	_velocity_h = Vector3.ZERO
+	velocity = Vector3.ZERO
+	_collapse_total = maxf(duration, 1.0 / float(Engine.physics_ticks_per_second))
+	_collapse_time = 0.0
+	_collapse_from_y = _origin.y
+	_collapse_from_tilt = _tilt_n
+	_collapse_to_y = _ground_y_at(_origin.x, _origin.z, _origin.y) + COLLAPSE_REST_GAP
+	var rest_pose: Transform3D = pose_transform(Vector3(_origin.x, _collapse_to_y, _origin.z), _yaw, Vector3.UP)
+	_collapse_from_feet = PackedVector3Array()
+	_collapse_to_feet = PackedVector3Array()
+	for i in _legs.size():
+		_collapse_from_feet.append(_foot[i])
+		var hip: Vector3 = rest_pose * (_legs[i] as WalkerLeg).hip_local
+		var x: float = _origin.x + (hip.x - _origin.x) * (1.0 + COLLAPSE_FOLD_IN)
+		var z: float = _origin.z + (hip.z - _origin.z) * (1.0 + COLLAPSE_FOLD_IN)
+		# The foot goes out a little past the hip, so the knee folds up and out and the pad rests flat.
+		_collapse_to_feet.append(Vector3(x, _ground_y_at(x, z, _collapse_to_y) , z))
+	_collapsing = true
+	_collapsed = false
+
+
+## True from collapse() until the walker is stood up again.
+func is_collapsing() -> bool:
+	return _collapsing
+
+
+## True once the collapse has finished and until apply_build() or teleport().
+func is_collapsed() -> bool:
+	return _collapsed
+
+
+func _stand_up() -> void:
+	_collapsing = false
+	_collapsed = false
+
+
+func _ground_y_at(x: float, z: float, near_y: float) -> float:
+	_make_queries()
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	_ray.from = Vector3(x, near_y + 2.0, z)
+	_ray.to = Vector3(x, near_y - 8.0, z)
+	var hit: Dictionary = space.intersect_ray(_ray)
+	if hit.is_empty():
+		return near_y
+	return (hit["position"] as Vector3).y
+
+
+func _collapse_tick(delta: float) -> void:
+	_collapse_time = minf(_collapse_time + delta, _collapse_total)
+	var share: float = _collapse_time / _collapse_total
+	# The legs buckle first (smooth), the chassis drops after them (accelerating), like a body giving way.
+	var legs_k: float = smoothstep(0.0, 1.0, minf(share * 1.4, 1.0))
+	var body_k: float = share * share
+	_origin.y = lerpf(_collapse_from_y, _collapse_to_y, body_k)
+	_base_y = _origin.y
+	_tilt_n = _collapse_from_tilt.lerp(Vector3.UP, body_k).normalized()
+	for i in _legs.size():
+		_foot[i] = _collapse_from_feet[i].lerp(_collapse_to_feet[i], legs_k)
+	_apply_transforms()
+	_pose_legs()
+	if _collapse_time >= _collapse_total:
+		_collapsing = false
+		_collapsed = true
+		collapse_finished.emit()
 
 
 func leg_count() -> int:
@@ -1666,6 +1756,10 @@ func _pose_legs() -> void:
 func _physics_process(delta: float) -> void:
 	_in_tick = false # a tick that was cut short must not leave every later build deferred
 	if _legs.is_empty():
+		return
+	if _collapsing or _collapsed:
+		if _collapsing:
+			_collapse_tick(delta)
 		return
 	_in_tick = true
 	var started_usec: int = Time.get_ticks_usec()
