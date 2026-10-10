@@ -1,26 +1,40 @@
 class_name FootFx
 extends Node3D
-## Foot plant read (GDD 10 rule 1, Pillar 2): every plant kicks up a 0.2 s dust puff and leaves a dark contact decal
+## Foot plant read (GDD 10 rule 1, Pillar 2): every plant kicks up a 0.8 s dust puff (size from weight per leg) and leaves a dark contact decal
 ## that fades over 2 s. Both come from fixed pools built in _ready (no node is made or freed afterwards); at capacity
-## the oldest is reused. Child of the WalkerBody; listens to its foot_planted signal. The same size for every walker.
+## the oldest is reused. Child of the WalkerBody; listens to its foot_planted signal. Puffs are 5 soft sprites in one MultiMesh.
 ## Time is counted in advance(), driven from _physics_process, so tests can step it by hand.
 
-## Dust puff across at its biggest (m). Same for every walker, not scaled by leg length.
-@export var puff_diameter_m: float = 0.6
-## Share of the full diameter the puff starts at.
-@export_range(0.1, 1.0) var puff_start_scale: float = 0.85
-## Height of the puff disc centres above the ground at the plant and at the end of its life (m). The visible top is this + half a disc (0.15 m) <= 0.3.
-@export var puff_base_height_m: float = 0.10
-@export var puff_top_height_m: float = 0.148
-@export var puff_life_s: float = 0.2
-## Dust tone: the ground family, lighter than the floor so it reads in grayscale.
-@export var puff_color: Color = Color("FAF2E0")
-## Opacity at the plant; it falls as 1 - t^2 to 0 at the end of the life (stays bright for the first frames).
-@export_range(0.0, 1.0) var puff_peak_alpha: float = 1.0
-@export var puff_pool_size: int = 16
-## A puff is this many soft discs round the pad (one disc would hide behind the pad), together puff_diameter_m across.
-@export_range(2, 6) var puff_discs: int = 4
-
+## Dust (GDD 10 rule 1): width W = clamp(width_per_kg_per_leg x mass per leg / 50 kg, min, max). Mass per leg is the build's
+## mass / leg count (read through get_build(), recomputed on build_applied). Height of the whole puff is half of W.
+@export var puff_width_ref_m: float = 0.5
+@export var puff_ref_mass_per_leg_kg: float = 50.0
+@export var puff_width_min_m: float = 0.25
+@export var puff_width_max_m: float = 1.0
+## Mass per leg used when there is no walker (a lone FootFx in a test or a scene).
+@export var puff_default_mass_per_leg_kg: float = 50.0
+## Soft sprites per puff, each puff_sprite_share x W across and started within puff_spread_share x W of the pad.
+@export_range(2, 8) var puff_sprites: int = 5
+@export var puff_sprite_share: float = 0.5
+@export var puff_spread_share: float = 0.3
+## Sprites burst outward at this speed (m/s), slowing linearly to 0 at puff_burst_s.
+@export var puff_burst_speed: float = 0.8
+@export var puff_burst_s: float = 0.4
+## The puff reaches its full height at puff_rise_s, then sinks by puff_sink_share while it fades.
+@export var puff_rise_s: float = 0.3
+@export_range(0.0, 1.0) var puff_sink_share: float = 0.3
+## Share of the full height at the plant.
+@export_range(0.0, 1.0) var puff_start_height_share: float = 0.6
+@export var puff_life_s: float = 0.8
+## Dust tone: the ground family (ground is #CAB294), a touch under the spec #D9C7AE so the overlap of 5 sprites stays <= 0.85 luma. Unshaded: does not darken in shadow.
+@export var puff_color: Color = Color("D5C3AA")
+## Opacity at the peak, reached at puff_peak_s; puff_mid_alpha at puff_burst_s; 0 at the end of the life.
+@export_range(0.0, 1.0) var puff_peak_alpha: float = 0.45
+@export var puff_peak_s: float = 0.08
+@export_range(0.0, 1.0) var puff_mid_alpha: float = 0.22
+## 28 puffs cover the Crawler at top speed (about 29 plants/s x 0.8 s = 23 live) with margin.
+@export var puff_pool_size: int = 28
+@export var puff_seed: int = 23
 ## Contact decal box (m): x and z cover the pad (0.30 x 0.34) plus a margin; y is thin so it never reaches the pad's top.
 @export var decal_size_m: Vector3 = Vector3(0.44, 0.10, 0.48)
 @export var decal_life_s: float = 2.0
@@ -57,6 +71,10 @@ var unaccounted_plants: int:
 	get:
 		return plants_seen - puffs_spawned - plants_ignored
 
+## Draw calls the puffs cost (one MultiMesh).
+var puff_draw_calls: int:
+	get:
+		return 1
 ## Decals showing now.
 var live_decal_count: int:
 	get:
@@ -71,11 +89,20 @@ var highest_plant_y: float = -INF
 var _decals: Array[Decal] = []
 var _decal_age: PackedFloat32Array = PackedFloat32Array()
 var _decal_ticks: PackedInt32Array = PackedInt32Array()
-## puff_discs consecutive entries belong to one puff.
-var _puffs: Array[MeshInstance3D] = []
-var _puff_mats: Array[StandardMaterial3D] = []
+## One MultiMesh holds every sprite of every puff (one draw call); puff i owns instances i*puff_sprites ...
+var _mm: MultiMesh
 var _puff_age: PackedFloat32Array = PackedFloat32Array()
 var _puff_pos: PackedVector3Array = PackedVector3Array()
+var _puff_width: PackedFloat32Array = PackedFloat32Array()
+## Per sprite: start offset from the pad (x, z) and the unit direction it bursts along.
+var _sprite_off: PackedVector2Array = PackedVector2Array()
+var _sprite_dir: PackedVector2Array = PackedVector2Array()
+var _sprite_world: PackedVector3Array = PackedVector3Array()
+var _rng := RandomNumberGenerator.new()
+var _width_m: float = 0.5
+## Set at the start and on build_applied; the width is read from the build when next needed (the walker's build is not there yet in _ready).
+var _width_dirty: bool = true
+var peak_live_puffs: int = 0
 var _freeze_armed: bool = false
 var _freeze_left: float = -1.0
 var _quiet_left: float = 0.0
@@ -138,6 +165,10 @@ func report(label: String) -> void:
 			highest_plant_y
 		]
 	)
+	print(
+		"FOOTFX %s puff_width_m=%.3f peak_live_puffs=%d/%d puff_draw_calls=%d"
+		% [label, puff_width(), peak_live_puffs, puff_pool_size, puff_draw_calls]
+	)
 
 
 ## Zeroes the counters (a scenario starts counting after the quiet time).
@@ -147,6 +178,7 @@ func reset_counts() -> void:
 	decals_spawned = 0
 	plants_ignored = 0
 	peak_live_decals = live_decals()
+	peak_live_puffs = live_puffs()
 	decal_ticks_min = 1 << 30
 	decal_ticks_max = 0
 	snap_mismatches = 0
@@ -184,8 +216,54 @@ func decal_nodes() -> Array[Decal]:
 	return _decals
 
 
-func puff_nodes() -> Array[MeshInstance3D]:
-	return _puffs
+## Puff width W (m) for a mass per leg (kg): clamp(0.5 m x w / 50 kg, 0.25, 1.0).
+func puff_width_for(mass_per_leg_kg: float) -> float:
+	return clampf(puff_width_ref_m * mass_per_leg_kg / puff_ref_mass_per_leg_kg, puff_width_min_m, puff_width_max_m)
+
+
+## Width W (m) the next puff gets, from the walker's build.
+func puff_width() -> float:
+	_update_width()
+	return _width_m
+
+
+
+
+## Opacity of a puff of age `age`: 0 -> peak at puff_peak_s, down to puff_mid_alpha at puff_burst_s, 0 at the end.
+func puff_alpha(age: float) -> float:
+	if age <= 0.0 or age >= puff_life_s:
+		return 0.0
+	if age < puff_peak_s:
+		return puff_peak_alpha * age / puff_peak_s
+	if age < puff_burst_s:
+		return lerpf(puff_peak_alpha, puff_mid_alpha, (age - puff_peak_s) / (puff_burst_s - puff_peak_s))
+	return lerpf(puff_mid_alpha, 0.0, (age - puff_burst_s) / (puff_life_s - puff_burst_s))
+
+
+## Distance (m) a sprite has burst out by `age`: speed falls linearly to 0 at puff_burst_s.
+func puff_burst_distance(age: float) -> float:
+	var t: float = minf(age, puff_burst_s)
+	return puff_burst_speed * (t - t * t / (2.0 * puff_burst_s))
+
+
+## Height share of the puff's full height at `age`: rises to 1 at puff_rise_s, then sinks by puff_sink_share by the end.
+func puff_height_share(age: float) -> float:
+	if age < puff_rise_s:
+		return lerpf(puff_start_height_share, 1.0, sqrt(age / puff_rise_s))
+	return 1.0 - puff_sink_share * (age - puff_rise_s) / (puff_life_s - puff_rise_s)
+
+
+## World position of sprite `k` of puff `i` now (m).
+func puff_sprite_position(i: int, k: int) -> Vector3:
+	return _sprite_world[i * puff_sprites + k]
+
+
+func puff_sprite_size(i: int) -> float:
+	return _puff_width[i] * puff_sprite_share
+
+
+func puff_age(i: int) -> float:
+	return _puff_age[i]
 
 
 ## Ages every puff and decal by `delta` seconds and frees the ones that ran out.
@@ -210,8 +288,7 @@ func advance(delta: float) -> void:
 		_puff_age[i] += delta
 		if _puff_age[i] >= puff_life_s - 0.0001:
 			_puff_age[i] = -1.0
-			for k in puff_discs:
-				_puffs[i * puff_discs + k].visible = false
+			_hide_puff(i)
 		else:
 			_pose_puff(i)
 	if _freeze_left >= 0.0 and not _freeze_armed:
@@ -251,6 +328,7 @@ func _on_foot_planted(leg: int, pos: Vector3, normal: Vector3) -> void:
 
 
 func _on_build_applied() -> void:
+	_width_dirty = true
 	_quiet_left = quiet_after_build_s
 	_checks.clear()
 
@@ -314,26 +392,55 @@ func _show_puff(pos: Vector3) -> void:
 	var i: int = _oldest(_puff_age)
 	_puff_pos[i] = pos
 	_puff_age[i] = 0.0
-	for k in puff_discs:
-		_puffs[i * puff_discs + k].visible = true
+	_update_width()
+	_puff_width[i] = _width_m
+	for k in puff_sprites:
+		# Seeded: spread within puff_spread_share x W of the pad, bursting outward along the same bearing.
+		var angle: float = _rng.randf() * TAU
+		var radius: float = sqrt(_rng.randf()) * puff_spread_share * _width_m
+		var dir := Vector2(cos(angle), sin(angle))
+		_sprite_dir[i * puff_sprites + k] = dir
+		_sprite_off[i * puff_sprites + k] = dir * radius
 	puffs_spawned += 1
+	peak_live_puffs = maxi(peak_live_puffs, live_puffs())
 	_pose_puff(i)
 
 
-func _pose_puff(i: int) -> void:
-	var t: float = clampf(_puff_age[i] / puff_life_s, 0.0, 1.0)
-	var grow: float = lerpf(puff_start_scale, 1.0, sqrt(t))
-	# Each disc is 0.5 of the puff across, centred 0.25 of it from the plant point: the whole puff spans puff_diameter_m.
-	var disc: float = puff_diameter_m * 0.5 * grow
-	var ring: float = puff_diameter_m * 0.25 * grow
-	var height: float = lerpf(puff_base_height_m, puff_top_height_m, t)
-	for k in puff_discs:
-		var angle: float = TAU * (float(k) / float(puff_discs)) + float(i) * 0.9
-		var mi: MeshInstance3D = _puffs[i * puff_discs + k]
-		mi.global_position = _puff_pos[i] + Vector3(cos(angle) * ring, height, sin(angle) * ring)
-		mi.scale = Vector3(disc, disc, disc)
-	_puff_mats[i].albedo_color.a = puff_peak_alpha * (1.0 - t * t)
+func _hide_puff(i: int) -> void:
+	for k in puff_sprites:
+		_mm.set_instance_transform(i * puff_sprites + k, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
+		_mm.set_instance_color(i * puff_sprites + k, Color(1, 1, 1, 0))
 
+
+func _pose_puff(i: int) -> void:
+	var age: float = _puff_age[i]
+	var width: float = _puff_width[i]
+	var size: float = width * puff_sprite_share
+	# The puff is width * 0.5 high: its sprites sit with their lower edge near the ground at full height.
+	var centre_y: float = size * 0.5 * puff_height_share(age)
+	var burst: float = puff_burst_distance(age)
+	var color := Color(puff_color.r, puff_color.g, puff_color.b, puff_alpha(age))
+	for k in puff_sprites:
+		var idx: int = i * puff_sprites + k
+		var flat: Vector2 = _sprite_off[idx] + _sprite_dir[idx] * burst
+		var p: Vector3 = _puff_pos[i] + Vector3(flat.x, centre_y, flat.y)
+		_sprite_world[idx] = p
+		_mm.set_instance_transform(idx, Transform3D(Basis.from_scale(Vector3(size, size, size)), p))
+		_mm.set_instance_color(idx, color)
+
+
+## Recomputes the puff width W from the build: mass / leg count. No walker -> puff_default_mass_per_leg_kg.
+func _update_width() -> void:
+	if not _width_dirty:
+		return
+	_width_dirty = false
+	var per_leg: float = puff_default_mass_per_leg_kg
+	if _body != null and _body.has_method("get_build"):
+		var build: WalkerBuild = _body.get_build()
+		var legs: int = build.leg_count()
+		if legs > 0:
+			per_leg = float(build.stats()["mass"]) / float(legs)
+	_width_m = puff_width_for(per_leg)
 
 func _build_pools() -> void:
 	var decal_tex: Texture2D = make_decal_texture()
@@ -352,31 +459,39 @@ func _build_pools() -> void:
 		_decals.append(d)
 		_decal_age.append(-1.0)
 		_decal_ticks.append(0)
-	var puff_tex: Texture2D = make_puff_texture()
+	_rng.seed = puff_seed
 	var quad := QuadMesh.new()
 	quad.size = Vector2.ONE
+	var m := StandardMaterial3D.new()
+	# Unshaded flat ground tone: a lit camera-facing sprite read as grey smudges in the valley light. Billboard: each sprite faces the camera.
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	m.billboard_keep_scale = true
+	m.vertex_color_use_as_albedo = true
+	m.albedo_texture = make_puff_texture()
+	quad.material = m
+	_mm = MultiMesh.new()
+	_mm.transform_format = MultiMesh.TRANSFORM_3D
+	_mm.use_colors = true
+	_mm.mesh = quad
+	_mm.instance_count = puff_pool_size * puff_sprites
+	var holder := MultiMeshInstance3D.new()
+	holder.multimesh = _mm
+	holder.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# The instances move through the world; the box must not cull them.
+	holder.custom_aabb = AABB(Vector3(-5000, -100, -5000), Vector3(10000, 1000, 10000))
+	holder.top_level = true
+	holder.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	add_child(holder)
+	_sprite_off.resize(_mm.instance_count)
+	_sprite_dir.resize(_mm.instance_count)
+	_sprite_world.resize(_mm.instance_count)
 	for i in puff_pool_size:
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-		m.billboard_keep_scale = true
-		m.albedo_texture = puff_tex
-		m.albedo_color = Color(puff_color.r, puff_color.g, puff_color.b, 0.0)
-		for k in puff_discs:
-			var mi := MeshInstance3D.new()
-			mi.mesh = quad
-			mi.material_override = m
-			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mi.visible = false
-			mi.top_level = true
-			mi.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-			add_child(mi)
-			_puffs.append(mi)
-		_puff_mats.append(m)
 		_puff_age.append(-1.0)
 		_puff_pos.append(Vector3.ZERO)
-
+		_puff_width.append(_width_m)
+		_hide_puff(i)
 
 ## Soft rounded rectangle, dark, full alpha over the pad's footprint and a soft edge out to the box.
 func make_decal_texture() -> Texture2D:
@@ -393,13 +508,13 @@ func make_decal_texture() -> Texture2D:
 	return ImageTexture.create_from_image(img)
 
 
-## Soft round puff, white, opaque in the middle and clear at the edge.
+## Soft round sprite, white: alpha (1 - r^2)^2 of the radius r, so it is 0.036 at 0.9 and 0 at the rim.
 func make_puff_texture() -> Texture2D:
 	var res: int = 64
 	var img := Image.create(res, res, false, Image.FORMAT_RGBA8)
 	for y in res:
 		for x in res:
 			var r: float = Vector2(x + 0.5 - res * 0.5, y + 0.5 - res * 0.5).length() / (res * 0.5)
-			var a: float = 1.0 - smoothstep(0.55, 1.0, r)
+			var a: float = 0.0 if r >= 1.0 else pow(1.0 - r * r, 2.0)
 			img.set_pixel(x, y, Color(1, 1, 1, a))
 	return ImageTexture.create_from_image(img)
