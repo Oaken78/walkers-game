@@ -25,6 +25,11 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 - T16 (climbing, reach and haul: Klas's gate decision) starts after T13 merges. The climb pose check (GDD 16 risk 7)
   passed with the descent drop at 0.32 x reach.
 - After the gate: T06, T07, T08 and T09 (max 3 devs at once). Then T11. T12 integrates last, including the HUD.
+- After T16 (2026-10-10): T11 (look), T18 (walker API) and T19 (foot dust and decal) run in parallel with disjoint
+  paths. Every shot changes in T11 and T19, so baselines are approved on main after each merge, and the later
+  branch merges main and re-runs its shots. A playtest-critic pass on main after both judges actors against the
+  new world (GDD 10 rule 4). The T12 packet (main flow, death and respawn, HUD; maybe split into flow and HUD) is
+  written while this wave is in review.
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
 ## Tasks
@@ -42,7 +47,9 @@ Status: ready, in-progress, review-passed, done.
 | T07 | Drone enemy: brain, hold-to-shoot telegraph, bolts, leash, encounters (lean; starts after T06 merges) | scripts/enemies/, scenes/enemies/, test/unit/test_drone_brain.gd, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/drone_fight.json | 3 | done | feat/walkers-drone, merged c961bfb |
 | T08 | Salvage economy, scrap nodes, wreck cache, bank (emits `banked` for the repair), recall hold | scripts/economy/, scenes/pickups/, test/unit/test_economy.gd, scripts/test/economy_course.gd, scenes/test/economy_course.tscn, test/scenarios/economy_loop.json | 3 | done | feat/walkers-economy, merged d094bc9 |
 | T09 | Workshop scene + build UI (inventory, mirrored leg pairs, stat deltas, exit reason); starts after T08 merges (Economy.spend) | scenes/workshop/, ui/workshop/, scripts/workshop/, test/unit/test_workshop.gd, test/scenarios/workshop_edit.json | 3 | done | art/walkers-workshop, merged da8819d |
-| T11 | Toon ramp + palette materials, dust puff + contact decal (outline moved to M1) | shaders/, assets/materials/ | 3 | | |
+| T11 | Look pass: actor toon ramp, palette materials, world bands, fog, sky, glow, grain; ledge and alcove reads (dust and decal moved to T19, outline to M1) | shaders/, assets/materials/, assets/world/, scenes/world/, scripts/world/terrain_builder.gd and valley.gd (colours), scripts/walker/walker_leg.gd (material functions only), scripts/enemies/drone.gd and drone_bolt_pool.gd (materials only), scenes/pickups/wreck_cache.tscn (crate material), test/unit/test_look.gd, test/scenarios/look_check.json | 3 | ready | |
+| T18 | Walker API: socket_transform, top_mounts + draw_cannons, chassis_size/center, apply_build(allow_invalid); socket_anchors.gd and DisplayBuild go | scripts/walker/walker_body.gd, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, scripts/workshop/workshop.gd, workshop_course.gd, socket_anchors.gd, test/unit/test_workshop.gd, scripts/weapons/weapon_rig.gd, test/unit/test_weapon.gd, scripts/combat/player_hurtbox.gd, test/unit/test_combat.gd, scripts/test/*.gd and scripts/camera/view_probe.gd (walker reads only) | 3 | ready | |
+| T19 | Foot plant read: dust puff 0.2 s and contact decal fading over 2 s (GDD 10 rule 1) | scripts/fx/, scenes/fx/, assets/fx/, scenes/walker/walker.tscn (FootFx child only), test/unit/test_foot_fx.gd, test/scenarios/foot_fx.json | 3 | ready | |
 | T14 | Gate rig: orbit camera on the test course (un-bobbed anchor), steer-mode toggle, free play, pitch_low/high shots with foot boxes | scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/scenarios/gait_course.json, test/scenarios/gait_rig.json, scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, scripts/walker/walker_body.gd (anchor only) | 3 | done | art/walkers-gate-rig, merged c7bc5e8 |
 | T15 | Descent camera: pitch floor (slope behind - 5 deg) on steep ground, gait_camera scenario | scripts/camera/orbit_camera.gd, test/unit/test_orbit_camera.gd, test/scenarios/gait_camera.json | 3 | done | art/walkers-descent-camera, merged 6376f87 |
 | T17 | View stutter: smooth camera and walker at any refresh rate, F9 frame-time readout (Klas, playtest of 1a777b6) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd, test/scenarios/camera_smooth.json, autoload/dev_harness.gd (readout only) | 3 | done | fix/walkers-view-stutter, merged 38ba789 |
@@ -93,7 +100,7 @@ Status: ready, in-progress, review-passed, done.
   lean (Klas, 2026-10-09: not much effort on the drone design now): build GDD 8.4 as written, no new design rounds.
 - T06/T07: the walker's movement collider is the chassis box plus a 0.06 m sphere per hip (T03 round 5). Hits use a
   chassis-sized hurtbox too, so shots between the legs miss (M0 criterion 5).
-- Walker API (after T16 merges, one small task owning walker_body.gd), from the T06 and T09 hand-backs:
+- Walker API (now packet T18; the block-layout table and fixed slots wait for M1), from the T06 and T09 hand-backs:
   - `socket_transform(socket_id)` for all 8 leg and 3 top sockets, at fixed slots, read from a block-layout table
     (the 4 x 2 build of GDD 8.1, socket id = block cell + face, today's ids kept as aliases) so M1 adds blocks with
     no API change; M0 keeps today's socket positions and plays as built;
