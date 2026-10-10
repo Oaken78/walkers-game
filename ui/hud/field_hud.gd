@@ -13,6 +13,16 @@ const BODY: Color = Color("E6E1D6")
 const SALVAGE: Color = Color("3DE0E8")
 const MUTED: Color = Color("C9C5BB")
 
+## A label that counts its theme notifications, so a test can prove nothing re-themes it per frame.
+class MarkLabel:
+	extends Label
+	var theme_changes: int = 0
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_THEME_CHANGED:
+			theme_changes += 1
+
+
 ## Back plate: the same 60 % #14161A as the F9 readout.
 @export var plate_color: Color = Color(0.0784, 0.0863, 0.1020, 0.6)
 ## Below this share of max HP the bar turns urgent (accent fill, pulse, "LOW" tag, notch).
@@ -27,14 +37,19 @@ const MUTED: Color = Color("C9C5BB")
 @export var margin_px: float = 32.0
 @export var hp_size: Vector2 = Vector2(320, 64)
 @export var scrap_size: Vector2 = Vector2(280, 92)
-@export var compass_size: Vector2 = Vector2(560, 56)
+@export var compass_size: Vector2 = Vector2(560, 64)
 @export var prompt_size: Vector2 = Vector2(220, 44)
 @export var recall_size: Vector2 = Vector2(260, 44)
 @export var toast_size: Vector2 = Vector2(640, 52)
-## Vertical position (share of the screen height) of the centre-low stack: prompt, recall hold, toast.
-@export var prompt_y: float = 0.72
-@export var recall_y: float = 0.78
-@export var toast_y: float = 0.86
+## Vertical position (share of the screen height) of the stack under the compass: toast, then the prompt and the
+## recall hold (the same slot: the prompt hides while a hold runs). All clear of the walker feet (Pillar 2).
+@export var prompt_y: float = 0.19
+@export var recall_y: float = 0.19
+@export var toast_y: float = 0.12
+## Track behind the HP fill and the recall bar: ink at half strength, so the orange trough still stands out.
+@export var track_color: Color = Color(0.0784, 0.0863, 0.1020, 0.5)
+## A pinned compass mark only changes ends once its bearing is this far past directly behind.
+@export var behind_hysteresis_deg: float = 20.0
 
 ## Bar fraction (0..1) of chassis HP, set on Health.changed only.
 var hp_fraction: float = 1.0
@@ -58,6 +73,18 @@ var _toast_queue: Array = []
 var _toast_left: float = 0.0
 var _toast_total: float = 0.0
 var _cache_shown: bool = false
+var _home_side: int = 0
+var _cache_side: int = 0
+var _home_m: int = -1
+var _cache_m: int = -1
+var _pulse_frozen: bool = false
+var _hp_style: StyleBoxFlat
+var _home_arrow: Polygon2D
+var _home_arrow_halo: Polygon2D
+var _cache_arrow: Polygon2D
+var _cache_arrow_halo: Polygon2D
+var _home_halo: ColorRect
+var _cache_halo: ColorRect
 
 var _hp_plate: Panel
 var _hp_back: ColorRect
@@ -74,7 +101,7 @@ var _banked_label: Label
 var _compass_plate: Panel
 var _compass_centre: ColorRect
 var _home_mark: ColorRect
-var _home_letter: Label
+var _home_letter: MarkLabel
 var _home_dist: Label
 var _cache_mark: ColorRect
 var _cache_dist: Label
@@ -92,10 +119,14 @@ var _label_sizes: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A pause must not freeze a reset recall bar or a half-faded toast on screen.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build()
 	apply_layout(get_viewport_rect().size)
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	_refresh_all()
+	if not _toast_queue.is_empty() and _toast_left <= 0.0:
+		_next_toast()
 
 
 ## Wires the HUD to the game. Any argument may be null; the HUD then shows its idle state for that part.
@@ -109,6 +140,8 @@ func bind(
 	_camera = camera
 	_home = home
 	_recall = recall
+	_home_side = 0
+	_cache_side = 0
 	if _health != null:
 		_health.changed.connect(_on_health_changed)
 		_on_health_changed(_health.hp, _health.max_hp)
@@ -131,13 +164,15 @@ func unbind() -> void:
 	_camera = null
 	_recall = null
 	recall_fraction = 0.0
+	_home_side = 0
+	_cache_side = 0
 	_refresh_all()
 
 
 ## Queues a toast; one shows at a time, the next starts when the current one has faded out.
 func show_toast(text: String, seconds: float = 4.0) -> void:
 	_toast_queue.append([text, maxf(seconds, 0.0)])
-	if _toast_left <= 0.0:
+	if _hp_plate != null and _toast_left <= 0.0:
 		_next_toast()
 
 
@@ -152,6 +187,8 @@ func toast_queue_size() -> int:
 
 
 func toast_alpha() -> float:
+	if _toast_plate == null:
+		return 0.0
 	return _toast_plate.modulate.a if _toast_plate.visible else 0.0
 
 
@@ -160,7 +197,7 @@ func is_low() -> bool:
 
 
 func cache_mark_visible() -> bool:
-	return _cache_mark.visible
+	return _cache_mark.visible if _cache_mark != null else _cache_shown
 
 
 func compass_pad_px() -> float:
@@ -171,6 +208,20 @@ func compass_pad_px() -> float:
 func compass_x(bearing_deg_value: float) -> float:
 	var half: float = compass_size.x * 0.5 - compass_pad_px()
 	return compass_size.x * 0.5 + clampf(bearing_deg_value / compass_half_span_deg, -1.0, 1.0) * half
+
+
+## Which end a mark is pinned to (-1 left, 1 right, 0 inside the strip), given its previous state and bearing.
+## Inside +-90 deg it is free. Beyond, it takes the end of its bearing sign, and keeps it until the bearing has
+## gone `hysteresis` degrees past directly behind to the other side, so a target near 180 does not flicker.
+static func pinned_side(prev: int, bearing: float, span: float = 90.0, hysteresis: float = 20.0) -> int:
+	if absf(bearing) <= span:
+		return 0
+	var sign_now: int = 1 if bearing > 0.0 else -1
+	if prev == 0:
+		return sign_now
+	if sign_now != prev and absf(bearing) <= 180.0 - hysteresis:
+		return sign_now
+	return prev
 
 
 ## Strip-local centre x (reference pixels) of a compass mark ("home" or "cache"), after the last layout.
@@ -223,6 +274,7 @@ func apply_layout(view: Vector2) -> void:
 	_place(_hp_plate, Vector2(m, view.y - m - hp_size.y * s), hp_size * s)
 	_place(_scrap_plate, Vector2(view.x - m - scrap_size.x * s, m), scrap_size * s)
 	_place(_compass_plate, Vector2((view.x - compass_size.x * s) * 0.5, m), compass_size * s)
+	_home_letter.add_theme_font_size_override("font_size", maxi(roundi(18 * s), 8))
 	_place(_prompt_plate, Vector2((view.x - prompt_size.x * s) * 0.5, view.y * prompt_y), prompt_size * s)
 	_place(_recall_plate, Vector2((view.x - recall_size.x * s) * 0.5, view.y * recall_y), recall_size * s)
 	_place(_toast_plate, Vector2((view.x - toast_size.x * s) * 0.5, view.y * toast_y), toast_size * s)
@@ -265,7 +317,7 @@ func _build() -> void:
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_hp_low_tag = _label(_hp_plate, "LOW", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
 	_hp_low_tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_hp_back = _rect(_hp_plate, "HpBack", Color(1, 1, 1, 0.18))
+	_hp_back = _rect(_hp_plate, "HpBack", track_color)
 	_hp_fill = _rect(_hp_plate, "HpFill", BODY)
 	_hp_tick = _rect(_hp_plate, "HpNotch", BODY)
 
@@ -281,17 +333,24 @@ func _build() -> void:
 	_compass_plate = _plate()
 	_compass_centre = _rect(_compass_plate, "CompassCentre", Color(1, 1, 1, 0.5))
 	# Workshop: a square with a letter; cache: a diamond in the accent. Different shape and value, not only hue.
+	# Each mark and arrow sits on an ink halo, so it keeps contrast whatever shows through the 60 % plate.
+	_home_halo = _rect(_compass_plate, "HomeHalo", INK)
 	_home_mark = _rect(_compass_plate, "HomeMark", BODY)
-	_home_letter = Label.new()
+	_home_letter = MarkLabel.new()
 	_home_letter.text = "W"
 	_home_letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_home_letter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_home_letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_home_letter.add_theme_color_override("font_color", INK)
 	_home_mark.add_child(_home_letter)
+	_cache_halo = _rect(_compass_plate, "CacheHalo", INK)
 	_cache_mark = _rect(_compass_plate, "CacheMark", ACCENT)
-	_home_dist = _label(_compass_plate, "", 16, BODY, HORIZONTAL_ALIGNMENT_CENTER)
-	_cache_dist = _label(_compass_plate, "", 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_home_arrow_halo = _arrow(INK)
+	_home_arrow = _arrow(BODY)
+	_cache_arrow_halo = _arrow(INK)
+	_cache_arrow = _arrow(ACCENT)
+	_home_dist = _label(_compass_plate, "", 20, BODY, HORIZONTAL_ALIGNMENT_CENTER)
+	_cache_dist = _label(_compass_plate, "", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 
 	_prompt_plate = _plate()
 	_prompt_label = _label(_prompt_plate, "F  Workshop", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
@@ -300,12 +359,20 @@ func _build() -> void:
 	_recall_plate = _plate()
 	_recall_label = _label(_recall_plate, "Recall", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
 	_recall_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_recall_back = _rect(_recall_plate, "RecallBack", Color(1, 1, 1, 0.18))
+	_recall_back = _rect(_recall_plate, "RecallBack", track_color)
 	_recall_fill = _rect(_recall_plate, "RecallFill", BODY)
 
 	_toast_plate = _plate()
 	_toast_label = _label(_toast_plate, "", 24, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+
+func _arrow(color: Color) -> Polygon2D:
+	var poly := Polygon2D.new()
+	poly.color = color
+	poly.visible = false
+	_compass_plate.add_child(poly)
+	return poly
 
 
 func _plate() -> Panel:
@@ -314,6 +381,8 @@ func _plate() -> Panel:
 	var style := StyleBoxFlat.new()
 	style.bg_color = plate_color
 	panel.add_theme_stylebox_override("panel", style)
+	if _hp_plate == null:
+		_hp_style = style
 	add_child(panel)
 	return panel
 
@@ -361,33 +430,81 @@ func _place_recall_fill() -> void:
 
 func _place_compass_marks() -> void:
 	var s: float = _scale
-	var mark := Vector2(18, 18) * s
+	var mark := Vector2(24, 24) * s
+	var halo: float = 3.0 * s
 	var home_b: float = 0.0
 	var cache_b: float = 0.0
 	if _camera != null and is_instance_valid(_camera) and _walker != null and is_instance_valid(_walker):
 		home_b = bearing_deg(_camera.global_transform.basis, _walker.global_position, _home)
 		if _economy != null and _economy.has_cache():
 			cache_b = bearing_deg(_camera.global_transform.basis, _walker.global_position, _economy.cache_position)
+	_home_side = pinned_side(_home_side, home_b, compass_half_span_deg, behind_hysteresis_deg)
+	_cache_side = pinned_side(_cache_side, cache_b, compass_half_span_deg, behind_hysteresis_deg)
+	var home_x: float = _mark_end_or_bearing(_home_side, home_b)
+	var cache_x: float = _mark_end_or_bearing(_cache_side, cache_b)
 	_home_mark.size = mark
-	_home_mark.position = Vector2(compass_x(home_b) * s - mark.x * 0.5, 10 * s)
+	_home_mark.position = Vector2(home_x * s - mark.x * 0.5, 6 * s)
+	_home_halo.size = mark + Vector2.ONE * halo * 2.0
+	_home_halo.position = _home_mark.position - Vector2.ONE * halo
 	_home_letter.position = Vector2.ZERO
 	_home_letter.size = mark
-	_home_letter.add_theme_font_size_override("font_size", maxi(roundi(14 * s), 8))
-	var dsize := Vector2(76, 20) * s
+	var dsize := Vector2(84, 26) * s
 	_home_dist.size = dsize
-	_home_dist.position = Vector2(_home_mark.position.x + mark.x * 0.5 - dsize.x * 0.5, 32 * s)
-	_cache_mark.size = mark * 0.8
-	_cache_mark.pivot_offset = _cache_mark.size * 0.5
+	_home_dist.position = Vector2(home_x * s - dsize.x * 0.5, 34 * s)
+	var cache_size: Vector2 = mark * 0.8
+	_cache_mark.size = cache_size
+	_cache_mark.pivot_offset = cache_size * 0.5
 	_cache_mark.rotation = PI * 0.25
-	_cache_mark.position = Vector2(compass_x(cache_b) * s - _cache_mark.size.x * 0.5, 11 * s)
+	_cache_mark.position = Vector2(cache_x * s - cache_size.x * 0.5, 6 * s + (mark.y - cache_size.y) * 0.5)
+	_cache_halo.size = cache_size + Vector2.ONE * halo * 2.0
+	_cache_halo.pivot_offset = _cache_halo.size * 0.5
+	_cache_halo.rotation = PI * 0.25
+	_cache_halo.position = _cache_mark.position - Vector2.ONE * halo
+	_cache_halo.visible = _cache_mark.visible
 	_cache_dist.size = dsize
-	_cache_dist.position = Vector2(_cache_mark.position.x + _cache_mark.size.x * 0.5 - dsize.x * 0.5, 32 * s)
-	# Two distance labels that would overlap are pushed apart (workshop left, cache right), never past the strip.
+	_cache_dist.position = Vector2(cache_x * s - dsize.x * 0.5, 34 * s)
+	# Two distance labels that would overlap are pushed apart (workshop left, cache right), then clamped to the strip.
 	var overlap: float = dsize.x * 0.7 - absf(_cache_dist.position.x - _home_dist.position.x)
 	if _cache_mark.visible and overlap > 0.0:
 		var dir: float = 1.0 if _cache_dist.position.x >= _home_dist.position.x else -1.0
 		_cache_dist.position.x += dir * overlap * 0.5
 		_home_dist.position.x -= dir * overlap * 0.5
+	var strip_w: float = compass_size.x * s
+	_home_dist.position.x = clampf(_home_dist.position.x, 0.0, strip_w - dsize.x)
+	_cache_dist.position.x = clampf(_cache_dist.position.x, 0.0, strip_w - dsize.x)
+	var cy: float = 6 * s + mark.y * 0.5
+	var gap: float = mark.x * 0.5 + halo
+	_place_arrow(_home_arrow, _home_arrow_halo, _home_side, home_x * s, cy, gap)
+	_place_arrow(_cache_arrow, _cache_arrow_halo, _cache_side if _cache_mark.visible else 0, cache_x * s, cy, gap)
+
+
+func _mark_end_or_bearing(side: int, bearing: float) -> float:
+	if side == 0:
+		return compass_x(bearing)
+	return compass_x(90.0 * side)
+
+
+## A pinned mark gets a small arrow (8 x 10 reference px) just outside it, pointing along the strip outward.
+func _place_arrow(poly: Polygon2D, back: Polygon2D, side: int, cx: float, cy: float, gap: float) -> void:
+	var on: bool = side != 0
+	poly.visible = on
+	back.visible = on
+	if not on:
+		return
+	var s: float = _scale
+	var dir: float = float(side)
+	var base := Vector2(cx + dir * (gap + 2.0 * s), cy)
+	poly.polygon = PackedVector2Array(
+		[base + Vector2(0, -5 * s), base + Vector2(dir * 8 * s, 0), base + Vector2(0, 5 * s)]
+	)
+	var e: float = 2.0 * s
+	back.polygon = PackedVector2Array(
+		[
+			base + Vector2(-dir * e, -5 * s - e),
+			base + Vector2(dir * (8 * s + e * 1.5), 0),
+			base + Vector2(-dir * e, 5 * s + e),
+		]
+	)
 
 
 func _on_viewport_resized() -> void:
@@ -399,6 +516,7 @@ func _on_health_changed(hp: float, max_hp: float) -> void:
 	hp_text = "%d / %d" % [ceili(hp), roundi(max_hp)]
 	_low = hp_fraction < low_hp_fraction
 	_pulse_t = 0.0
+	_pulse_frozen = false
 	if _hp_plate != null:
 		_refresh_hp()
 
@@ -418,6 +536,9 @@ func _refresh_hp() -> void:
 	_hp_fill.color = ACCENT if _low else BODY
 	_hp_fill.modulate = Color.WHITE
 	_hp_low_tag.visible = _low
+	# The urgent area grows: a 2 px plate border while low.
+	_hp_style.set_border_width_all(2 if _low else 0)
+	_hp_style.border_color = BODY
 	_place_hp_fill()
 
 
@@ -449,12 +570,28 @@ func _refresh_all() -> void:
 func _apply_visibility() -> void:
 	if _hp_plate == null:
 		return
-	_prompt_plate.visible = _enter_prompt
+	_prompt_plate.visible = _enter_prompt and not _holding()
 	_recall_plate.visible = recall_fraction > 0.0
 	_cache_mark.visible = _cache_shown
 	_cache_dist.visible = _cache_shown
 	_toast_plate.visible = _toast_left > 0.0
 	_compass_plate.visible = _camera != null and _walker != null
+
+
+func _holding() -> bool:
+	return _recall != null and is_instance_valid(_recall) and _recall.holding
+
+
+## Test and screenshot hook: hold the low-HP pulse at this phase (0..1 of the period; 0.75 is the trough).
+func freeze_pulse(phase: float) -> void:
+	_pulse_frozen = true
+	_pulse_t = phase * low_pulse_period
+	_update_pulse()
+
+
+func _update_pulse() -> void:
+	var wave: float = 0.5 + 0.5 * sin(_pulse_t / low_pulse_period * TAU)
+	_hp_fill.color = ACCENT.lerp(Color.WHITE, wave)
 
 
 func _next_toast() -> void:
@@ -476,19 +613,24 @@ func _update_compass() -> void:
 		return
 	_place_compass_marks()
 	var from: Vector3 = _walker.global_position
-	_home_dist.text = "%d m" % roundi(Vector2(_home.x - from.x, _home.z - from.z).length())
+	var home_m: int = roundi(Vector2(_home.x - from.x, _home.z - from.z).length())
+	if home_m != _home_m:
+		_home_m = home_m
+		_home_dist.text = "%d m" % home_m
 	if _cache_shown and _economy != null:
 		var c: Vector3 = _economy.cache_position
-		_cache_dist.text = "%d m" % roundi(Vector2(c.x - from.x, c.z - from.z).length())
+		var cache_m: int = roundi(Vector2(c.x - from.x, c.z - from.z).length())
+		if cache_m != _cache_m:
+			_cache_m = cache_m
+			_cache_dist.text = "%d m" % cache_m
 
 
 func _process(delta: float) -> void:
 	if _hp_plate == null:
 		return
-	if _low:
+	if _low and not _pulse_frozen:
 		_pulse_t += delta
-		var wave: float = 0.5 + 0.5 * sin(_pulse_t / low_pulse_period * TAU)
-		_hp_fill.color = ACCENT.lerp(Color.WHITE, wave)
+		_update_pulse()
 	var tracking: bool = _camera != null and is_instance_valid(_camera) and _walker != null and is_instance_valid(_walker)
 	_compass_plate.visible = tracking
 	if tracking:
@@ -500,6 +642,7 @@ func _process(delta: float) -> void:
 		recall_fraction = prog
 		_place_recall_fill()
 	_recall_plate.visible = recall_fraction > 0.0
+	_prompt_plate.visible = _enter_prompt and not _holding()
 	if _toast_left > 0.0:
 		_toast_left -= delta
 		var elapsed: float = _toast_total - _toast_left

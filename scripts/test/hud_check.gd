@@ -127,9 +127,21 @@ func toast(text: String) -> void:
 	hud.show_toast(text, 4.0)
 
 
-## Frees the HUD side first, then the stand-ins, the way T12 should end a run.
+## Trough of the low-HP pulse, held still for the gray shot.
+func pulse_trough() -> void:
+	hud.freeze_pulse(0.75)
+
+
+## Frees the HUD side first, then the stand-ins, the way T12 should end a run. The data then changes once more:
+## nothing may be left listening (a leftover connection would hit the freed HUD).
 func teardown() -> void:
 	hud.unbind()
+	hud.queue_free()
+	_camera.queue_free()
 	_walker.queue_free()
+	hud = null
+	_camera = null
 	_walker = null
+	health.damage(1.0)
+	economy.collect_loose(1)
 	economy = Economy.new()
