@@ -764,3 +764,13 @@ func test_collapsed_walker_stays_down_until_apply_build_and_teleport() -> void:
 	_tick(walker, 70)
 	walker.teleport(Transform3D(Basis.IDENTITY, Vector3(2.0, 1.0, 0.0)))
 	assert_false(walker.is_collapsed(), "a teleport stands it up")
+
+
+func test_aiming_no_longer_slows_the_turn() -> void:
+	var walker: WalkerBody = preload("res://scenes/walker/walker.tscn").instantiate()
+	assert_eq(walker.aim_turn_factor, 1.0, "the x 0.6 aim penalty is gone (GDD 6)")
+	var rate: float = 0.0
+	for i in 12:
+		rate = WalkerBody.approach_yaw_rate(rate, 1.0, 120.0, true, 0.1, walker.aim_turn_factor, DT)
+	assert_almost_eq(rate, 120.0, 0.01, "full turn rate with aim held")
+	walker.free()

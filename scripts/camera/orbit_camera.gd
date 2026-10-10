@@ -23,6 +23,8 @@ const SPEED_SMOOTHING_S: float = 0.10
 @export var aim_fov: float = 50.0
 @export var aim_fov_time: float = 0.10
 @export var sensitivity_deg_per_px: float = 0.15
+## While `aim` is held the mouse drops to this, so the dot moves the same distance on screen per pixel (GDD 6).
+@export var aim_sensitivity_deg_per_px: float = 0.10
 @export var invert_y: bool = false
 ## -20 to -10 is the aim-up range (GDD 6): the spring arm shortens against the ground there (rock wins).
 @export var pitch_min_deg: float = -20.0
@@ -150,7 +152,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	_follow(delta)
 	_idle_s += delta
-	if is_aiming():
+	if recenter_paused(is_aiming(), Input.is_action_pressed("fire")):
 		_idle_s = 0.0
 	if recenter_enabled and is_instance_valid(target):
 		# The interpolated heading: the raw one only changes on physics ticks, so the recentring yaw would step
@@ -165,7 +167,7 @@ func _process(delta: float) -> void:
 			recenter_delay,
 			recenter_rate_deg,
 			recenter_min_target_speed,
-			is_aiming()
+			recenter_paused(is_aiming(), Input.is_action_pressed("fire"))
 		)
 	_ease_zoom_and_fov(delta)
 	_ease_floor(delta)
@@ -200,7 +202,7 @@ func orbit(dx_px: float, dy_px: float) -> void:
 		pitch_deg,
 		dx_px,
 		dy_px,
-		sensitivity_deg_per_px,
+		look_sensitivity(sensitivity_deg_per_px, aim_sensitivity_deg_per_px, is_aiming()),
 		invert_y,
 		pitch_min_deg,
 		pitch_max_deg
@@ -226,6 +228,16 @@ func zoom(steps: int) -> void:
 ## The rendered Camera3D at the end of the arm (screen projection, make_current).
 func camera() -> Camera3D:
 	return _camera
+
+
+## Degrees per pixel of mouse motion: the aim value while `aim` is held, else the normal one.
+static func look_sensitivity(normal: float, aimed: float, aiming: bool) -> float:
+	return aimed if aiming else normal
+
+
+## Behind-the-body recentring pauses while `aim` or `fire` is held; its idle timer restarts on release (GDD 6).
+static func recenter_paused(aiming: bool, firing: bool) -> bool:
+	return aiming or firing
 
 
 func is_aiming() -> bool:

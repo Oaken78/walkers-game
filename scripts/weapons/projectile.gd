@@ -16,6 +16,8 @@ var alive: bool = false
 var velocity: Vector3 = Vector3.ZERO
 var damage: float = 0.0
 var source: Node = null
+## The index of the player weapon that fired it (-1 for none), so a hit flashes that weapon's ring.
+var weapon: int = -1
 var age: float = 0.0
 var travelled: float = 0.0
 

@@ -458,9 +458,85 @@ func test_a_hit_on_a_wreck_does_not_flash_the_ring_and_a_hit_on_a_live_target_do
 	for i in 8:
 		rig.pool.step(TICK)
 	assert_eq(rig.pool.impact_count, 1, "the bolt landed on the wreck's hurtbox")
-	assert_false(rig.ring_flashing, "but a wreck gives no hit confirmation")
+	assert_false(rig.weapon_flashing(0), "but a wreck gives no hit confirmation")
 	target.health.repair_full()
 	rig.shoot(0)
 	for i in 8:
 		rig.pool.step(TICK)
-	assert_true(rig.ring_flashing, "a live target does")
+	assert_true(rig.weapon_flashing(0), "a live target does")
+
+
+func test_the_hit_flash_goes_to_the_weapon_that_fired_the_hitting_shot() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.crawler(), 40, 0.0)
+	var direction: Vector3 = rig.muzzle_direction(1)
+	var target := Hurtbox.new()
+	var shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.6
+	shape.shape = sphere
+	target.add_child(shape)
+	target.health = Health.new(45.0)
+	target.position = rig.muzzle_position(1) + direction * 5.0
+	add_child_autofree(target)
+	await wait_physics_frames(2)
+	rig.shoot(1)
+	for i in 8:
+		rig.pool.step(TICK)
+	assert_true(rig.weapon_flashing(1), "cannon 1 fired the hit")
+	assert_false(rig.weapon_flashing(0), "cannon 0 did not")
+
+
+# --- Per-weapon aim state ------------------------------------------------------------------------------------
+
+
+func test_the_pulse_cannon_traverses_at_180_deg_per_s() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.scout(), 40, 0.0)
+	assert_almost_eq(rig.traverse_rate_dps(), 180.0, 0.01, "40 kg")
+
+
+func test_weapon_state_reports_the_fields_the_marks_need() -> void:
+	var rig: WeaponRig = _rig_with_pool(WalkerBuild.scout(), 40, 0.0)
+	var state: Dictionary = rig.weapon_state(0)
+	for key in ["live", "aim_point", "on_enemy", "flash_left", "yaw_deg", "pitch_deg"]:
+		assert_true(state.has(key), key)
+
+
+# --- Phases with a gray weapon (clock plus live gate) --------------------------------------------------------
+
+
+## Ticks at which the live weapons fire; a gray weapon skips its slots.
+func _gated(clock: FireClock, live: Array[bool], ticks: int) -> Array[Vector2i]:
+	var shots: Array[Vector2i] = []
+	for tick in ticks:
+		for weapon in clock.update(float(tick) * TICK, true):
+			if live[weapon]:
+				shots.append(Vector2i(tick, weapon))
+	return shots
+
+
+func test_with_one_of_two_cannons_gray_the_other_keeps_its_phase_every_quarter_second() -> void:
+	var both: Array[Vector2i] = _gated(FireClock.new(2, 4.0), [true, true], 120)
+	var only_first: Array[Vector2i] = _gated(FireClock.new(2, 4.0), [true, false], 120)
+	var first_ticks: Array[int] = []
+	for shot in both:
+		if shot.y == 0:
+			first_ticks.append(shot.x)
+	var alone_ticks: Array[int] = []
+	for shot in only_first:
+		alone_ticks.append(shot.x)
+	assert_eq(alone_ticks, first_ticks, "top_0 fires on the same ticks as when top_1 is live")
+	for i in range(1, alone_ticks.size()):
+		assert_eq(alone_ticks[i] - alone_ticks[i - 1], 15, "every 0.25 s")
+
+
+func test_a_gray_first_cannon_does_not_move_the_second_ones_phase() -> void:
+	var both: Array[Vector2i] = _gated(FireClock.new(2, 4.0), [true, true], 120)
+	var only_second: Array[Vector2i] = _gated(FireClock.new(2, 4.0), [false, true], 120)
+	var second_ticks: Array[int] = []
+	for shot in both:
+		if shot.y == 1:
+			second_ticks.append(shot.x)
+	var alone_ticks: Array[int] = []
+	for shot in only_second:
+		alone_ticks.append(shot.x)
+	assert_eq(alone_ticks, second_ticks, "no re-phasing")

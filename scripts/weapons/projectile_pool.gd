@@ -52,7 +52,7 @@ func _physics_process(delta: float) -> void:
 
 
 ## Starts a bolt at `origin` along `direction`. Returns false (and counts a refusal) when `cap` are already live.
-func fire(origin: Vector3, direction: Vector3, speed: float, damage: float, source: Node = null) -> bool:
+func fire(origin: Vector3, direction: Vector3, speed: float, damage: float, source: Node = null, weapon: int = -1) -> bool:
 	if _live >= cap:
 		refused_count += 1
 		return false
@@ -70,6 +70,7 @@ func fire(origin: Vector3, direction: Vector3, speed: float, damage: float, sour
 	bolt.velocity = dir * speed
 	bolt.damage = damage
 	bolt.source = source
+	bolt.weapon = weapon
 	bolt.age = 0.0
 	bolt.travelled = 0.0
 	bolt.alive = true

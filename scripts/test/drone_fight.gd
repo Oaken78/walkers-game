@@ -8,15 +8,20 @@ extends Node3D
 ## What it measures (all in physics ticks, 60 Hz):
 ##   - a drone run (idle or strafing walker, 2 drones): states seen, the telegraph before every shot, the 1.5 s cycle, the
 ##     hold (speed, drift, brake time, resume time), orbit speed and radius, the bolt's aim, the damage the walker took;
-##   - heading races (risk 8): the time to bring the heading onto a drone 90 deg off, still / orbiting away / toward;
-##   - the no-lead tracker (risk 8): hit rates of shots fired in the hold window and while the drone orbits, kill times;
+##   - swing races (risk 8): the time for a reticle to reach a drone 90 deg off that has started its wind-up, with the
+##     body still and with A toward it;
+##   - the no-lead tracker (risk 8): the dot on the drone's current position, fire held, no body turn, standing and
+##     strafing: hit rates of shots fired in the hold window and while the drone orbits, kill times;
+##   - two drones 90 deg apart (reported, not asserted): the time to kill both and the damage taken, with and
+##     without A/D toward the next one;
 ##   - leash, scrap drop against scrap collected, the engagement cap, the cost per tick.
 
 signal run_finished
-signal race_finished
+signal swing_finished
+signal pair_finished
 signal trial_finished
 
-enum Drive { NONE, IDLE, STRAFE, TRACK, RACE }
+enum Drive { NONE, IDLE, STRAFE, TRACK, SWING, PAIR }
 
 const GROUND_COLOR: Color = Color("CAB294")
 const SKY_COLOR: Color = Color("90A092")
@@ -24,7 +29,7 @@ const SPAWN_Y: float = 1.0
 const START_PITCH_DEG: float = 20.0
 ## A player that cannot die, so a run can add up all the damage the bolts would do.
 const PLAYER_HP: float = 100000.0
-## Risk 8: the drone orbits at 15 m, 4 m up; the heading is "on" it within its angular radius.
+## Risk 8: the drone orbits at 15 m, 4 m up.
 const ORBIT_M: float = 15.0
 const HOVER_M: float = 4.0
 const STOP_MARGIN_DEG: float = 0.5
@@ -33,9 +38,9 @@ const YAW_RAMP_S: float = 0.1
 const WINDOW_FROM_S: float = 0.15
 const WINDOW_TO_S: float = 0.65
 const HOLD_S: float = 0.9
-const RACE_S: float = 2.0
-## A race ends this long after the heading first reached the drone.
-const RACE_TAIL_TICKS: int = 20
+const SWING_MAX_S: float = 1.5
+## The two-drone trial gives up after this long.
+const PAIR_MAX_S: float = 10.0
 const TRIAL_MAX_S: float = 6.0
 const TRIAL_TAIL_TICKS: int = 30
 ## A shot has missed once it has flown this far past the drone's range at the moment it left.
@@ -90,13 +95,20 @@ var last_drop_point: Vector3 = Vector3.ZERO
 var engaged_max: int = 0
 var field_active_max: int = 0
 
-## --- Heading race ----------------------------------------------------------------------------------------------
-var heading_time_s: float = -1.0
-var heading_final_error_deg: float = 0.0
-var race_done: bool = false
-var race_still_s: float = -1.0
-var race_away_s: float = -1.0
-var race_toward_s: float = -1.0
+## --- Swing race (risk 8) ------------------------------------------------------------------------------------
+## Ticks from the dot landing on the drone to a reticle (any weapon's barrel line) first being on it.
+var swing_done: bool = false
+var swing_ticks: int = -1
+var swing_still_ticks: int = -1
+var swing_assist_ticks: int = -1
+var swing_body_rate_max_dps: float = 0.0
+
+## --- Two drones 90 deg apart (reported) --------------------------------------------------------------------
+var pair_done: bool = false
+var pair_kill_s: float = -1.0
+var pair_damage: float = 0.0
+var pair_kills: int = 0
+var pair_first_kill_s: float = -1.0
 
 ## --- Tracker -----------------------------------------------------------------------------------------------------
 var trial_done: bool = false
@@ -129,9 +141,10 @@ var _drive_ticks: int = 0
 var _drive_limit: int = 0
 var _strafe_half_s: float = 1.0
 var _tracked: Drone = null
-var _use_aim: bool = false
-var _race_cone_deg: float = 0.0
-var _race_ticks: int = 0
+var _tracker_strafe: bool = false
+var _swing_assist: bool = false
+var _pair_assist: bool = false
+var _pair_target: Drone = null
 var _trial_start_frame: int = 0
 var _trial_first_hold_s: float = -1.0
 var _trial_death_frame: int = -1
@@ -209,6 +222,40 @@ var luma_ok: bool:
 var drone_count: int:
 	get:
 		return _drones.size()
+## What the aim marks show (refreshed every frame by the marks themselves).
+var gray_cannons: int:
+	get:
+		return _rig.gray_count
+var cannons: int:
+	get:
+		return _rig.cannon_count()
+var rings_visible: int:
+	get:
+		return _marks.visible_ring_count()
+var rings_dashed: int:
+	get:
+		var n: int = 0
+		for ring in _marks.rings:
+			n += 1 if ring.dashed else 0
+		return n
+var ring_to_dot_max_px: float:
+	get:
+		var worst: float = 0.0
+		for ring in _marks.rings:
+			worst = maxf(worst, ring.to_dot_px)
+		return worst
+var ring_to_dot_min_px: float:
+	get:
+		var best: float = INF
+		for ring in _marks.rings:
+			best = minf(best, ring.to_dot_px)
+		return best
+## Share of the standing swing time the body turn saves (GDD 16 risk 8: at least 30 %).
+var swing_gain: float:
+	get:
+		if swing_still_ticks <= 0 or swing_assist_ticks < 0:
+			return 0.0
+		return 1.0 - float(swing_assist_ticks) / float(swing_still_ticks)
 var alive_drones: int:
 	get:
 		return _field.alive_count()
@@ -281,7 +328,6 @@ func _ready() -> void:
 	_field.drone_died.connect(_on_field_death)
 	_rig.fired.connect(_on_player_shot)
 	_rig.pool.impacted.connect(_on_player_impact)
-	_race_cone_deg = rad_to_deg(asin(Drone.HURT_RADIUS_M / ORBIT_M))
 
 
 func _physics_process(delta: float) -> void:
@@ -291,8 +337,10 @@ func _physics_process(delta: float) -> void:
 			_drive_strafe()
 		Drive.TRACK:
 			_drive_track(delta)
-		Drive.RACE:
-			_drive_race(delta)
+		Drive.SWING:
+			_drive_swing()
+		Drive.PAIR:
+			_drive_pair()
 	if _drive != Drive.NONE:
 		_drive_ticks += 1
 		if _drive_limit > 0 and _drive_ticks >= _drive_limit:
@@ -346,6 +394,7 @@ func spawn(yaw_deg: float = 0.0, pitch_deg: float = START_PITCH_DEG) -> void:
 	_rig.pool.clear()
 	_walker.teleport(Transform3D(Basis(Vector3.UP, deg_to_rad(yaw_deg)), Vector3(0.0, SPAWN_Y, 0.0)))
 	_walker.reset_physics_interpolation()
+	_rig.reset_aim()
 	_orbit.snap()
 	_orbit.set_angles(yaw_deg, pitch_deg)
 	reset_checks()
@@ -384,9 +433,8 @@ func reset_checks() -> void:
 	scrap_drop_max = 0
 	engaged_max = 0
 	field_active_max = 0
-	heading_time_s = -1.0
-	heading_final_error_deg = 0.0
-	race_done = false
+	swing_done = false
+	pair_done = false
 	trial_done = false
 	_enc_last_start.clear()
 
@@ -481,42 +529,37 @@ func mark_strafe() -> void:
 	strafe_damage = damage_taken
 
 
-## Risk 8 heading race. A drone 90 deg to the left at 15 m, 4 m up; the walker turns left onto it. `mode`: "still" (the
-## drone starts its wind-up now and holds), "away" (it orbits away from the turn) or "toward".
-func begin_race(mode: String) -> void:
+## Risk 8 swing race. A drone 90 deg to the left at 15 m, 4 m up, that starts its wind-up now and then holds; the dot
+## goes onto it at once (a mouse flick). Counts the ticks until a reticle is on the drone. With `assist` the body turns
+## left (A) onto it until then.
+func begin_swing(assist: bool) -> void:
 	var build_spread: float = _rig.spread_override_deg
 	spawn(0.0)
 	_rig.spread_override_deg = build_spread
 	add_drone(90.0, ORBIT_M, HOVER_M, "engaged")
-	match mode:
-		"still":
-			set_orbit(0, ORBIT_M, 1, 0.0)
-		"away":
-			set_orbit(0, ORBIT_M, 1, 5.0)
-		"toward":
-			set_orbit(0, ORBIT_M, -1, 5.0)
-	_race_ticks = 0
-	heading_time_s = -1.0
-	heading_final_error_deg = INF
-	race_done = false
+	set_orbit(0, ORBIT_M, 1, 0.0)
+	swing_ticks = -1
+	swing_body_rate_max_dps = 0.0
+	swing_done = false
+	_swing_assist = assist
 	_drive_ticks = 0
-	_drive_limit = int(round(RACE_S * float(Engine.physics_ticks_per_second)))
-	_drive = Drive.RACE
+	_drive_limit = int(round(SWING_MAX_S * float(Engine.physics_ticks_per_second)))
+	_look_at(_drones[0])
+	if assist:
+		hold_action("turn_left", true)
+	_drive = Drive.SWING
 
 
-func end_race(mode: String) -> void:
-	match mode:
-		"still":
-			race_still_s = heading_time_s
-		"away":
-			race_away_s = heading_time_s
-		"toward":
-			race_toward_s = heading_time_s
+func end_swing(assist: bool) -> void:
+	if assist:
+		swing_assist_ticks = swing_ticks
+	else:
+		swing_still_ticks = swing_ticks
 
 
 ## Starts a set of tracker trials (totals reset).
-func begin_tracker_set(use_aim: bool = false) -> void:
-	_use_aim = use_aim
+func begin_tracker_set(strafe: bool = false) -> void:
+	_tracker_strafe = strafe
 	tracker_trials = 0
 	tracker_kills = 0
 	tracker_kill_max_s = 0.0
@@ -530,8 +573,9 @@ func begin_tracker_set(use_aim: bool = false) -> void:
 
 
 ## One tracker trial: a fresh drone 15 m out, `start_deg` off the heading, orbiting in `direction` (+1 away from a left turn,
-## -1 toward), its first wind-up 1.0 s away. The tracker holds A/D toward the drone's current position, aims the camera at it
-## and fires continuously, until the drone is dead (or 6 s).
+## -1 toward), its first wind-up 1.0 s away. The tracker puts the dot on the drone's current position every tick (never
+## ahead of it), holds `fire`, does not turn the body (and strafes Q/E when the set is a strafing one), until the drone
+## is dead (or 6 s).
 func tracker_trial(direction: int, start_deg: float = 40.0) -> void:
 	var build_spread: float = _rig.spread_override_deg
 	spawn(0.0)
@@ -549,6 +593,30 @@ func tracker_trial(direction: int, start_deg: float = 40.0) -> void:
 	_drive_limit = 0
 	_look_at(_tracked)
 	_drive = Drive.TRACK
+
+
+## Two drones 90 deg apart (-45 and +45), 15 m out, orbiting opposite ways, their wind-ups 0.8 s apart. The player
+## keeps the dot on the drone that is winding up (else the one it had), holds `fire`, and with `assist` turns the body
+## toward it with A/D. Reported, not asserted: pair_kill_s (both dead) and pair_damage (taken meanwhile).
+func begin_pair(assist: bool) -> void:
+	var build_spread: float = _rig.spread_override_deg
+	spawn(0.0)
+	_rig.spread_override_deg = build_spread
+	add_drone(45.0, ORBIT_M, HOVER_M, "engaged")
+	add_drone(-45.0, ORBIT_M, HOVER_M, "engaged")
+	set_orbit(0, ORBIT_M, 1, 0.4)
+	set_orbit(1, ORBIT_M, -1, 1.2)
+	pair_done = false
+	pair_kill_s = -1.0
+	pair_first_kill_s = -1.0
+	pair_kills = 0
+	pair_damage = 0.0
+	_pair_assist = assist
+	_pair_target = _drones[0]
+	_drive_ticks = 0
+	_drive_limit = 0
+	_look_at(_pair_target)
+	_drive = Drive.PAIR
 
 
 ## Cost runs: record the drones' and the bolt pool's tick time (microseconds in the nodes, milliseconds here).
@@ -675,13 +743,19 @@ func measure_luma() -> void:
 ## One log line of what the marks show, for the shot checks.
 func log_marks(label: String) -> void:
 	_marks.refresh()
+	var parts: PackedStringArray = PackedStringArray()
+	for i in _marks.rings.size():
+		var ring: AimMarks.Ring = _marks.rings[i]
+		parts.append(
+			"ring%d=(%.1f,%.1f) shown=%s live=%s dashed=%s thick=%s chevron=%s to_dot=%.1f"
+			% [i, ring.screen.x, ring.screen.y, ring.visible, ring.live, ring.dashed, ring.thick, ring.chevron_visible, ring.to_dot_px]
+		)
 	print(
 		(
-			"AIMMARKS %s dot=(%.1f,%.1f) ring=(%.1f,%.1f) ring_shown=%s pip=%s dot_shown=%s thick=%s d=%.1f h=%.1f pitch=%.1f on_enemy=%s"
+			"AIMMARKS %s size=(%.0f,%.0f) scale=%.3f dot=(%.1f,%.1f) gray=%d pitch=%.1f on_enemy=%s %s"
 			% [
-				label, _marks.dot_screen.x, _marks.dot_screen.y, _marks.ring_screen.x, _marks.ring_screen.y,
-				_marks.ring_visible, _marks.pip_visible, _marks.dot_visible, _marks.thick, _rig.aim_range_m,
-				_rig.aim_height_m, _orbit.pitch_deg, _rig.aim_on_enemy,
+				label, _marks.view_size.x, _marks.view_size.y, _marks.ui_scale, _marks.dot_screen.x, _marks.dot_screen.y,
+				_rig.gray_count, _orbit.pitch_deg, _rig.aim_on_enemy, " | ".join(parts),
 			]
 		)
 	)
@@ -710,14 +784,23 @@ func log_run(label: String) -> void:
 	)
 
 
-func log_race(label: String) -> void:
+func log_swing(label: String) -> void:
 	print(
 		(
-			"DRONERACE %s turn_rate=%.1f heading_time_s=%.3f final_err_deg=%.2f cone_deg=%.2f"
+			"DRONESWING %s ticks=%d (%.4f s) assist=%s body_rate_max_dps=%.1f traverse_dps=%.1f"
 			% [
-				label, float(_walker.stats().get("turn_rate", 0.0)), heading_time_s, heading_final_error_deg,
-				_race_cone_deg,
+				label, swing_ticks, float(swing_ticks) / float(Engine.physics_ticks_per_second), _swing_assist,
+				swing_body_rate_max_dps, _rig.traverse_rate_dps(),
 			]
+		)
+	)
+
+
+func log_pair(label: String) -> void:
+	print(
+		(
+			"DRONEPAIR %s assist=%s first_kill_s=%.3f both_dead_s=%.3f kills=%d damage_taken=%.0f"
+			% [label, _pair_assist, pair_first_kill_s, pair_kill_s, pair_kills, pair_damage]
 		)
 	)
 
@@ -737,7 +820,7 @@ func log_scrap(label: String) -> void:
 func log_tracker(label: String) -> void:
 	var text: String = (
 		"DRONETRACK %s trials=%d kills=%d kill_s=%.3f..%.3f hold_hit_rate=%.3f (%d of %d)"
-		+ " orbit_hit_rate=%.3f (%d of %d) other=%d of %d aim=%s spread=%.2f"
+		+ " orbit_hit_rate=%.3f (%d of %d) other=%d of %d strafing=%s spread=%.2f"
 	)
 	print(
 		(
@@ -746,7 +829,7 @@ func log_tracker(label: String) -> void:
 				label, tracker_trials, tracker_kills, tracker_kill_min_s, tracker_kill_max_s, tracker_hold_rate,
 				tracker_hold_hits, tracker_hold_hits + tracker_hold_misses, tracker_orbit_rate, tracker_orbit_hits,
 				tracker_orbit_hits + tracker_orbit_misses, tracker_other_hits,
-				tracker_other_hits + tracker_other_misses, _use_aim, _rig.spread_deg(),
+				tracker_other_hits + tracker_other_misses, _tracker_strafe, _rig.spread_deg(),
 			]
 		)
 	)
@@ -780,8 +863,8 @@ func _drive_track(_delta: float) -> void:
 			for shot in _shots:
 				if shot["status"] == "pending":
 					shot["status"] = "void"
-		hold_action("turn_left", false)
-		hold_action("turn_right", false)
+		hold_action("strafe_left", false)
+		hold_action("strafe_right", false)
 		hold_action("fire", false)
 		_trial_tail -= 1
 		if _trial_tail <= 0:
@@ -790,20 +873,57 @@ func _drive_track(_delta: float) -> void:
 	if float(frame - _trial_start_frame) / float(Engine.physics_ticks_per_second) >= TRIAL_MAX_S:
 		_finish_trial()
 		return
-	_turn_onto(_tracked.global_position)
 	_look_at(_tracked)
-	hold_action("aim", _use_aim)
 	hold_action("fire", true)
+	if _tracker_strafe:
+		var phase: int = int(float(frame - _trial_start_frame) / (_strafe_half_s * float(Engine.physics_ticks_per_second))) % 2
+		hold_action("strafe_left", phase == 0)
+		hold_action("strafe_right", phase == 1)
 
 
-func _drive_race(_delta: float) -> void:
+func _drive_swing() -> void:
 	var drone: Drone = _drones[0]
-	_race_ticks += 1
-	var error: float = _turn_onto(drone.global_position)
-	if heading_time_s < 0.0 and absf(error) <= _race_cone_deg:
-		heading_time_s = float(_race_ticks) / float(Engine.physics_ticks_per_second)
-		_drive_limit = mini(_drive_limit, _drive_ticks + RACE_TAIL_TICKS + 1)
-	heading_final_error_deg = absf(error)
+	var ticks: int = _drive_ticks + 1
+	swing_body_rate_max_dps = maxf(swing_body_rate_max_dps, absf(_walker.yaw_rate_dps))
+	if swing_ticks < 0:
+		for i in _rig.cannon_count():
+			if bool(_rig.weapon_state(i)["on_enemy"]):
+				swing_ticks = ticks
+				hold_action("turn_left", false)
+				hold_action("turn_right", false)
+				_drive_limit = mini(_drive_limit, _drive_ticks + 10)
+				break
+	if drone.is_dead():
+		_drive_limit = 1
+
+
+func _drive_pair() -> void:
+	var alive: Array[Drone] = []
+	for drone in _drones:
+		if is_instance_valid(drone) and not drone.is_dead():
+			alive.append(drone)
+	var elapsed_s: float = float(_drive_ticks + 1) / float(Engine.physics_ticks_per_second)
+	if alive.size() < 2 and pair_first_kill_s < 0.0:
+		pair_first_kill_s = elapsed_s
+	pair_kills = _drones.size() - alive.size()
+	if alive.is_empty() or elapsed_s >= PAIR_MAX_S:
+		pair_kill_s = elapsed_s if alive.is_empty() else -1.0
+		pair_damage = damage_taken
+		_drive = Drive.NONE
+		_release_inputs()
+		pair_done = true
+		pair_finished.emit()
+		return
+	if _pair_target == null or not alive.has(_pair_target):
+		_pair_target = alive[0]
+	for drone in alive:
+		if DroneBrain.is_holding(drone.brain.state):
+			_pair_target = drone
+			break
+	_look_at(_pair_target)
+	hold_action("fire", true)
+	if _pair_assist:
+		_turn_onto(_pair_target.global_position)
 
 
 ## A/D toward `spot`'s bearing, released inside the stopping distance (yaw rate x ramp / 2) + 0.5 deg, the tracker's rule.
@@ -818,7 +938,7 @@ func _turn_onto(spot: Vector3) -> float:
 
 
 func _look_at(drone: Drone) -> void:
-	var to: Vector3 = drone.global_position - (_walker.global_position + _orbit.target_offset)
+	var to: Vector3 = drone.global_position - _orbit.global_position
 	var flat: float = Vector2(to.x, to.z).length()
 	_orbit.set_angles(rad_to_deg(atan2(-to.x, -to.z)), -rad_to_deg(atan2(to.y, flat)))
 
@@ -829,9 +949,9 @@ func _end_drive() -> void:
 	var was: Drive = _drive
 	_drive = Drive.NONE
 	_release_inputs()
-	if was == Drive.RACE:
-		race_done = true
-		race_finished.emit()
+	if was == Drive.SWING:
+		swing_done = true
+		swing_finished.emit()
 	elif was == Drive.IDLE or was == Drive.STRAFE:
 		run_done = true
 		run_finished.emit()

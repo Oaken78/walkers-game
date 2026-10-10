@@ -1,25 +1,25 @@
 class_name AimMath
 extends RefCounted
-## Pure maths of the aim model (GDD 8.3). No nodes, so unit tests cover it directly. Angles passed as `yaw` are
-## radians with the walker's convention (0 looks along -Z, positive turns left); `*_deg` values are degrees.
-##   P  the camera centre ray's hit (or the point at 120 m)
-##   d  horizontal range from the body origin to P, clamped to 4-120 m;  h  P's height
-##   Q  d metres along the body's heading from the body origin, at height h
-## Q lies on the heading line, so turning the body is how you aim sideways. Each weapon converges on Q from its own
-## muzzle: its yaw is the bearing from its muzzle to Q (the heading, plus a lateral correction from the socket offset
-## that is zero on the centre line and a few degrees at 4 m for a weapon at the side) and its elevation is the angle
-## from its muzzle to Q, clamped to -10..+45 deg world-relative and slewed at 360 deg/s.
+## Pure maths of the aim model (GDD 8.3). No nodes, so unit tests cover it directly.
+## P is the camera centre ray's hit (or the point at 120 m). Every weapon aims from its pivot straight at P, within
+## its mount's arc, which is measured in the chassis frame (yaw 0 = the face's outward direction, pitch 0 = the
+## chassis plane, up positive). Poses are Vector2(yaw_deg, pitch_deg) in the chassis frame; yaw is the walker's
+## convention (0 looks along -Z, positive turns left), so a chassis-frame yaw of +90 looks along -X.
 
-const RANGE_MIN_M: float = 4.0
-const RANGE_MAX_M: float = 120.0
-const ELEVATION_MIN_DEG: float = -10.0
-const ELEVATION_MAX_DEG: float = 45.0
-const SLEW_DEG_PER_S: float = 360.0
-## d and h hold while the camera yaw is more than this far off the heading.
-const HOLD_YAW_DEG: float = 90.0
-## The muzzle moves with the barrel's yaw and elevation, so both are solved by a few fixed-point passes (the muzzle arm
-## is under 1 m and Q at least 4 m away: each pass shrinks the error by about 5x).
-const MUZZLE_PASSES: int = 5
+## Tolerance on the arc limits, so a reticle sitting at the limit does not flicker between live and gray.
+const ARC_TOLERANCE_DEG: float = 0.5
+## A P closer than this to the pivot leaves the weapon holding its pose, gray.
+const HOLD_RADIUS_M: float = 1.5
+const TRAVERSE_CONSTANT: float = 7200.0
+const TRAVERSE_MIN_DEG_S: float = 45.0
+const TRAVERSE_MAX_DEG_S: float = 720.0
+
+const FACE_TOP: StringName = &"top"
+const FACE_BOTTOM: StringName = &"bottom"
+const FACE_FRONT: StringName = &"front"
+const FACE_BACK: StringName = &"back"
+const FACE_LEFT: StringName = &"left"
+const FACE_RIGHT: StringName = &"right"
 
 
 ## Horizontal unit vector of a heading.
@@ -31,94 +31,129 @@ static func horizontal_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(b.x - a.x, b.z - a.z).length()
 
 
-static func clamp_range(distance: float) -> float:
-	return clampf(distance, RANGE_MIN_M, RANGE_MAX_M)
-
-
-static func convergence_point(origin: Vector3, yaw: float, range_m: float, height: float) -> Vector3:
-	var along: Vector3 = heading(yaw) * range_m
-	return Vector3(origin.x + along.x, height, origin.z + along.z)
-
-
-## Angle (deg, 0..180) between the camera's yaw and the body's heading.
-static func yaw_gap_deg(camera_yaw_deg: float, body_yaw: float) -> float:
-	return absf(wrapf(camera_yaw_deg - rad_to_deg(body_yaw), -180.0, 180.0))
-
-
-static func holds(camera_yaw_deg: float, body_yaw: float) -> bool:
-	return yaw_gap_deg(camera_yaw_deg, body_yaw) > HOLD_YAW_DEG
-
-
-## The (d, h) pair for this tick: from P within 90 deg of the heading, else the previous pair.
-static func range_and_height(
-	previous: Vector2, p: Vector3, origin: Vector3, camera_yaw_deg: float, body_yaw: float
-) -> Vector2:
-	if holds(camera_yaw_deg, body_yaw):
-		return previous
-	return Vector2(clamp_range(horizontal_distance(origin, p)), p.y)
-
-
-## World rotation of a barrel: yaw about up, then elevation (deg, up positive) about its own right axis. The
-## barrel points along -Z; there is no roll, whatever the body does.
-static func barrel_basis(yaw: float, elevation_deg: float) -> Basis:
-	return Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, deg_to_rad(elevation_deg))
-
-
-static func muzzle_position(pivot: Vector3, yaw: float, elevation_deg: float, muzzle_local: Vector3) -> Vector3:
-	return pivot + barrel_basis(yaw, elevation_deg) * muzzle_local
-
-
-## Elevation (deg, up positive) of the straight line from `from` to `to`.
-static func elevation_to(from: Vector3, to: Vector3) -> float:
-	var flat: float = horizontal_distance(from, to)
-	return rad_to_deg(atan2(to.y - from.y, flat))
-
-
 ## Yaw (radians, the walker's convention) of the horizontal bearing from `from` to `to`.
 static func bearing_to(from: Vector3, to: Vector3) -> float:
 	return atan2(-(to.x - from.x), -(to.z - from.z))
 
 
-## The unclamped aim of a barrel pivoting at `pivot` so that its own muzzle points at `q`: x is the yaw in radians
-## and y the elevation in degrees (up positive).
-static func solve_aim(pivot: Vector3, muzzle_local: Vector3, q: Vector3) -> Vector2:
-	var yaw: float = bearing_to(pivot, q)
-	var elevation: float = elevation_to(pivot, q)
-	for i in MUZZLE_PASSES:
-		var muzzle: Vector3 = muzzle_position(pivot, yaw, elevation, muzzle_local)
-		yaw = bearing_to(muzzle, q)
-		elevation = elevation_to(muzzle, q)
-	return Vector2(yaw, elevation)
+# --- Mount arcs ----------------------------------------------------------------------------------------------------
 
 
-## The yaw (radians) that points the muzzle at `q` when the barrel is already at `elevation_deg` (the slewed value,
-## not the wanted one): the muzzle sits where the barrel really is.
-static func solve_yaw(
-	pivot: Vector3, muzzle_local: Vector3, elevation_deg: float, q: Vector3, yaw_guess: float
-) -> float:
-	var yaw: float = yaw_guess
-	for i in MUZZLE_PASSES:
-		yaw = bearing_to(muzzle_position(pivot, yaw, elevation_deg, muzzle_local), q)
-	return yaw
+## The arc of a socket face: {unlimited (360 deg yaw), face_yaw_deg (the face's outward direction in the chassis
+## frame), yaw_half_deg (when limited), pitch_min_deg, pitch_max_deg}. Only the top is mounted in M0.
+static func mount_arc(face: StringName) -> Dictionary:
+	match face:
+		FACE_TOP:
+			return {"unlimited": true, "face_yaw_deg": 0.0, "yaw_half_deg": 180.0, "pitch_min_deg": -20.0, "pitch_max_deg": 75.0}
+		FACE_BOTTOM:
+			return {"unlimited": true, "face_yaw_deg": 0.0, "yaw_half_deg": 180.0, "pitch_min_deg": -75.0, "pitch_max_deg": 20.0}
+		FACE_FRONT:
+			return _side_arc(0.0)
+		FACE_LEFT:
+			return _side_arc(90.0)
+		FACE_BACK:
+			return _side_arc(180.0)
+		FACE_RIGHT:
+			return _side_arc(-90.0)
+	push_error("AimMath.mount_arc: unknown face %s" % face)
+	return mount_arc(FACE_TOP)
 
 
-## Degrees between a barrel's yaw and the bearing from its muzzle to `q`, from the barrel's world transform as drawn.
-static func yaw_error_deg(barrel: Transform3D, muzzle_local: Vector3, q: Vector3) -> float:
-	var forward: Vector3 = -barrel.basis.z
-	var drawn: float = atan2(-forward.x, -forward.z)
-	return absf(rad_to_deg(wrapf(drawn - bearing_to(barrel * muzzle_local, q), -PI, PI)))
+static func _side_arc(face_yaw_deg: float) -> Dictionary:
+	return {
+		"unlimited": false,
+		"face_yaw_deg": face_yaw_deg,
+		"yaw_half_deg": 90.0,
+		"pitch_min_deg": -90.0,
+		"pitch_max_deg": 90.0,
+	}
 
 
-static func clamp_elevation(elevation_deg: float) -> float:
-	return clampf(elevation_deg, ELEVATION_MIN_DEG, ELEVATION_MAX_DEG)
+## deg/s, in yaw and in pitch: clamp(7200 / m, 45, 720).
+static func traverse_rate(mass_kg: float) -> float:
+	if mass_kg <= 0.0:
+		return TRAVERSE_MAX_DEG_S
+	return clampf(TRAVERSE_CONSTANT / mass_kg, TRAVERSE_MIN_DEG_S, TRAVERSE_MAX_DEG_S)
 
 
-static func is_limited(wanted_deg: float) -> bool:
-	return wanted_deg < ELEVATION_MIN_DEG or wanted_deg > ELEVATION_MAX_DEG
+# --- Solve -------------------------------------------------------------------------------------------------------
 
 
-static func slew(current_deg: float, target_deg: float, delta: float) -> float:
-	return move_toward(current_deg, target_deg, SLEW_DEG_PER_S * delta)
+## The pose (yaw deg, pitch deg) in the chassis frame of a world direction.
+static func pose_of_direction(chassis_basis: Basis, direction: Vector3) -> Vector2:
+	var local: Vector3 = chassis_basis.orthonormalized().inverse() * direction.normalized()
+	var yaw: float = rad_to_deg(atan2(-local.x, -local.z))
+	var pitch: float = rad_to_deg(asin(clampf(local.y, -1.0, 1.0)))
+	return Vector2(yaw, pitch)
+
+
+## World rotation of a barrel at a chassis-frame pose: yaw about the chassis up, then pitch about its own right axis.
+## The barrel points along -Z and never rolls against the chassis.
+static func barrel_basis(chassis_basis: Basis, pose: Vector2) -> Basis:
+	return (
+		chassis_basis.orthonormalized()
+		* Basis(Vector3.UP, deg_to_rad(pose.x))
+		* Basis(Vector3.RIGHT, deg_to_rad(pose.y))
+	)
+
+
+static func _relative_yaw(yaw_deg: float, arc: Dictionary) -> float:
+	return wrapf(yaw_deg - float(arc["face_yaw_deg"]), -180.0, 180.0)
+
+
+## The pose inside the arc nearest to `pose`: the pitch clamped, the yaw clamped on a limited mount.
+static func clamp_to_arc(pose: Vector2, arc: Dictionary) -> Vector2:
+	var pitch: float = clampf(pose.y, float(arc["pitch_min_deg"]), float(arc["pitch_max_deg"]))
+	if bool(arc["unlimited"]):
+		return Vector2(wrapf(pose.x, -180.0, 180.0), pitch)
+	var half: float = float(arc["yaw_half_deg"])
+	var relative: float = clampf(_relative_yaw(pose.x, arc), -half, half)
+	return Vector2(wrapf(relative + float(arc["face_yaw_deg"]), -180.0, 180.0), pitch)
+
+
+static func is_inside(pose: Vector2, arc: Dictionary, tolerance_deg: float = ARC_TOLERANCE_DEG) -> bool:
+	if pose.y < float(arc["pitch_min_deg"]) - tolerance_deg or pose.y > float(arc["pitch_max_deg"]) + tolerance_deg:
+		return false
+	if bool(arc["unlimited"]):
+		return true
+	return absf(_relative_yaw(pose.x, arc)) <= float(arc["yaw_half_deg"]) + tolerance_deg
+
+
+## One weapon's solve for this tick. Returns {hold, live, wanted (the pose that puts the line on P), target (the pose
+## to swing toward: wanted, or the nearest reachable pose when gray)}. `current` is the held pose.
+static func solve(pivot: Vector3, chassis_basis: Basis, p: Vector3, arc: Dictionary, current: Vector2) -> Dictionary:
+	if pivot.distance_to(p) < HOLD_RADIUS_M:
+		return {"hold": true, "live": false, "wanted": current, "target": current}
+	var wanted: Vector2 = pose_of_direction(chassis_basis, p - pivot)
+	var live: bool = is_inside(wanted, arc)
+	return {"hold": false, "live": live, "wanted": wanted, "target": clamp_to_arc(wanted, arc)}
+
+
+# --- Step --------------------------------------------------------------------------------------------------------
+
+
+## Each axis moves at most `rate_dps * delta` toward `target`, on its own, with no ramp. A 360 deg mount takes the
+## shortest way round; a limited mount moves linearly inside its arc, never through its dead zone (the target is
+## inside the arc, so the straight move stays inside it).
+static func step(current: Vector2, target: Vector2, rate_dps: float, delta: float, arc: Dictionary) -> Vector2:
+	var max_step: float = rate_dps * delta
+	var yaw: float
+	if bool(arc["unlimited"]):
+		var gap: float = wrapf(target.x - current.x, -180.0, 180.0)
+		yaw = wrapf(current.x + clampf(gap, -max_step, max_step), -180.0, 180.0)
+	else:
+		var face: float = float(arc["face_yaw_deg"])
+		var relative: float = move_toward(_relative_yaw(current.x, arc), _relative_yaw(target.x, arc), max_step)
+		yaw = wrapf(relative + face, -180.0, 180.0)
+	var pitch: float = move_toward(current.y, target.y, max_step)
+	return Vector2(yaw, pitch)
+
+
+## Degrees between two poses' directions seen from the pivot, for tests and checks.
+static func pose_error_deg(a: Vector2, b: Vector2) -> float:
+	var da: Vector3 = barrel_basis(Basis.IDENTITY, a) * Vector3.FORWARD
+	var db: Vector3 = barrel_basis(Basis.IDENTITY, b) * Vector3.FORWARD
+	return angle_between_deg(da, db)
 
 
 ## `direction` turned by up to `spread_deg` (a cone half-angle, uniform over the disc) from two random numbers in 0..1.
