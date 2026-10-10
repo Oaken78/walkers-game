@@ -534,15 +534,15 @@ func _add_target_at(position_world: Vector3) -> void:
 
 
 func _chassis_in_frame(camera: Camera3D) -> bool:
-	var chassis: MeshInstance3D = _walker.get_node("Chassis")
-	var box: BoxMesh = chassis.mesh as BoxMesh
-	if box == null:
+	var box_size: Vector3 = _walker.chassis_size()
+	if box_size == Vector3.ZERO:
 		return false
-	var half: Vector3 = box.size * 0.5
+	var chassis: Transform3D = _walker.body_pose() * Transform3D(Basis.IDENTITY, _walker.chassis_center())
+	var half: Vector3 = box_size * 0.5
 	for sx: float in [-1.0, 1.0]:
 		for sy: float in [-1.0, 1.0]:
 			for sz: float in [-1.0, 1.0]:
-				var corner: Vector3 = chassis.global_transform * (half * Vector3(sx, sy, sz))
+				var corner: Vector3 = chassis * (half * Vector3(sx, sy, sz))
 				if not AimLayout.on_screen(_project_ref(camera, corner), Vector2(REF_WIDTH, REF_HEIGHT)):
 					return false
 	return true

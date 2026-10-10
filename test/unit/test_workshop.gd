@@ -748,10 +748,8 @@ func test_every_top_part_carries_the_body_layer_two_frames_after_setup() -> void
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	await get_tree().process_frame
-	var tops: Node = workshop.get_node("Walker/Tops") if workshop.has_node("Walker/Tops") else null
-	if tops == null:
-		tops = workshop._walker.get_node("Tops")
-	assert_gt(tops.get_child_count(), 0, "the build has tops")
-	for piece in tops.get_children():
+	var tops: Dictionary = workshop.walker().top_mounts()
+	assert_gt(tops.size(), 0, "the build has tops")
+	for piece: Node in tops.values():
 		assert_true(((piece as MeshInstance3D).layers & WorkshopCamera.BODY_LAYER_MASK) != 0, str(piece.name))
 

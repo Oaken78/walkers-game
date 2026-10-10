@@ -516,3 +516,188 @@ func test_a_walker_backing_head_on_into_a_ledge_or_off_an_edge_climbs_or_steps_d
 	# Strafing into a ledge meets it side-on: shallow.
 	assert_false(body._approach_ok(Vector3(1.0, 0.0, 0.0)), "a face beside the walker")
 	body.free()
+
+
+# --- Walker API (T18): sockets, tops, chassis size, invalid builds ------------------------------------------------
+
+
+const WALKER_SCENE: PackedScene = preload("res://scenes/walker/walker.tscn")
+const SOCKET_TOL: float = 0.0001
+
+
+## A two-leg build: invalid (needs 4, 6 or 8 legs), drawn only with allow_invalid.
+func _two_leg_build() -> WalkerBuild:
+	var build := WalkerBuild.new()
+	build.place(&"leg_l0", PartCatalog.LEG_MEDIUM)
+	build.place(&"leg_r0", PartCatalog.LEG_MEDIUM)
+	build.place(&"top_0", PartCatalog.PULSE_CANNON)
+	return build
+
+
+func _walker_with(build: WalkerBuild, allow_invalid: bool = false) -> WalkerBody:
+	var walker: WalkerBody = WALKER_SCENE.instantiate()
+	add_child_autofree(walker)
+	walker.apply_build(build, allow_invalid)
+	return walker
+
+
+func _assert_socket(walker: WalkerBody, id: StringName, expected: Vector3, armed: StringName = &"") -> void:
+	var at: Vector3 = walker.socket_transform(id, armed).origin
+	assert_lt(at.distance_to(expected), SOCKET_TOL, "%s at %s, expected %s (armed '%s')" % [id, at, expected, armed])
+
+
+func test_socket_transform_mounted_legs_match_hips() -> void:
+	var four := WalkerBuild.scout()
+	four.remove(&"leg_l2")
+	four.remove(&"leg_r2")
+	for build in [four, WalkerBuild.scout(), WalkerBuild.crawler()]:
+		var walker: WalkerBody = _walker_with(build, true)
+		var mounted: Array[Dictionary] = walker.get_build().mounted_legs()
+		assert_eq(mounted.size(), walker.leg_count())
+		for i in mounted.size():
+			var at: Vector3 = walker.body_pose() * walker.socket_transform(mounted[i]["socket"]).origin
+			assert_lt(at.distance_to(walker.hip_position(i)), SOCKET_TOL, "%d legs, leg %d" % [mounted.size(), i])
+
+
+## Free slots captured from the T09 socket_anchors.gd before it was removed (walker-local, armed part none / leg_long).
+func test_free_leg_socket_matches_old_anchor() -> void:
+	var scout: WalkerBody = _walker_with(WalkerBuild.scout())
+	_assert_socket(scout, &"leg_l3", Vector3(-0.6, 0.16, 1.2))
+	_assert_socket(scout, &"leg_r3", Vector3(0.6, 0.16, 1.2))
+	_assert_socket(scout, &"leg_l3", Vector3(-0.6, 0.16, 1.2675), PartCatalog.LEG_LONG)
+	_assert_socket(scout, &"leg_r3", Vector3(0.6, 0.16, 1.2675), PartCatalog.LEG_LONG)
+	var strider: WalkerBody = _walker_with(WalkerBuild.strider())
+	_assert_socket(strider, &"leg_l3", Vector3(-0.69, 0.196, 1.47))
+	_assert_socket(strider, &"leg_r3", Vector3(0.69, 0.196, 1.47))
+	_assert_socket(strider, &"leg_l3", Vector3(-0.69, 0.196, 1.47), PartCatalog.LEG_LONG)
+	# The Crawler has no free leg socket: its eight sockets are the hips.
+	var crawler: WalkerBody = _walker_with(WalkerBuild.crawler())
+	_assert_socket(crawler, &"leg_l0", Vector3(-0.54, -0.06, -1.02))
+	_assert_socket(crawler, &"leg_r3", Vector3(0.54, -0.06, 1.02))
+	var two: WalkerBody = _walker_with(_two_leg_build(), true)
+	_assert_socket(two, &"leg_l0", Vector3(-0.6, -0.1, 0.0))
+	_assert_socket(two, &"leg_l1", Vector3(-0.6, 0.16, -0.4))
+	_assert_socket(two, &"leg_l2", Vector3(-0.6, 0.16, 0.4))
+	_assert_socket(two, &"leg_l3", Vector3(-0.6, 0.16, 1.2))
+	_assert_socket(two, &"leg_r1", Vector3(0.6, 0.16, -0.4))
+	_assert_socket(two, &"leg_r3", Vector3(0.6, 0.16, 1.2))
+	_assert_socket(two, &"leg_l1", Vector3(-0.6, 0.16, -0.445), PartCatalog.LEG_LONG)
+	_assert_socket(two, &"leg_l2", Vector3(-0.6, 0.16, 0.445), PartCatalog.LEG_LONG)
+	_assert_socket(two, &"leg_r3", Vector3(0.6, 0.16, 1.335), PartCatalog.LEG_LONG)
+
+
+func test_leg_socket_basis_points_out_of_the_flank() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	for id in [&"leg_l0", &"leg_l3"]:
+		assert_lt(walker.socket_transform(id).basis.y.distance_to(Vector3(-1.0, 0.0, 0.0)), SOCKET_TOL, str(id))
+	for id in [&"leg_r1", &"leg_r3"]:
+		assert_lt(walker.socket_transform(id).basis.y.distance_to(Vector3(1.0, 0.0, 0.0)), SOCKET_TOL, str(id))
+	assert_true(walker.socket_transform(&"leg_l3").basis.is_conformal(), "a proper rotation")
+	assert_lt(walker.socket_transform(&"top_2").basis.y.distance_to(Vector3.UP), SOCKET_TOL)
+
+
+func test_top_sockets_match_top_spots() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.crawler())
+	var size: Vector3 = walker.chassis_size()
+	# Cannons sit 0.18 m above the chassis top and 0.35 m ahead of the spot, the armor plate 0.06 m above it.
+	var spot0: Vector3 = WalkerBody._top_spot(0, 3, size.x, size.z)
+	var spot1: Vector3 = WalkerBody._top_spot(1, 3, size.x, size.z)
+	var spot2: Vector3 = WalkerBody._top_spot(2, 3, size.x, size.z)
+	_assert_socket(walker, &"top_0", Vector3(spot0.x, size.y + 0.18, spot0.z - 0.35))
+	_assert_socket(walker, &"top_1", Vector3(spot1.x, size.y + 0.18, spot1.z - 0.35))
+	_assert_socket(walker, &"top_2", Vector3(spot2.x, size.y + 0.06, spot2.z))
+	# Pinned from the old anchors too.
+	_assert_socket(walker, &"top_0", Vector3(-0.2325, 0.452, -0.624))
+	_assert_socket(walker, &"top_2", Vector3(0.0, 0.332, 0.685))
+	# A free top socket is the top face slot 0.1 m above the chassis.
+	var scout: WalkerBody = _walker_with(WalkerBuild.scout())
+	_assert_socket(scout, &"top_0", Vector3(0.0, 0.5, -0.465))
+	_assert_socket(scout, &"top_1", Vector3(0.2625, 0.42, -0.23))
+	_assert_socket(scout, &"top_2", Vector3(0.0, 0.42, 0.575))
+	var strider: WalkerBody = _walker_with(WalkerBuild.strider())
+	_assert_socket(strider, &"top_1", Vector3(0.3075, 0.492, -0.266))
+	_assert_socket(strider, &"top_2", Vector3(0.0, 0.492, 0.665))
+	var two: WalkerBody = _walker_with(_two_leg_build(), true)
+	_assert_socket(two, &"top_0", Vector3(0.0, 0.5, -0.385))
+	_assert_socket(two, &"top_1", Vector3(0.2625, 0.42, -0.07))
+	_assert_socket(two, &"top_2", Vector3(0.0, 0.42, 0.175))
+
+
+func test_top_mounts_lists_the_drawn_pieces() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.crawler())
+	var mounts: Dictionary = walker.top_mounts()
+	assert_eq(mounts.keys().size(), 3)
+	for id in [&"top_0", &"top_1", &"top_2"]:
+		assert_true(mounts[id] is MeshInstance3D, str(id))
+	assert_true((mounts[&"top_0"] as MeshInstance3D).mesh is CylinderMesh)
+	assert_true((mounts[&"top_2"] as MeshInstance3D).mesh is BoxMesh, "the armor plate")
+	assert_eq(_walker_with(WalkerBuild.scout()).top_mounts().keys(), [&"top_0"])
+
+
+func test_unknown_socket_is_identity() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	assert_eq(walker.socket_transform(&"leg_x9"), Transform3D.IDENTITY)
+	assert_push_error("unknown socket")
+
+
+func test_chassis_size_matches_drawn_box() -> void:
+	for build in [WalkerBuild.scout(), WalkerBuild.strider(), WalkerBuild.crawler()]:
+		var walker: WalkerBody = _walker_with(build)
+		var mesh := (walker.get_node("Chassis") as MeshInstance3D).mesh as BoxMesh
+		assert_eq(walker.chassis_size(), mesh.size)
+		assert_almost_eq(walker.chassis_center().y, mesh.size.y * 0.5, SOCKET_TOL)
+		assert_almost_eq(walker.chassis_center().x, 0.0, SOCKET_TOL)
+	assert_ne(_walker_with(WalkerBuild.scout()).chassis_size(), _walker_with(WalkerBuild.strider()).chassis_size())
+
+
+func test_apply_build_allow_invalid_draws_two_legs() -> void:
+	var walker: WalkerBody = _walker_with(_two_leg_build(), true)
+	assert_eq(walker.leg_count(), 2)
+	assert_eq(walker.get_build().leg_count(), 2)
+	assert_false(walker.get_build().is_valid())
+
+
+func test_default_apply_build_still_refuses_invalid() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	walker.apply_build(_two_leg_build())
+	assert_push_error("invalid build")
+	assert_eq(walker.leg_count(), 6, "the old build stays")
+
+
+func test_draw_cannons_false_draws_no_tops() -> void:
+	var crawler: WalkerBody = _walker_with(WalkerBuild.crawler())
+	assert_true(crawler.draw_cannons, "on by default")
+	crawler.draw_cannons = false
+	var mounts: Dictionary = crawler.top_mounts()
+	assert_false((mounts[&"top_0"] as Node3D).visible)
+	assert_false((mounts[&"top_1"] as Node3D).visible)
+	assert_true((mounts[&"top_2"] as Node3D).visible, "the armor plate is not a cannon")
+	crawler.apply_build(WalkerBuild.scout())
+	assert_false((crawler.top_mounts()[&"top_0"] as Node3D).visible, "a rebuild keeps the flag")
+	crawler.draw_cannons = true
+	assert_true((crawler.top_mounts()[&"top_0"] as Node3D).visible)
+
+
+func test_body_layer_mask_survives_rebuilds() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	walker.body_layer_mask = 2
+	walker.apply_build(WalkerBuild.crawler())
+	assert_true(((walker.get_node("Chassis") as MeshInstance3D).layers & 2) != 0)
+	for piece: MeshInstance3D in walker.top_mounts().values():
+		assert_true((piece.layers & 2) != 0)
+	assert_true(((walker.get_node("Chassis") as MeshInstance3D).layers & 1) != 0, "layer 1 stays")
+
+
+func test_telemetry_accessors_read_the_private_counters() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	assert_eq(walker.hang_wait(), walker._hang_wait)
+	assert_eq(walker.contact_count(), walker._contact_count)
+
+
+func test_deferred_apply_build_keeps_allow_invalid() -> void:
+	var walker: WalkerBody = _walker_with(WalkerBuild.scout())
+	walker._in_tick = true
+	walker.apply_build(_two_leg_build(), true)
+	walker._in_tick = false
+	await get_tree().process_frame
+	assert_eq(walker.leg_count(), 2, "the queued rebuild drew the invalid build")
