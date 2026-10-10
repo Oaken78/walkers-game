@@ -11,7 +11,7 @@ extends Hurtbox
 
 var _shape: CollisionShape3D
 var _box: BoxShape3D
-var _chassis: MeshInstance3D
+var _following: bool = false
 
 
 func _init() -> void:
@@ -32,8 +32,8 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if _chassis != null and is_instance_valid(_chassis):
-		follow(_chassis.global_transform)
+	if _following and is_instance_valid(walker):
+		follow(_chassis_transform())
 
 
 ## The box size (m).
@@ -54,9 +54,15 @@ func _on_build_applied() -> void:
 	if not walker.is_node_ready():
 		# This hurtbox came up before its walker (a scene may order them so); build_applied follows.
 		return
-	_chassis = walker.get_node_or_null("Chassis") as MeshInstance3D
-	if _chassis == null or not (_chassis.mesh is BoxMesh):
+	var size: Vector3 = walker.chassis_size()
+	if size == Vector3.ZERO:
 		push_error("PlayerHurtbox: the walker has no box chassis to follow")
 		return
-	set_box((_chassis.mesh as BoxMesh).size)
-	follow(_chassis.global_transform)
+	_following = true
+	set_box(size)
+	follow(_chassis_transform())
+
+
+## The drawn chassis: the body pose plus the chassis centre offset.
+func _chassis_transform() -> Transform3D:
+	return walker.body_pose() * Transform3D(Basis.IDENTITY, walker.chassis_center())

@@ -323,14 +323,15 @@ func test_the_rig_mounts_one_barrel_per_pulse_cannon_and_hides_the_walkers_own()
 	var scout: Array = _mounted(WalkerBuild.scout())
 	var rig: WeaponRig = scout[1]
 	assert_eq(rig.cannon_count(), 1)
-	var tops: Node = (scout[0] as WalkerBody).get_node("Tops")
-	assert_false((tops.get_child(0) as Node3D).visible, "the walker's static barrel is hidden")
+	assert_false((scout[0] as WalkerBody).draw_cannons, "the rig sets the walker's flag")
+	var tops: Dictionary = (scout[0] as WalkerBody).top_mounts()
+	assert_false((tops[&"top_0"] as Node3D).visible, "the walker's static barrel is hidden")
 	var crawler: Array = _mounted(WalkerBuild.crawler())
 	assert_eq((crawler[1] as WeaponRig).cannon_count(), 2, "two cannons and an armor plate")
-	var crawler_tops: Node = (crawler[0] as WalkerBody).get_node("Tops")
-	assert_false((crawler_tops.get_child(0) as Node3D).visible)
-	assert_false((crawler_tops.get_child(1) as Node3D).visible)
-	assert_true((crawler_tops.get_child(2) as Node3D).visible, "the armor plate stays drawn")
+	var crawler_tops: Dictionary = (crawler[0] as WalkerBody).top_mounts()
+	assert_false((crawler_tops[&"top_0"] as Node3D).visible)
+	assert_false((crawler_tops[&"top_1"] as Node3D).visible)
+	assert_true((crawler_tops[&"top_2"] as Node3D).visible, "the armor plate stays drawn")
 
 
 func test_the_rig_remounts_when_the_build_changes() -> void:
@@ -342,15 +343,16 @@ func test_the_rig_remounts_when_the_build_changes() -> void:
 	assert_eq(rig.cannon_count(), 2)
 	walker.apply_build(WalkerBuild.strider())
 	assert_eq(rig.cannon_count(), 1)
-	var tops: Node = walker.get_node("Tops")
-	assert_false((tops.get_child(0) as Node3D).visible, "the new static barrel is hidden too")
+	var tops: Dictionary = walker.top_mounts()
+	assert_false((tops[&"top_0"] as Node3D).visible, "the new static barrel is hidden too")
 
 
 func test_the_rig_shows_the_walkers_barrels_again_when_it_leaves() -> void:
 	var mounted: Array = _mounted(WalkerBuild.scout())
-	var tops: Node = (mounted[0] as WalkerBody).get_node("Tops")
+	var tops: Dictionary = (mounted[0] as WalkerBody).top_mounts()
 	(mounted[1] as WeaponRig).free()
-	assert_true((tops.get_child(0) as Node3D).visible)
+	assert_true((mounted[0] as WalkerBody).draw_cannons, "the flag is back on")
+	assert_true((tops[&"top_0"] as Node3D).visible)
 
 
 func test_the_rig_reads_the_builds_spread() -> void:

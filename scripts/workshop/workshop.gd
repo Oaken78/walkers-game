@@ -67,19 +67,11 @@ var _hover_signature: String = ""
 @onready var _markers_root: Node3D = %Markers
 
 
-## The walker's own checks refuse a build that is not valid (apply_build keeps the old one and logs an error). The
-## workshop still has to draw what the player built: fewer legs, an overloaded walker. This copy claims to be valid,
-## so the walker draws it. The walker copies it on apply, so the claim never leaves this file.
-class DisplayBuild:
-	extends WalkerBuild
-
-	func is_valid() -> bool:
-		return true
-
-
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_walker.input_enabled = false
+	# The chassis and the tops get render layer 2, the layer the camera body light lights (legs stay on layer 1 only).
+	_walker.body_layer_mask = WorkshopCamera.BODY_LAYER_MASK
 	for socket in PartCatalog.chassis_sockets(PartCatalog.CHASSIS_MEDIUM):
 		var marker := SocketMarker.new()
 		marker.name = "Marker_%s" % socket["id"]
@@ -327,21 +319,9 @@ func _after_edit() -> void:
 
 
 func _apply_build_to_walker() -> void:
-	var shown := DisplayBuild.new()
-	var parts: Dictionary = _build.parts()
-	for socket: StringName in parts:
-		shown.place(socket, parts[socket])
-	_walker.apply_build(shown)
-	_tag_body_layers()
+	# The workshop draws what the player built, valid or not.
+	_walker.apply_build(_build, true)
 	_refresh_anchors(true)
-
-
-## The chassis and the tops get render layer 2, the layer the camera body light lights (legs stay on layer 1 only).
-## WalkerBody builds the tops again on every apply, so this runs after each one.
-func _tag_body_layers() -> void:
-	(_walker.get_node("Chassis") as MeshInstance3D).layers |= WorkshopCamera.BODY_LAYER_MASK
-	for piece in _walker.get_node("Tops").get_children():
-		(piece as MeshInstance3D).layers |= WorkshopCamera.BODY_LAYER_MASK
 
 
 ## Socket anchors and the marks' places are worked out again only when the build, the armed part or the walker's pose
@@ -358,10 +338,26 @@ func _refresh_anchors(force: bool = false) -> void:
 	_anchor_version = _build_version
 	_anchor_armed = armed_part
 	_anchor_pose = pose
-	_anchors = SocketAnchors.compute(_walker, _build, armed_part)
+	_anchors = _compute_anchors()
 	anchor_computes += 1
 	for id: StringName in _markers:
 		(_markers[id] as SocketMarker).global_position = _anchors[id]["pos"]
+
+
+## World-space place, outward normal, kind and mounted flag of every socket, from the walker's own socket_transform.
+func _compute_anchors() -> Dictionary:
+	var anchors: Dictionary = {}
+	for socket in PartCatalog.chassis_sockets(_build.chassis_id):
+		var id: StringName = socket["id"]
+		var local: Transform3D = _walker.socket_transform(id, armed_part)
+		var pose := _walker.body_pose()
+		anchors[id] = {
+			"pos": pose * local.origin,
+			"normal": (pose.basis * local.basis.y).normalized(),
+			"kind": socket["kind"],
+			"mounted": _build.part_at(id) != &"",
+		}
+	return anchors
 
 
 func _refresh_all() -> void:

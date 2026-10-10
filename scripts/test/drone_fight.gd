@@ -1009,7 +1009,7 @@ func _now_s() -> float:
 func _sample_drones() -> void:
 	var frame: int = Engine.get_physics_frames()
 	var now: float = _now_s()
-	var aim: Vector3 = _walker.get_node("Chassis").global_position
+	var aim: Vector3 = _walker.body_pose() * _walker.chassis_center()
 	for drone in _drones:
 		if not is_instance_valid(drone) or drone.is_dead() or not drone.ai_enabled:
 			continue
@@ -1068,7 +1068,7 @@ func _on_shot_fired(drone: Drone, origin: Vector3, direction: Vector3) -> void:
 	shots_by_drones += 1
 	var track: DroneTrack = _track_of(drone)
 	telegraph_min_s = minf(telegraph_min_s, _now_s() - track.wind_up_s)
-	var chassis: Vector3 = _walker.get_node("Chassis").global_position
+	var chassis: Vector3 = _walker.body_pose() * _walker.chassis_center()
 	bolt_aim_err_max_deg = maxf(bolt_aim_err_max_deg, rad_to_deg(direction.angle_to(chassis - origin)))
 
 

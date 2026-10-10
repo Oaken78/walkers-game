@@ -21,6 +21,8 @@ enum Kind { STRIDE, REACH, UP, DOWN }
 const LEG_SCENE: PackedScene = preload("res://scenes/walker/leg.tscn")
 ## A planted foot may never be further than this x reach from its hip (the IK clamp is at the same value).
 const REACH_LIMIT: float = 0.99
+## Height of a free top socket above the chassis top (m).
+const FREE_TOP_LIFT: float = 0.1
 const BISECT_STEPS: int = 9
 ## Mean of sin(PI * t) over a swing is 2 / PI: the bob offset is shifted by 2 x this so it averages out.
 const BOB_MEAN_SHIFT: float = 1.2732395
@@ -305,6 +307,17 @@ const SIGHT_MARGIN: float = 0.1
 @export var pad_edge_gap: float = -1.0
 
 var input_enabled: bool = true
+## False hides the pulse-cannon pieces on top (WeaponRig draws its own barrels). The nodes stay, so socket_transform and
+## top_mounts answer the same.
+var draw_cannons: bool = true:
+	set(value):
+		draw_cannons = value
+		_show_tops()
+## Render layers ORed into the chassis and every top piece (the workshop's body light layer). Kept over rebuilds.
+var body_layer_mask: int = 0:
+	set(value):
+		body_layer_mask = value
+		_tag_body_layers()
 var yaw_source: Node3D
 
 ## Read-only state for telemetry and the camera rig.
@@ -367,6 +380,11 @@ var _base_y: float = 0.0
 var _origin: Vector3 = Vector3.ZERO
 var _pose: Transform3D = Transform3D.IDENTITY
 var _chassis_center: Vector3 = Vector3.ZERO
+var _chassis_size: Vector3 = Vector3.ZERO
+## Leg index (into _legs) by socket id, for the mounted legs.
+var _socket_leg: Dictionary = {}
+## The drawn top piece (MeshInstance3D) by socket id.
+var _top_nodes: Dictionary = {}
 ## The rear (or front) support the body pitches about: lowest hip height, outermost hip.
 var _pivot_z: float = 0.0
 var _pivot_y: float = 0.0
@@ -407,6 +425,7 @@ var _climb_session: bool = false
 var _in_tick: bool = false
 var _in_apply: bool = false
 var _pending_build: WalkerBuild = null
+var _pending_allow_invalid: bool = false
 var _rebuild_queued: bool = false
 ## The leg that waits to hang until the body has made a support margin (-1 when none).
 var _hang_wait: int = -1
@@ -479,6 +498,8 @@ func _ready() -> void:
 	else:
 		_origin = global_position
 		_base_y = global_position.y
+	# body_pose() is right from here on, not only after the first tick (a field walker spawns away from the origin).
+	_pose = pose_transform(_origin, _yaw, _tilt_n)
 	if _build == null:
 		# Static bodies added in the same frame cannot be queried yet: plant on the first physics tick.
 		_defer_plant = true
@@ -493,14 +514,18 @@ func _ready() -> void:
 ## until the frame is over. A caller in a physics callback (an Area3D signal, which runs while the physics step flushes its
 ## queries) must defer the call itself, as salvage_field.gd does: the walker cannot tell that context from a plain
 ## _physics_process, where a rebuild is fine.
-func apply_build(build: WalkerBuild) -> void:
-	if build == null or not build.is_valid():
+##
+## `allow_invalid` draws a build that `is_valid()` rejects (too few legs, over load) without an error: the workshop
+## shows what the player built. The default keeps the refusal.
+func apply_build(build: WalkerBuild, allow_invalid: bool = false) -> void:
+	if build == null or (not allow_invalid and not build.is_valid()):
 		push_error("WalkerBody.apply_build: invalid build, keeping the old one")
 		return
 	if _in_tick or _in_apply:
 		# The rebuild frees the old legs and collision shapes: not inside this body's own tick (a listener of step_started or
 		# foot_planted runs there) nor inside build_applied's own emission. It runs when the frame is over.
 		_pending_build = build.copy()
+		_pending_allow_invalid = allow_invalid
 		if not _rebuild_queued:
 			_rebuild_queued = true
 			_apply_pending_build.call_deferred()
@@ -521,7 +546,108 @@ func _apply_pending_build() -> void:
 	var build: WalkerBuild = _pending_build
 	_pending_build = null
 	if build != null:
-		apply_build(build)
+		apply_build(build, _pending_allow_invalid)
+
+
+## Where a socket is, walker-local (relative to body_pose(), so it follows tilt and bob). Basis: +Y points out of the
+## socket's face (a leg socket: sideways away from the body, -X on the left and +X on the right; a top socket: up),
+## +Z of a leg socket is the body's back, a top socket has the identity basis.
+## A mounted leg is at its hip, a free leg socket at the chassis flank slot (middle of the flank height, four rows spaced
+## as a full side of the build would be), a mounted top at the centre of the drawn piece, a free top at the top face
+## slot 0.1 m above the chassis. `armed_part` (optional) spaces the free leg slots for that leg added to the build, the
+## way the workshop previews it. An unknown id is an error and the identity transform.
+func socket_transform(socket_id: StringName, armed_part: StringName = &"") -> Transform3D:
+	var found: Dictionary = {}
+	var chassis_id: StringName = _build.chassis_id if _build != null else PartCatalog.CHASSIS_MEDIUM
+	for socket in PartCatalog.chassis_sockets(chassis_id):
+		if socket["id"] == socket_id:
+			found = socket
+			break
+	if found.is_empty() or _build == null:
+		push_error("WalkerBody.socket_transform: unknown socket '%s'" % socket_id)
+		return Transform3D.IDENTITY
+	var row: int = found["row"]
+	if found["kind"] == PartCatalog.KIND_LEG:
+		var side: int = found["side"]
+		var face := Basis(Vector3(0.0, -float(side), 0.0), Vector3(float(side), 0.0, 0.0), Vector3(0.0, 0.0, 1.0))
+		if _socket_leg.has(socket_id):
+			return Transform3D(face, _legs[_socket_leg[socket_id]].hip_local)
+		var lateral: float = (_chassis_size.x + 0.15) * 0.5
+		var rows: PackedFloat32Array = hip_z_positions(PartCatalog.LEG_SOCKETS_PER_SIDE, _slot_spacing(armed_part))
+		return Transform3D(face, Vector3(float(side) * lateral, _chassis_size.y * 0.5, rows[row]))
+	if _top_nodes.has(socket_id):
+		return Transform3D(Basis.IDENTITY, (_top_nodes[socket_id] as Node3D).position)
+	var slot: Vector2
+	if row == 0:
+		slot = Vector2(-_chassis_size.x * 0.25, -_chassis_size.z * 0.1)
+	elif row == 1:
+		slot = Vector2(_chassis_size.x * 0.25, -_chassis_size.z * 0.1)
+	else:
+		slot = Vector2(0.0, _chassis_size.z * 0.25)
+	return Transform3D(Basis.IDENTITY, Vector3(slot.x, _chassis_size.y + FREE_TOP_LIFT, slot.y))
+
+
+## Spacing of the four free leg slots (m): the hip spacing for the mean reach of the build with the armed leg pair added.
+func _slot_spacing(armed_part: StringName) -> float:
+	var count: int = int(_stats["leg_count"])
+	var mean_reach: float = float(_stats["reach"]) if count > 0 else 1.0
+	var reach := mean_reach
+	if PartCatalog.socket_kind(armed_part) == PartCatalog.KIND_LEG:
+		var armed_reach: float = PartCatalog.PARTS[armed_part]["reach"]
+		reach = (mean_reach * float(count) + 2.0 * armed_reach) / float(count + 2)
+	return hip_spacing_base + hip_spacing_per_reach * reach
+
+
+## The drawn top pieces by socket id (top_0..top_2): MeshInstance3D nodes, only for the mounted tops.
+func top_mounts() -> Dictionary:
+	return _top_nodes.duplicate()
+
+
+## Size of the chassis box (m), walker-local axes.
+func chassis_size() -> Vector3:
+	return _chassis_size
+
+
+## Centre of the chassis box, walker-local (relative to body_pose()).
+func chassis_center() -> Vector3:
+	return _chassis_center
+
+
+## The chassis box centre as drawn this frame (physics-interpolated, world space): for view probes.
+func drawn_chassis_position() -> Vector3:
+	return (get_node("Chassis") as Node3D).get_global_transform_interpolated().origin
+
+
+## The foot pad of leg i as drawn this frame (physics-interpolated, world space): for view probes.
+func drawn_foot_position(leg: int) -> Vector3:
+	return (_legs[leg].get_child(3) as Node3D).get_global_transform_interpolated().origin
+
+
+## Ticks the walker has waited for support (-1 when it is not waiting): gait telemetry.
+func hang_wait() -> int:
+	return _hang_wait
+
+
+## Contacts found by the last move resolve: telemetry.
+func contact_count() -> int:
+	return _contact_count
+
+
+func _show_tops() -> void:
+	if _build == null:
+		return
+	for socket: StringName in _top_nodes:
+		var piece := _top_nodes[socket] as MeshInstance3D
+		if piece != null and is_instance_valid(piece):
+			piece.visible = draw_cannons or _build.part_at(socket) != PartCatalog.PULSE_CANNON
+
+
+func _tag_body_layers() -> void:
+	var chassis := get_node_or_null("Chassis") as MeshInstance3D
+	if chassis != null:
+		chassis.layers |= body_layer_mask
+	for piece: Node3D in _top_nodes.values():
+		(piece as MeshInstance3D).layers |= body_layer_mask
 
 
 func get_build() -> WalkerBuild:
@@ -542,6 +668,7 @@ func teleport(xform: Transform3D) -> void:
 	else:
 		_teleport_pending = true
 	_tilt_n = Vector3.UP
+	_pose = pose_transform(_origin, _yaw, _tilt_n)
 	_velocity_h = Vector3.ZERO
 	velocity = Vector3.ZERO
 	yaw_rate_dps = 0.0
@@ -1178,6 +1305,9 @@ func _rebuild() -> void:
 	_legs.clear()
 	var mounted: Array[Dictionary] = _build.mounted_legs()
 	var count: int = mounted.size()
+	_socket_leg.clear()
+	for k in count:
+		_socket_leg[mounted[k]["socket"]] = k
 	var sides := PackedInt32Array()
 	var reaches := PackedFloat32Array()
 	var per_side: Dictionary = {-1: 0, 1: 0}
@@ -1307,6 +1437,7 @@ func _build_body_meshes(
 	var height: float = 0.2 + 0.12 * _mean_reach
 	var bottom: float = 0.0
 	_chassis_center = Vector3(0.0, bottom + height * 0.5, 0.0)
+	_chassis_size = Vector3(width, height, length)
 	_pivot_z = length * 0.5
 	_pivot_y = bottom
 	for hip in _hips_local:
@@ -1352,6 +1483,7 @@ func _build_body_meshes(
 	for child in tops.get_children():
 		tops.remove_child(child)
 		child.free()
+	_top_nodes.clear()
 	var parts: Dictionary = _build.parts()
 	var present: Array[StringName] = []
 	for socket: StringName in [&"top_0", &"top_1", &"top_2"]:
@@ -1379,6 +1511,9 @@ func _build_body_meshes(
 			piece.position = Vector3(spot.x, top_y + 0.18, spot.z - 0.35)
 		piece.material_override = WalkerLeg.body_material()
 		tops.add_child(piece)
+		_top_nodes[present[index]] = piece
+	_show_tops()
+	_tag_body_layers()
 	_cache_shapes()
 
 

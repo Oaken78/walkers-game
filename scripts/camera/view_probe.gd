@@ -20,8 +20,6 @@ const PARTS: Array[String] = ["cam_pos", "cam_yaw", "cam_pitch", "arm", "root", 
 
 var _orbit: OrbitCamera
 var _walker: WalkerBody
-var _chassis: Node3D
-var _foot: Node3D
 var _recording: bool = false
 var _skip: int = 0
 var _flip: bool = false
@@ -158,8 +156,6 @@ func _sample() -> void:
 	if not _recording or _orbit == null:
 		return
 	# use_build replaces the legs: look the parts up every sample.
-	_chassis = _walker.get_node("Chassis")
-	_foot = _walker.get_node("Legs").get_child(0).get_child(3)
 	var cam: Camera3D = _orbit.camera()
 	var cur: Dictionary = {
 		"cam_pos": cam.global_position,
@@ -167,8 +163,8 @@ func _sample() -> void:
 		"cam_pitch": _orbit.shown_pitch_deg,
 		"arm": _orbit.arm_length,
 		"root": _walker.get_global_transform_interpolated().origin,
-		"chassis": _chassis.get_global_transform_interpolated().origin,
-		"foot": _foot.get_global_transform_interpolated().origin,
+		"chassis": _walker.drawn_chassis_position(),
+		"foot": _walker.drawn_foot_position(0),
 	}
 	cur["root_raw"] = _walker.global_position
 	cur["walker_yaw"] = OrbitMath.behind_yaw(-_walker.global_basis.z)

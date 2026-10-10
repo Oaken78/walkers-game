@@ -141,10 +141,9 @@ func log_foot_vis(tag: String) -> void:
 		Vector3(-half.x, top, half.z),
 		Vector3(half.x, top, half.z)
 	]
-	var chassis: MeshInstance3D = _walker.get_node("Chassis")
-	var box: BoxMesh = chassis.mesh as BoxMesh
-	var to_local: Transform3D = chassis.global_transform.affine_inverse()
-	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
+	var box_size: Vector3 = _walker.chassis_size()
+	var to_local: Transform3D = (_walker.body_pose() * Transform3D(Basis.IDENTITY, _walker.chassis_center())).affine_inverse()
+	var local_box := AABB(-box_size * 0.5, box_size)
 	min_foot_vis = 5
 	for i in _walker.leg_count():
 		var foot: Vector3 = _walker.foot_position(i)
@@ -153,7 +152,7 @@ func log_foot_vis(tag: String) -> void:
 			var point: Vector3 = foot + basis * offset
 			var end: Vector3 = point - (point - eye).normalized() * 0.02
 			var blocked: bool = not space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, end, 1)).is_empty()
-			if not blocked and box != null:
+			if not blocked and box_size != Vector3.ZERO:
 				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
 			if not blocked:
 				seen += 1

@@ -66,7 +66,7 @@ var reticle_on_enemy: bool = false
 var reticle_valid: bool = false
 
 var _cannons: Array[Cannon] = []
-var _hidden: Array[Node3D] = []
+var _walker_hidden: bool = false
 var _clock: FireClock
 var _now: float = 0.0
 var _teleports: int = -1
@@ -243,39 +243,36 @@ func _mount() -> void:
 	if walker == null:
 		return
 	var parts: Dictionary = walker.get_build().parts()
-	var tops: Node = walker.get_node_or_null("Tops")
+	var mounts: Dictionary = walker.top_mounts()
 	var present: Array[StringName] = []
 	for socket: StringName in [&"top_0", &"top_1", &"top_2"]:
 		if parts.has(socket):
 			present.append(socket)
-	var drawn_barrels: Array[Node3D] = []
 	for index in present.size():
-		if parts[present[index]] != PartCatalog.PULSE_CANNON or tops == null or index >= tops.get_child_count():
+		if parts[present[index]] != PartCatalog.PULSE_CANNON or not mounts.has(present[index]):
 			continue
-		var drawn: MeshInstance3D = tops.get_child(index) as MeshInstance3D
+		var drawn: MeshInstance3D = mounts[present[index]] as MeshInstance3D
 		if drawn == null or not (drawn.mesh is CylinderMesh):
 			continue
-		drawn_barrels.append(drawn)
 		var cannon := Cannon.new()
 		cannon.index = _cannons.size()
 		# The walker's barrel is centred ahead of the pivot; the pivot is where the barrel tips.
-		cannon.pivot_local = drawn.position + Vector3(0.0, 0.0, PIVOT_BEHIND_CENTRE)
+		cannon.pivot_local = walker.socket_transform(present[index]).origin + Vector3(0.0, 0.0, PIVOT_BEHIND_CENTRE)
 		cannon.rng.seed = SEED_BASE + index
 		cannon.barrel = _make_barrel()
 		add_child(cannon.barrel)
 		_cannons.append(cannon)
 		_place_at_rest(cannon)
 	if hide_walker_barrels:
-		for drawn in drawn_barrels:
-			drawn.visible = false
-			_hidden.append(drawn)
+		walker.draw_cannons = false
+		_walker_hidden = true
 	var expected: int = 0
 	for socket in present:
 		if parts[socket] == PartCatalog.PULSE_CANNON:
 			expected += 1
 	if _cannons.size() != expected:
 		push_error(
-			"WeaponRig: the build has %d pulse cannons but %d barrels were found on the walker's Tops"
+			"WeaponRig: the build has %d pulse cannons but %d barrels were found on the walker's tops"
 			% [expected, _cannons.size()]
 		)
 	var part: Dictionary = PartCatalog.get_part(PartCatalog.PULSE_CANNON)
@@ -307,10 +304,9 @@ func _place_at_rest(cannon: Cannon) -> void:
 
 
 func _show_walker_barrels() -> void:
-	for drawn in _hidden:
-		if is_instance_valid(drawn):
-			drawn.visible = true
-	_hidden.clear()
+	if _walker_hidden and walker != null and is_instance_valid(walker):
+		walker.draw_cannons = true
+	_walker_hidden = false
 
 
 func _make_barrel() -> Node3D:

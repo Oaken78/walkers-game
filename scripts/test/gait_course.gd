@@ -422,7 +422,7 @@ func _physics_process(delta: float) -> void:
 		_run_autopilot(delta)
 	if _hash_on:
 		# A rolling hash of the walker's state each tick (position, the leg that waits, contacts): two identical runs must agree.
-		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker._hang_wait * 7 + _walker._contact_count) & 0x3FFFFFFFFFFF
+		run_hash = (run_hash * 31 + hash(_walker.global_position) + _walker.hang_wait() * 7 + _walker.contact_count()) & 0x3FFFFFFFFFFF
 	_run_backoff_probe()
 	_track_lateral_offset()
 	_track_step_up()
@@ -895,10 +895,9 @@ func log_foot_vis(tag: String) -> void:
 		Vector3(-half.x, top, half.z),
 		Vector3(half.x, top, half.z)
 	]
-	var chassis: MeshInstance3D = _walker.get_node("Chassis")
-	var box: BoxMesh = chassis.mesh as BoxMesh
-	var to_local: Transform3D = chassis.global_transform.affine_inverse()
-	var local_box := AABB(-box.size * 0.5, box.size) if box != null else AABB()
+	var box_size: Vector3 = _walker.chassis_size()
+	var to_local: Transform3D = (_walker.body_pose() * Transform3D(Basis.IDENTITY, _walker.chassis_center())).affine_inverse()
+	var local_box := AABB(-box_size * 0.5, box_size)
 	var rows: Array[String] = []
 	min_foot_vis = 5
 	for i in _walker.leg_count():
@@ -911,7 +910,7 @@ func log_foot_vis(tag: String) -> void:
 			var end: Vector3 = point - toward * 0.02
 			var query := PhysicsRayQueryParameters3D.create(eye, end, 1)
 			var blocked: bool = not space.intersect_ray(query).is_empty()
-			if not blocked and box != null:
+			if not blocked and box_size != Vector3.ZERO:
 				blocked = local_box.intersects_segment(to_local * eye, to_local * end) != null
 			if not blocked:
 				seen += 1
