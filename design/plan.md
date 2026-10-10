@@ -100,7 +100,7 @@ Status: ready, in-progress, review-passed, done.
 | T12 | Integration: game loop (boot to workshop, exit, bank at the bench, death collapse, recall, reclaim, pause), loop_full; starts after T18 merges, instances T20's HUD once merged | scenes/main.tscn, scripts/main.gd, scripts/game/, scripts/walker/walker_body.gd (collapse only), scripts/enemies/drone_field.gd (clear_all fix only), scripts/test/loop_pilot.gd, test/unit/test_game_flow.gd, test/unit/test_walker_body.gd (collapse tests), test/scenarios/loop_full.json | 3 | done | feat/walkers-game-loop, merged 49bd192 |
 | T20 | Field HUD: HP bar, carried/banked scrap, compass, enter and recall prompts, toast; `bind` API for T12 | ui/hud/, scenes/test/hud_check.tscn, scripts/test/hud_check.gd, test/unit/test_field_hud.gd, test/scenarios/hud_check.json | 3 | done | art/walkers-field-hud, merged 5ff8813 |
 | T21 | M0 proof runs on the real valley: map_bounds (three builds push every wall) and perf_4_drones (four drones, up-valley view, ledge-guard read) | scenes/test/valley_run.tscn, scripts/test/valley_run.gd, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | done | feat/walkers-proof-runs, merged 308be56 |
-| T22 | Per-weapon aim: the mouse aims, roof arc, traverse by mass, fire gate, one reticle per weapon (gray at the limit), aim turn penalty off, recentring paused on fire, aim_range and drone_fight reworked | scripts/weapons/, scenes/weapons/, ui/aim/, scripts/camera/orbit_camera.gd (aim sensitivity, recentring pause), scripts/walker/walker_body.gd (aim_turn_factor only), scripts/test/aim_range.gd, scenes/test/aim_range.tscn, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/aim_range.json, test/scenarios/drone_fight.json, test/unit/test_aim_math.gd, test/unit/test_weapon.gd, test/unit/test_orbit_camera.gd, test/unit/test_walker_body.gd (aim factor only) | 3 | in-progress | feat/walkers-weapon-aim |
+| T22 | Per-weapon aim: the mouse aims, roof arc, traverse by mass, fire gate, one reticle per weapon (gray at the limit), aim turn penalty off, recentring paused on fire, aim_range and drone_fight reworked | scripts/weapons/, scenes/weapons/, ui/aim/, scripts/camera/orbit_camera.gd (aim sensitivity, recentring pause), scripts/walker/walker_body.gd (aim_turn_factor only), scripts/test/aim_range.gd, scenes/test/aim_range.tscn, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/aim_range.json, test/scenarios/drone_fight.json, test/unit/test_aim_math.gd, test/unit/test_weapon.gd, test/unit/test_orbit_camera.gd, test/unit/test_walker_body.gd (aim factor only), test/scenarios/walk_flat.json (aim-turn block only, lead 2026-10-10) | 3 | in-progress | feat/walkers-weapon-aim |
 | T23 | Foot dust that reads as dust, sized by weight per leg (GDD 10 rule 1) | scripts/fx/, scenes/fx/, assets/fx/, test/unit/test_foot_fx.gd, test/scenarios/foot_fx.json | 3 | in-progress | art/walkers-dust |
 
 ## Notes for packets not yet written (from the T01-T05 reviews, 2026-10-09)
@@ -169,6 +169,24 @@ Status: ready, in-progress, review-passed, done.
     wrong;
   - on the light test stripes the sand-coloured puff barely shows (a value question for the game-designer if it
     also shows on the valley floor); no settle sequence or ledge shot yet.
+- T22 follow-ups (code review of c2c9f3c, no blocking findings; deferred under playable-first):
+  - **watch in Klas's playtest:** live/gray can flicker at the arc edge while walking (the 0.5 deg tolerance has no
+    hysteresis; step bob moves the chassis pitch more than that when P sits about -20.5 deg); fix with enter/exit
+    hysteresis if it shows, plus an aim_range walk with P pinned near -20.3 counting transitions;
+  - checks that miss the rule: "drawn barrel within 0.1 deg" compares the tick transform with itself (compare
+    `barrel_drawn_transform` in `_process`); the 39 deg chassis-frame check is unit-level only (the walker's tilt is
+    clamped to 25 deg); the gray-skip unit tests re-implement the gate instead of calling the rig; the strict
+    shot-lands-at-P probe runs on the one-cannon Scout only (add a Crawler run at 5 m, camera 90 deg); the barrel-
+    never-rolls test went with the old model and has no replacement;
+  - a bolt in flight across a workshop re-mount can flash the wrong ring (clear the pool or re-tag in `_mount`);
+  - rest pose (0, 0) ignores `face_yaw_deg`, which is in the dead zone for back and side mounts (M1);
+  - recentring pauses on raw `fire` even where the rig's input is off (workshop);
+  - a Dictionary and an Array per cannon per tick (inside budget);
+  - smoke is capped at 7200 frames and aim_range (6541) and drone_fight (6237) are near it: split before adding checks;
+  - at camera pitch 60 the dot lands inside the Scout's 1.5 m hold, so the guns hold their last pose gray rather
+    than at the -20 deg limit (GDD hold rule as written; the limit and reticle_gray shots use pitch 45);
+  - measured -20 deg ground reach from the body origin: Scout 3.24, Strider 4.44, Crawler 2.58 m (GDD "about" 2.9,
+    3.9, 2.2 from the pivot geometry); drones die 0.38-0.77 s into their first hold, so fights may be easy (Klas).
 - T21 follow-ups (code review, deferred under playable-first): perf_4_drones checks `drones_in_view == 4` on one
   frame only; the drones orbit at 13-17.5 m at one speed and drift apart (in_view 2 at the window's end): give them
   one radius with phase offsets and assert `in_view_min >= 4` over the window; the up-valley drones circle behind
