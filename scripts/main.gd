@@ -36,6 +36,7 @@ var flow: GameFlow
 
 var _workshop: Workshop = null
 var _in_field: bool = false
+var _field_environment: Environment = null
 var _settle_ticks: int = 0
 var _pending_toast: String = ""
 
@@ -64,6 +65,7 @@ func _ready() -> void:
 	flow.fade_out_started.connect(_on_fade_out_started)
 	flow.arrived_home.connect(_on_arrived_home)
 	_orbit.capture_mouse = false
+	_field_environment = get_viewport().find_world_3d().environment
 	_salvage.setup(economy)
 	_collector.target = _walker
 	_collector.economy = economy
@@ -167,6 +169,10 @@ func _show_workshop() -> void:
 	_workshop = WORKSHOP_SCENE.instantiate()
 	add_child(_workshop)
 	move_child(_workshop, 0)
+	# WorldEnvironment only picks its environment on entering the tree: hand the workshop's to the world by hand.
+	var bay: WorldEnvironment = _workshop.find_child("Environment", false, false) as WorldEnvironment
+	if bay != null:
+		get_viewport().find_world_3d().environment = bay.environment
 	_workshop.setup(build, inventory, economy)
 	_workshop.exit_requested.connect(_on_exit_requested)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -181,6 +187,7 @@ func _on_field_started() -> void:
 	if _workshop != null:
 		_workshop.queue_free()
 		_workshop = null
+	get_viewport().find_world_3d().environment = _field_environment
 	# The valley collision was switched off for the visit: static bodies added back this frame cannot be queried yet.
 	_set_field_active(true)
 	_settle_ticks = COLLISION_SETTLE_TICKS
@@ -188,6 +195,7 @@ func _on_field_started() -> void:
 
 func _begin_field() -> void:
 	_in_field = true
+	_drones.target = _walker
 	health.set_max_hp(float(BuildStats.of(build)["hp"]))
 	_walker.apply_build(build)
 	_place_walker_at_bench()
@@ -217,6 +225,9 @@ func _set_field_active(active: bool) -> void:
 	_valley.visible = active
 	_valley.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 	_hud.visible = active
+	var grain: CanvasLayer = _valley.get_node_or_null("Grain") as CanvasLayer
+	if grain != null:
+		grain.visible = active
 	_recall.read_input = active
 	_recall.reset()
 
@@ -243,12 +254,18 @@ func _unlock_player() -> void:
 # --- Trips home -------------------------------------------------------------------------------------------------
 
 
+## The floor under a point: the wreck cache lies there (the walker root floats above it).
+func _ground_point(p: Vector3) -> Vector3:
+	return Vector3(p.x, _valley.floor_height(p.x, p.z), p.z)
+
+
 func _on_health_depleted() -> void:
-	flow.request_death(_walker.global_position)
+	flow.request_death(_ground_point(_walker.global_position))
 
 
 func _on_collapse_started() -> void:
 	_lock_player()
+	_drones.target = null
 	# Health.depleted can fire inside a physics callback (a bolt hit): the collapse queries the world, so wait.
 	_walker.collapse.call_deferred(GameFlow.COLLAPSE_S)
 
@@ -256,10 +273,11 @@ func _on_collapse_started() -> void:
 func _on_fade_out_started(kind: GameFlow.Kind) -> void:
 	if kind != GameFlow.Kind.DEATH:
 		_lock_player()
+	_drones.target = null
 
 
 func _on_recall_requested(position: Vector3) -> void:
-	flow.request_recall(position)
+	flow.request_recall(_ground_point(position))
 
 
 func _on_interact_tapped() -> void:

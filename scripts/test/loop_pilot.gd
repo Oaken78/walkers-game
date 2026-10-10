@@ -223,6 +223,13 @@ var state_name: String:
 var cache_nodes: int:
 	get:
 		return 1 if _main.salvage_field().cache() != null else 0
+## How far the wreck cache sits from the floor under it (m); 99 when there is none.
+var cache_height_error: float:
+	get:
+		var c: WreckCache = _main.salvage_field().cache()
+		if c == null:
+			return 99.0
+		return absf(c.global_position.y - _main.valley().floor_height(c.global_position.x, c.global_position.z))
 var walker_collapsed: bool:
 	get:
 		return _main.walker().is_collapsed()
