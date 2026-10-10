@@ -199,11 +199,11 @@ func test_the_player_hurtbox_on_a_real_walker_reads_the_chassis_and_follows_it()
 	var box := PlayerHurtbox.new()
 	box.walker = walker
 	add_child_autofree(box)
-	var chassis: MeshInstance3D = walker.get_node("Chassis")
-	assert_eq(box.box_size(), (chassis.mesh as BoxMesh).size, "sized from the walker's chassis box")
+	assert_eq(box.box_size(), walker.chassis_size(), "sized from the walker's chassis box")
 	await wait_physics_frames(8)
+	var chassis: Transform3D = walker.body_pose() * Transform3D(Basis.IDENTITY, walker.chassis_center())
 	assert_true(
-		box.global_transform.is_equal_approx(chassis.global_transform),
+		box.global_transform.is_equal_approx(chassis),
 		"it sits where the chassis is drawn, with the chassis' own offset"
 	)
 	var pose: Transform3D = walker.body_pose()
@@ -218,7 +218,7 @@ func test_the_player_hurtbox_resizes_when_the_walker_changes_build() -> void:
 	add_child_autofree(box)
 	var scout_size: Vector3 = box.box_size()
 	walker.apply_build(WalkerBuild.strider())
-	var strider_size: Vector3 = ((walker.get_node("Chassis") as MeshInstance3D).mesh as BoxMesh).size
+	var strider_size: Vector3 = walker.chassis_size()
 	assert_eq(box.box_size(), strider_size)
 	assert_ne(box.box_size(), scout_size, "a Strider's chassis is not a Scout's")
 
@@ -229,7 +229,7 @@ func test_a_shot_between_a_real_walkers_legs_misses_its_hurtbox() -> void:
 	box.walker = walker
 	add_child_autofree(box)
 	await wait_physics_frames(12)
-	var chassis: Transform3D = (walker.get_node("Chassis") as MeshInstance3D).global_transform
+	var chassis: Transform3D = walker.body_pose() * Transform3D(Basis.IDENTITY, walker.chassis_center())
 	var low: Dictionary = _ray(Vector3(-6.0, 0.1, 0.0), Vector3(6.0, 0.1, 0.0), CombatLayers.PLAYER)
 	assert_true(low.is_empty(), "at foot height there is no hurtbox")
 	var at_chassis: Dictionary = _ray(
@@ -245,10 +245,9 @@ func test_the_player_hurtbox_may_come_up_before_its_walker() -> void:
 	add_child_autofree(box)
 	assert_eq(box.box_size(), Vector3.ONE, "nothing to read yet, and no error")
 	add_child_autofree(walker)
-	var chassis: MeshInstance3D = walker.get_node("Chassis")
-	assert_eq(box.box_size(), (chassis.mesh as BoxMesh).size, "the walker's build_applied sized it")
+	assert_eq(box.box_size(), walker.chassis_size(), "the walker's build_applied sized it")
 	walker.apply_build(WalkerBuild.crawler())
-	assert_eq(box.box_size(), (chassis.mesh as BoxMesh).size, "and it follows rebuilds")
+	assert_eq(box.box_size(), walker.chassis_size(), "and it follows rebuilds")
 
 
 func test_a_bolt_that_queries_layer_2_with_bodies_hits_the_walker_but_areas_only_do_not() -> void:

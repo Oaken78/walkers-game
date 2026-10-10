@@ -493,7 +493,7 @@ func _on_exit_requested(exited: WalkerBuild) -> void:
 	exits_seen += 1
 	exit_leg_count = exited.leg_count()
 	exit_same_build = exited == _setup_build
-	exit_is_display = exited is Workshop.DisplayBuild
+	exit_is_display = exited.get_script() != WalkerBuild
 
 
 func _on_armed_changed(_part_id: StringName) -> void:
