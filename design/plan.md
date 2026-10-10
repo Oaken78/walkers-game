@@ -28,8 +28,10 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
 - After T16 (2026-10-10): T11 (look), T18 (walker API) and T19 (foot dust and decal) run in parallel with disjoint
   paths. Every shot changes in T11 and T19, so baselines are approved on main after each merge, and the later
   branch merges main and re-runs its shots. A playtest-critic pass on main after both judges actors against the
-  new world (GDD 10 rule 4). The T12 packet (main flow, death and respawn, HUD; maybe split into flow and HUD) is
-  written while this wave is in review.
+  new world (GDD 10 rule 4).
+- Then (max 3 at once, as slots free): T20 (HUD) and T21 (proof runs) need nothing from wave 1; T12 (game loop)
+  starts after T18 merges (it owns walker_body.gd for the collapse) and instances the HUD once T20 merges. After
+  all of them: the M0 review (tier 3 on every scenario, code-reviewer, playtest-critic, Klas plays the build).
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
 ## Tasks
@@ -55,7 +57,9 @@ Status: ready, in-progress, review-passed, done.
 | T17 | View stutter: smooth camera and walker at any refresh rate, F9 frame-time readout (Klas, playtest of 1a777b6) | scripts/camera/, scenes/camera/, test/unit/test_orbit_camera.gd, test/scenarios/camera_smooth.json, autoload/dev_harness.gd (readout only) | 3 | done | fix/walkers-view-stutter, merged 38ba789 |
 | T16 | Climbing: reach and haul (climb 0.9 x reach, hanging legs, step-down mirror, ledge pocket 1.2 m), gait_climb scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/walker/walker_build.gd, test/unit/test_walker_build.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, scripts/test/valley_pockets.gd, scenes/test/valley_pockets.tscn, scripts/world/valley_layout.gd (LEDGE_RISE), test/integration/test_valley_geometry.gd, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/ (gait_climb new, gait_*, walk_flat, build_contrast, valley_pockets) | 3 | done | feat/walkers-climbing, merged 2fbad22 |
 | T13 | Walker controller hardening (T03 review follow-ups): face-height wall test, slide along faces, stall and cost limits, tilt smoothing, spawn resolve, valley pocket scenario | scripts/walker/walker_body.gd, scripts/walker/walker_leg.gd, scripts/walker/walker_telemetry.gd, scripts/test/gait_course.gd, scenes/test/gait_course.tscn, test/unit/test_walker_body.gd, test/integration/test_walker_rig.gd, test/scenarios/gait_slopes.json, test/scenarios/gait_talus.json, test/scenarios/walk_flat.json, test/scenarios/gait_course.json, test/scenarios/build_contrast.json, test/scenarios/gait_rig.json, new test/scenarios/gait_*.json, scripts/test/valley_pockets.gd, test/scenarios/valley_pockets.json | 3 | done | fix/walkers-walker-hardening, merged eff475a |
-| T12 | Integration: main flow, death/respawn, field HUD, loop + perf scenarios | scenes/main.tscn, scripts/main.gd, ui/hud/, test/scenarios/loop_full.json, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | | |
+| T12 | Integration: game loop (boot to workshop, exit, bank at the bench, death collapse, recall, reclaim, pause), loop_full; starts after T18 merges, instances T20's HUD once merged | scenes/main.tscn, scripts/main.gd, scripts/game/, scripts/walker/walker_body.gd (collapse only), scripts/enemies/drone_field.gd (clear_all fix only), scripts/test/loop_pilot.gd, test/unit/test_game_flow.gd, test/unit/test_walker_body.gd (collapse tests), test/scenarios/loop_full.json | 3 | ready | |
+| T20 | Field HUD: HP bar, carried/banked scrap, compass, enter and recall prompts, toast; `bind` API for T12 | ui/hud/, scenes/test/hud_check.tscn, scripts/test/hud_check.gd, test/unit/test_field_hud.gd, test/scenarios/hud_check.json | 3 | ready | |
+| T21 | M0 proof runs on the real valley: map_bounds (three builds push every wall) and perf_4_drones (four drones, up-valley view, ledge-guard read) | scenes/test/valley_run.tscn, scripts/test/valley_run.gd, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | ready | |
 
 ## Notes for packets not yet written (from the T01-T05 reviews, 2026-10-09)
 - Gate (lead): give the camera an un-bobbed anchor (its 0.1 s lag only half-filters the 2.8 Hz body bob). Judge
