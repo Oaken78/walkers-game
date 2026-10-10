@@ -233,7 +233,10 @@ func middle_button(pressed: bool) -> void:
 
 ## Moves the cursor onto a socket's mark.
 func hover_socket(socket_id: String) -> void:
-	_dispatch(_motion(workshop.socket_screen_position(StringName(socket_id))))
+	var pos := workshop.socket_screen_position(StringName(socket_id))
+	# As in move_mouse: a windowed viewport keeps its own mouse position, so the real cursor could override the hover.
+	get_viewport().warp_mouse(pos)
+	_dispatch(_motion(pos))
 
 
 ## Clicks a socket ("left" places, "right" takes off).

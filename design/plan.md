@@ -195,6 +195,13 @@ Status: ready, in-progress, review-passed, done.
   fallbacks are in GDD 16 risk 8.
 - T23 merge note (lead, 2026-10-10): at a low camera (gait_slopes crawler_crest_b, crawler_talus_edge) the Crawler's
   1.34 m puffs lay a light haze over its knees and chassis; legs and pads still read. Judge in play.
+- workshop_edit windowed flake (lead, 2026-10-10, found by tier 3 on main after T22 and T23): the windowed run reads
+  the real OS cursor. It failed twice at step 86 (`hover_mode_name` NONE, expected BLOCKED) until `hover_socket`
+  warped the viewport mouse as `move_mouse` already does; after that 2 of 3 windowed runs passed and one failed at step
+  247 (`camera_yaw` -49.45, expected >= -40.2, after a middle drag). The headless smoke passes every assert. Proper
+  fix (gameplay-dev, scripts/workshop/workshop_course.gd and test/scenarios/workshop_edit.json): make scripted input
+  immune to real cursor events in windowed runs (warp in `click_socket` and `drag_middle` too, or ignore non-injected
+  mouse events while a scenario drives the workshop), then 5 windowed runs in a row PASS.
 - T22 follow-ups (code review of c2c9f3c, no blocking findings; deferred under playable-first):
   - **watch in Klas's playtest:** live/gray can flicker at the arc edge while walking (the 0.5 deg tolerance has no
     hysteresis; step bob moves the chassis pitch more than that when P sits about -20.5 deg); fix with enter/exit
