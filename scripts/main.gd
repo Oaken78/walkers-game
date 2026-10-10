@@ -5,8 +5,8 @@ extends Node3D
 ##
 ## Scene work, in design terms:
 ##   - The workshop brings its own camera, environment, lights and walker, so it is instanced on every visit and
-##     freed on exit. It sits 1000 m below the valley (so its floor never meets the valley collision) and is the
-##     first child, so its WorldEnvironment wins while it is there.
+##     freed on exit. It is the first child, so its WorldEnvironment wins while it is there, and the valley (collision
+##     included) is switched off so the workshop floor is the only ground under its walker.
 ##   - The field (walker, drones, pickups, camera, rig) lives under `Actors`. During a workshop visit `Actors` is
 ##     process-disabled and hidden, the valley is hidden, and nothing in the field moves.
 ##   - A return home always ends in Economy.bank(): Economy.banked repairs the walker, respawns the drones, and
@@ -20,8 +20,8 @@ signal field_entered
 signal workshop_entered(kind: int)
 
 const WORKSHOP_SCENE: PackedScene = preload("res://scenes/workshop/workshop.tscn")
-## The workshop hangs this far below the world origin.
-const WORKSHOP_OFFSET: Vector3 = Vector3(0.0, -1000.0, 0.0)
+## Physics frames the valley collision gets to come back before the walker is placed on it.
+const COLLISION_SETTLE_TICKS: int = 2
 ## The walker spawns this far down-valley (+Z) of the bench, facing down-valley.
 const SPAWN_AHEAD_M: float = 3.0
 ## Drop height of a spawned walker above the floor (m); it settles by itself.
@@ -35,8 +35,9 @@ var health: Health = Health.new(100.0)
 var flow: GameFlow
 
 var _workshop: Workshop = null
-var _toast_left: float = 0.0
 var _in_field: bool = false
+var _settle_ticks: int = 0
+var _pending_toast: String = ""
 
 @onready var _valley: Valley = %Valley
 @onready var _actors: Node3D = %Actors
@@ -50,7 +51,7 @@ var _in_field: bool = false
 @onready var _recall: RecallHold = %RecallHold
 @onready var _hud: CanvasLayer = %Hud
 @onready var _fade: ColorRect = %Fade
-@onready var _toast: Label = %Toast
+@onready var _field_hud: FieldHud = %FieldHud
 @onready var _pause: PauseGate = %PauseGate
 
 
@@ -75,7 +76,7 @@ func _ready() -> void:
 	_recall.recall_requested.connect(_on_recall_requested)
 	_recall.tapped.connect(_on_interact_tapped)
 	_pause.pause_changed.connect(_on_pause_changed)
-	_toast.visible = false
+	_field_hud.bind(health, economy, _walker, _orbit.camera(), bench_position(), _recall)
 	_set_field_active(false)
 	_show_workshop()
 	level_started.emit()
@@ -83,15 +84,16 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	flow.tick(delta)
+	if _settle_ticks > 0:
+		_settle_ticks -= 1
+		if _settle_ticks == 0:
+			_begin_field()
 	_pause.allowed = not flow.is_busy()
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	_fade.color.a = flow.fade_alpha()
-	if _toast_left > 0.0:
-		_toast_left -= delta
-		if _toast_left <= 0.0:
-			_toast.visible = false
+	_field_hud.set_enter_prompt(_in_field and flow.state == GameFlow.State.FIELD and distance_to_bench() <= GameFlow.ENTER_RANGE_M)
 
 
 # --- Read by the pilot and the scenarios ------------------------------------------------------------------------
@@ -148,11 +150,9 @@ func mark_walker() -> void:
 	_mark = _walker.global_position
 
 
-## Shows `text` for `seconds` at the top of the screen. (The field HUD takes this over once it is wired in.)
+## Shows a toast on the field HUD.
 func show_toast(text: String, seconds: float = TOAST_SECONDS) -> void:
-	_toast.text = text
-	_toast.visible = true
-	_toast_left = seconds
+	_field_hud.show_toast(text, seconds)
 
 
 # --- Workshop visit ---------------------------------------------------------------------------------------------
@@ -160,11 +160,11 @@ func show_toast(text: String, seconds: float = TOAST_SECONDS) -> void:
 
 func _show_workshop() -> void:
 	_in_field = false
+	_settle_ticks = 0
 	_set_field_active(false)
 	if _workshop != null:
 		_workshop.queue_free()
 	_workshop = WORKSHOP_SCENE.instantiate()
-	_workshop.position = WORKSHOP_OFFSET
 	add_child(_workshop)
 	move_child(_workshop, 0)
 	_workshop.setup(build, inventory, economy)
@@ -181,8 +181,13 @@ func _on_field_started() -> void:
 	if _workshop != null:
 		_workshop.queue_free()
 		_workshop = null
-	_in_field = true
+	# The valley collision was switched off for the visit: static bodies added back this frame cannot be queried yet.
 	_set_field_active(true)
+	_settle_ticks = COLLISION_SETTLE_TICKS
+
+
+func _begin_field() -> void:
+	_in_field = true
 	health.set_max_hp(float(BuildStats.of(build)["hp"]))
 	_walker.apply_build(build)
 	_place_walker_at_bench()
@@ -192,6 +197,9 @@ func _on_field_started() -> void:
 	_walker.reset_physics_interpolation()
 	_orbit.snap()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if _pending_toast != "":
+		show_toast(_pending_toast)
+		_pending_toast = ""
 	field_entered.emit()
 
 
@@ -207,6 +215,7 @@ func _set_field_active(active: bool) -> void:
 	_actors.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 	_actors.visible = active
 	_valley.visible = active
+	_valley.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
 	_hud.visible = active
 	_recall.read_input = active
 	_recall.reset()
@@ -267,7 +276,8 @@ func _on_arrived_home(kind: GameFlow.Kind, cache_amount: int, cache_position: Ve
 	_show_workshop()
 	if kind != GameFlow.Kind.ENTER and cache_amount > 0:
 		var d: Vector3 = cache_position - bench_position()
-		show_toast("Wreck cache: %d scrap at %d m" % [cache_amount, roundi(Vector2(d.x, d.z).length())])
+		# The HUD is hidden in the workshop: the toast waits for the walk out.
+		_pending_toast = "Wreck cache: %d scrap at %d m" % [cache_amount, roundi(Vector2(d.x, d.z).length())]
 	workshop_entered.emit(kind)
 
 

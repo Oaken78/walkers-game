@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://ui/aim/aim_marks.gd" id="11_marks"]
 [ext_resource type="Script" path="res://scripts/game/pause_gate.gd" id="12_pause"]
 [ext_resource type="Script" path="res://scripts/test/loop_pilot.gd" id="13_pilot"]
+[ext_resource type="PackedScene" path="res://ui/hud/field_hud.tscn" id="14_hud"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -67,6 +68,9 @@ script = ExtResource("11_marks")
 rig = NodePath("../../Actors/WeaponRig")
 orbit = NodePath("../../Actors/OrbitCamera")
 
+[node name="FieldHud" parent="Hud" instance=ExtResource("14_hud")]
+unique_name_in_owner = true
+
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 20
 
@@ -79,20 +83,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
-
-[node name="Toast" type="Label" parent="Overlay"]
-unique_name_in_owner = true
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -300.0
-offset_top = 60.0
-offset_right = 300.0
-offset_bottom = 100.0
-grow_horizontal = 2
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 24
-text = ""
 
 [node name="PauseLayer" type="CanvasLayer" parent="."]
 layer = 30

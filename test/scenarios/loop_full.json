@@ -71,6 +71,7 @@
     {"assert_prop": {"node": "Pilot", "prop": "conserved", "op": "==", "value": true}},
     {"key_tap": "Tab", "frames": 3},
     {"wait_frames": 60},
+    {"screenshot": "loop_full__toast"},
     {"call": {"node": "Pilot", "method": "warp_to_cache", "args": [8.0]}},
     {"wait_frames": 30},
     {"call": {"node": "Pilot", "method": "warp_to_cache", "args": [2.0]}},
