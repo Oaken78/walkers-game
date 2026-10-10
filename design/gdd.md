@@ -23,8 +23,8 @@ Numbers, not adjectives. References in `design/refs/`. Defaults below are for th
    *We cut map size before we compromise this.*
 
 ## 3. Core loop
-- **30 seconds:** steer the walker over uneven ground (WASD, mouse orbit), stop to shoot drones (LMB), walk over
-  scrap to pick it up.
+- **30 seconds:** steer the walker over uneven ground (WASD; the mouse orbits the camera and aims the guns), shoot
+  drones (LMB), walk over scrap to pick it up.
 - **5 minutes (one expedition):** leave the workshop, follow scrap nodes 60-200 m out, survive 2-4 drone encounters,
   then decide: push further for richer nodes, or walk back and bank. Bank in the workshop, buy one part, re-socket,
   and leave again with a different feel.
@@ -77,9 +77,10 @@ Each number is a scenario or unit check. "Default" means the M0 Scout build.
 | Haul | Advance <= 0.4 x top speed from the first front foot on top to the last foot up; rise or lower <= 1.5 m/s (2.5 cm per tick). Body pitch peaks at 10-25 deg, never above min(grip - 5, 25) deg. Climb time from the first reach to the last foot on top: 1.0-2.0 s on a ledge 0.75 x climb tall (Strider 1.08 m, Crawler 0.40 m), Klas tunes it at the next playtest. No stretch longer than 0.4 s without horizontal or vertical progress while input is held. A rise within stride step-up costs <= 0.3 s extra | |
 | Hanging legs | A leg with no valid foothold lifts within 1 tick and hangs at its lift height (0.25 x reach), >= 0.05 m clear of geometry, pawing toward the face or edge on a 0.6 s cycle. At a face it cannot climb, each paw swings a front pad up the face to the highest foothold it tested, >= 0.6 x reach above the floor and at most its hip + 0.4 x reach, >= 0.05 m off the face, then drops back to the lift height. It counts as airborne. While any leg hangs, the centre of mass stays inside the planted feet's polygon by >= 0.1 x mean reach (Strider 0.16, Scout 0.10, Crawler 0.06 m). On ground with no rise or drop beyond stride step-up, no leg hangs | |
 | Camera orbit distance | 8 m (scroll 5-12 m), FOV 70; spring-arm terrain collision, min 2 m unless rock is closer (rock wins) | |
-| Mouse sensitivity | 0.15 deg/px, invert-Y off (constants in M0, settings menu M2) | |
+| Mouse sensitivity | 0.15 deg/px; 0.10 deg/px while `aim` is held (the same screen motion per pixel at FOV 50); invert-Y off (constants in M0, settings menu M2) | |
 | Camera position lag | 0.10 s smoothing; 0 lag on rotation | |
-| Pulse cannon | 4 shots/s, 15 dmg, projectile 60 m/s, spread 1.0 deg x leg spread factor | 0.5 - 1.5 deg |
+| Pulse cannon | 4 shots/s, 15 dmg, projectile 60 m/s, spread 1.0 deg x leg spread factor; 40 kg, top mount, traverse 180 deg/s (8.3) | 0.5 - 1.5 deg |
+| Weapon traverse (its reticle follows the dot) | clamp(7200 / weapon mass in kg, 45, 720) deg/s, in yaw and in pitch, no ramp: the pulse cannon follows a 90 deg flick in 0.50 s (30 ticks) | 45 (>= 160 kg, 90 deg in 2.0 s) - 720 (<= 10 kg, 90 deg in 0.125 s) deg/s |
 | Drone | 45 HP (3 hits), hitbox r 0.6 m, hover 3-6 m, 10 dmg/shot, 1 shot / 1.5 s, 0.6 s wind-up glow, bolt 25 m/s aimed at the walker's position with no lead (0.6 s flight at 15 m: dodgeable by strafing). Orbits at <= 6 m/s and holds still for its wind-up: stop within 0.1 s, hold 0.9 s (wind-up 0.6 s + 0.3 s after the shot), resume orbit speed over 0.3 s, so it is a still target for 0.9 s of every 1.5 s | |
 | Player chassis HP | 100 (Scout) | 70 - 180 |
 | Feedback on taking hit | 0.12 s red rim flash + 0.15 s camera shake, 0.15 m amplitude | |
@@ -101,7 +102,7 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
 | `strafe_left` | Q | walking |
 | `strafe_right` | E | walking |
 | `fire` | LMB | walking |
-| `aim` | RMB (zoom to FOV 50, -40 % turn rate) | walking |
+| `aim` | RMB (zoom to FOV 50, mouse 0.10 deg/px) | walking |
 | `interact` | F: enter the workshop when within 4 m. Hold 3 s anywhere: recall to the workshop (stuck recovery; carried scrap drops as a cache, like death) | walking |
 | `zoom_in` / `zoom_out` | mouse wheel | walking |
 | `build_place` | LMB on socket | workshop |
@@ -109,21 +110,31 @@ Verbs: walk, strafe, turn, look/orbit, aim, fire, collect (automatic), build (so
 | `build_exit` | Tab | workshop |
 | `pause` | Esc | both |
 
-**Tank controls:**
-- W/S drive along the body's facing, A/D turn the body at its turn rate, and Q/E crab-strafe.
-- The mouse orbits the camera independently and never turns the walker. Mouse X yaws the camera freely (360 deg).
-  Mouse Y pitches it from -20 to 60 deg. -10 to 60 is the normal range. -20 to -10 is the aim-up range for
-  drones close overhead: there the spring arm shortens against the ground (rock wins), and feet may leave the frame.
-- Weapons point where the walker faces. Their yaw is always the body's heading; there is no turret yaw. Their
-  elevation follows the camera: they aim at the height and range of the point under the screen centre (8.3).
-  Turning the body (A/D, at the build's turn rate) is how you aim sideways. Q/E strafing dodges bolts while the
-  guns stay on target. This makes the turn rate a build stat you feel in every fight (Pillar 1).
-- `aim` (RMB, held): FOV 70 -> 50 in 0.10 s and turn rate x 0.6 for fine tracking (Scout 120 -> 72 deg/s). It
-  pauses recentring and releases the descent floor, as before. It does not swing the camera to the heading; the
-  weapon reticle (section 12) shows where the guns point.
+**Tank controls, mouse aim** (Klas after the M0 build, 2026-10-10: "The weapons must follow the mouse"):
+- The keys drive the body and never aim. W/S drive along the body's facing, A/D turn the body at its turn rate,
+  and Q/E crab-strafe.
+- The mouse moves the camera, and the camera aims. The mouse never turns the walker. Mouse X yaws the camera freely
+  (360 deg). Mouse Y pitches it from -20 to 60 deg. -10 to 60 is the normal range. -20 to -10 is the aim-up range
+  for drones close overhead: there the spring arm shortens against the ground (rock wins), and feet may leave the
+  frame.
+- The screen centre is the aim point P (8.3), marked by the camera dot (12): where the mouse aims, not where the
+  walker heads.
+- Every weapon turns toward P by itself, within its mount's arc and at its own traverse rate (8.3). Light guns are
+  on the dot almost at once; heavy guns visibly lag behind it. Each weapon has its own reticle (12). A gray
+  reticle means that weapon cannot reach P from its mount and does not fire.
+- `fire` (LMB, held) fires every weapon whose reticle is live (not gray), each at its own rate.
+- The body heading still counts (risk 8). The traverse is relative to the chassis, so turning toward a target with
+  A/D adds the turn rate to every gun's swing (Scout, 90 deg: 0.50 s on the gun alone, about 0.32 s with A/D).
+  Front, back and side mounts (M1) reach only +/- 90 deg around their face. The heading is also the line you travel,
+  climb (the 45 deg approach rule, 8.2) and strafe across. Q/E strafing dodges bolts while the mouse keeps the
+  dot on target.
+- `aim` (RMB, held): FOV 70 -> 50 in 0.10 s, and the mouse drops 0.15 -> 0.10 deg/px, so the dot moves the same
+  distance on screen per pixel. The turn rate is unchanged (the x 0.6 aim penalty is gone: the body no longer aims).
+  It pauses recentring and releases the descent floor, as before.
 - Turning in place re-plants the legs visibly, so the turn itself is a gait show (Pillar 2).
 - The camera does not auto-follow the body's yaw. Behind-the-body recentring is on a 1.5 s delay after mouse
-  idle and pauses while `aim` is held; this is a tuning knob for the gate.
+  idle. It pauses while `aim` or `fire` is held, and its timer restarts on release. Recentring now also moves P and
+  every gun with it, so it is the first knob to turn off if it fights the aim in play (section 18).
 - On a descent, where the ground behind the walker rises steeper than about 25 deg for at least 1.5 m (a slope, not
   a boulder or a single ledge) and stands in the line of sight to the walker's feet, or drops that steeply just
   ahead, the camera holds a pitch floor of that slope
@@ -187,8 +198,8 @@ already allow it.
       per cargo container: a full walker heads home (Pillar 3).
     - *Limits:* mass against leg lift is the main limit, felt in speed and turning; there is no power resource. M1
       hard caps: 12 legs (raised only after a 12-leg performance test passes) and 4 weapons. A weapon on any face
-      aims along the walker's heading (the aim model, section 6). A module on a bottom socket lowers the ground
-      clearance by its depth, shown as a stat.
+      aims at the mouse aim point within its face's arc (8.3, from 2026-10-10), so where a gun is socketed is a
+      build choice. A module on a bottom socket lowers the ground clearance by its depth, shown as a stat.
   - Not yet decided: the chassis size cap (blocks long, wide and high); the cargo container's mass and price; which
     other modules ship when and what they do; the gait for 9-12 legs; and the stats the new shapes stretch (the top
     speed range, the turn rate floor, the camera distance for large builds).
@@ -320,34 +331,81 @@ already allow it.
   above 0.9 x reach; the centre-of-mass margin stays >= 0.1 x mean reach whenever a leg hangs; no leg hangs and no
   leg reaches up on the 30 deg bumps.
 
-### 8.3 Weapons - top socket parts
-- **State:** cooldown, heat (M1).
-- **Rules (aim model, Klas at the gate: yaw from the body, pitch from the camera):**
-  - *Aim point P:* the camera's centre ray hits the world or an enemy (layers 1 and 3, never the player), up to
-    120 m. With no hit, P is the point at 120 m.
-  - *Aim range d and height h:* d is the horizontal distance from the body origin to P, clamped to 4-120 m (a
-    camera looking down at the walker's own feet never points the guns into the ground under it). h is P's height.
-  - *Convergence point Q:* d metres along the body's heading from the body origin, at height h. Every weapon aims
-    at Q. Its yaw follows the heading (lateral convergence from its socket offset only, <= 4 deg at 4 m), and its
-    elevation is the angle from its muzzle to Q. When the target sits on the heading, the shot lands where the
-    camera looks.
-  - *Elevation limits:* -10 to +45 deg, world-relative, so a body tilted up to 45 deg on the talus still aims level.
-    At a limit the weapon still fires, and the reticle shows where the shot really lands.
-  - *Response:* weapon elevation slews at 360 deg/s (a full mouse flick is followed within 0.15 s). Yaw is locked
-    to the heading on every tick, with 0 lag.
-  - *Crosshair far off the heading:* the weapons always fire along the heading. There is no arc lockout and nothing
-    greys out. When the camera's yaw is more than 90 deg off the heading, d and h hold their last values, so the
-    guns do not nod while you look behind you; they pick P up again within 90 deg.
+### 8.3 Weapons - socketed parts that aim themselves
+Fantasy: I point, and every gun I bolted on swings to it as fast as its weight allows, as far as its mount lets it.
+Loop: put the dot on a target -> the reticles slide onto it (light guns at once, heavy guns lagging; gray where a
+mount cannot reach) -> fire, and turn or strafe the body to dodge and to bring a lagging or gray gun on.
+- **State:** per weapon: its yaw and pitch in the chassis frame, cooldown, live or gray; heat (M1).
+- **Rules (aim model, Klas after the M0 build, 2026-10-10: each weapon follows the mouse within its own arc):**
+  - *Aim point P* (unchanged): the camera's centre ray hits the world or an enemy (layers 1 and 3, never the
+    player), up to 120 m. With no hit, P is the point at 120 m. P is where the mouse aims, and the camera dot marks
+    it (12). Every weapon aims at the same P.
+  - *Aim line:* each weapon aims from its pivot (its socket point) straight at P, and its muzzle sits on that line.
+    So a settled weapon inside its arc hits P exactly, wherever the camera is. There is no convergence point and no
+    range or height clamp.
+  - *Mount arcs* belong to the socket face the weapon sits on, not to the weapon type, and are measured in the
+    chassis frame, so they tilt with the body. Yaw 0 is the face's outward direction (for top and bottom: the
+    heading). Pitch 0 is the chassis plane, positive up. A later weapon may narrow its face's arc, never widen it.
+
+    | Mount (socket face) | Yaw arc | Pitch arc | In M0 |
+    |---|---|---|---|
+    | Top (roof) | 360 deg, unlimited | -20 to +75 deg | yes: top_0 (front left), top_1 (front right), top_2 (rear centre) |
+    | Front, back, left, right | -90 to +90 deg around the face's outward direction | -90 to +90 deg | no: M1 block chassis (8.1); Klas's example, re-checked against the legs then |
+    | Bottom | 360 deg | -75 to +20 deg (the top, mirrored) | no: M1 |
+
+  - *Traverse rate:* rate = clamp(7200 / m, 45, 720) deg/s, where m is the weapon part's own mass in kg. The same
+    rate applies in yaw and in pitch, and each axis is rate-limited on its own with no acceleration ramp, so a swing
+    takes angle / rate, to the tick. 10 kg or lighter: 720 deg/s (90 deg in 0.125 s, 7.5 ticks: almost instant).
+    40 kg: 180 deg/s (0.50 s). 80 kg: 90 deg/s (1.0 s). 160 kg or heavier: 45 deg/s (2.0 s: visibly slow). The
+    floor of 45 deg/s is 1.5x the fastest drone's angular rate (6 m/s at 12 m = 29 deg/s), so every gun can track
+    an orbiting drone (risk 8). 7200 is the one tuning constant.
+  - *The body carries the guns:* traverse turns a weapon relative to the chassis. Turning the body toward P adds the
+    turn rate to the swing, and turning away subtracts it. A weapon whose rate is at least the body's turn rate holds
+    a still P while the body turns; the pulse cannon (180) outturns every M0 build (at most 134 deg/s, 8.1).
+  - *Path:* a 360 deg mount swings the shortest way round. A limited mount swings inside its arc only, never through
+    its dead zone.
+  - *Fire gate:* each tick a weapon finds the yaw and pitch that put its line on P.
+    - *Live:* that pose lies inside its arc (with 0.5 deg of tolerance, so a reticle at the limit does not flicker).
+      The weapon turns toward P, and while `fire` is held it fires on its own cooldown along its current line, even
+      mid-swing. Its reticle shows that line, so a heavy gun that is still swinging sprays where its reticle sweeps.
+    - *Gray:* that pose lies outside the arc. The weapon turns to the point of its arc nearest P and stops there,
+      and it does not fire. It goes live again on the tick P comes back inside.
+    - A P within 1.5 m of a weapon's pivot leaves that weapon holding its pose, gray.
+  - *M0 pulse cannon:* 40 kg (8.1 catalog), on any of the 3 top sockets, roof arc (yaw 360, pitch -20 to +75),
+    traverse 180 deg/s in yaw and in pitch; 4 shots/s, 15 dmg, 60 m/s, spread 1.0 deg x leg spread factor (5).
+    On flat ground with a level body, -20 reaches the ground about 2.9 m out on the Scout (Crawler about 2.2 m,
+    Strider about 3.9 m; pivot about 0.45 m above the chassis underside). At the default camera pitch 20 the dot
+    lands about 6 m ahead, inside the arc for every reference build, so only a dot near the walker's own feet turns
+    a roof gun gray.
   - *Projectiles* fly along the weapon's aim line at their own speed and do not inherit the walker's velocity, so a
-    strafing or turning walker hits where the reticle shows, with no lead of its own.
-  - *Several weapons:* LMB fires every mounted weapon. Each keeps its own rate (pulse cannon 4 shots/s), and their
-    phases are spread evenly: weapon k of n fires k / (n x rate) s after the first, so two cannons fire every
-    0.125 s, a steady rhythm rather than a double bang.
-- **Tests:** fire rate cap; damage applied once per projectile; weapon yaw equals the body heading within 0.1 deg on
-  every tick; with a target on the heading, the shot passes within 0.5 deg of the camera's aim point inside the
-  elevation limits; elevation is clamped to -10..45 deg world-relative on a body tilted 39 deg; d is clamped to
-  4 m when the camera looks straight down; d and h hold when the camera yaw is more than 90 deg off the heading;
-  two weapons fire 0.125 s apart.
+    strafing or turning walker hits where the reticle shows, with no lead of its own. They collide with layers 1 and
+    3 only and pass through their own walker, so a rear gun can fire over the front ones.
+  - *Several weapons:* LMB fires every live weapon. Each keeps its own rate (pulse cannon 4 shots/s). Phases are
+    fixed by mount order (top_0, top_1, top_2): weapon k of n mounted fires k / (n x rate) s after the first, so two
+    cannons fire every 0.125 s, a steady rhythm rather than a double bang. A gray weapon skips its slots, and the
+    others keep their phases (no re-phasing).
+- **Edge cases:** arcs are chassis-relative (this replaces the world-relative -10..+45 deg limits). A Crawler tilted
+  39 deg nose-up on the talus reaches no lower than world +19 deg straight ahead (up the slope, where the ground is
+  anyway) and down to world -59 deg straight behind. A camera looking straight down puts P under the walker: every
+  roof gun goes gray, which reads "you cannot shoot your own feet".
+- **Tests:**
+  - `traverse_rate`: 5 and 10 kg -> 720, 40 kg -> 180, 80 kg -> 90, 160 and 300 kg -> 45 deg/s (within 0.01); it
+    never rises with mass.
+  - Swing: a pulse cannon on a still Scout, with P stepped 90 deg in yaw, is within 1 deg of P after 30 +/- 1 ticks
+    and never turns faster than 3.0 deg per tick (+0.5 %); a 30 deg pitch step takes 10 +/- 1 ticks.
+  - Body assist: from the same start with A/D held toward P, within 1 deg of P in <= 0.35 s for every reference
+    build (Scout about 0.32 s). Hold: with P still and the Strider turning at 134 deg/s for 1.0 s, a settled cannon
+    stays within 1 deg of P.
+  - Arc gate: with P at -19.0 deg from the pivot the cannon is live and fires 8 +/- 1 shots in 2.0 s of `fire`; at
+    -20.4 deg it is still live; at -20.6 deg it is gray, fires 0 shots in 2.0 s, and its barrel sits at
+    -20.0 +/- 0.1 deg on P's bearing.
+  - Shot lands at P: with spread 0 and a settled cannon, P inside the arc at 5, 15 and 60 m and the camera at yaw
+    0, 90 and 180 deg from the heading, the projectile passes within 0.2 deg of P seen from the pivot.
+  - Chassis frame: on a body tilted 39 deg nose-up, the lowest pitch straight ahead is world +19 +/- 0.5 deg.
+  - Default view: on flat ground at camera pitch 20, every reference build's cannons are live.
+  - The drawn barrel matches the aim pose within 0.1 deg on every tick.
+  - Fire rate cap; damage applied once per projectile; projectiles never hit layer 2.
+  - Two cannons fire 0.125 s apart; with top_1 gray, top_0 alone fires every 0.25 s on its own phase.
 
 ### 8.4 Enemies - drones (M0); enemy walkers (M1)
 - **Drone states:** idle-hover, patrol, alert (sees the player within 35 m, line of sight), strafe (orbits at
@@ -358,16 +416,17 @@ already allow it.
 - **The telegraph is the opening.** A drone stops to shoot: at wind-up start it brakes from orbit speed to 0
   within 0.1 s and holds its position (hover bob <= 0.1 m) through the 0.6 s wind-up, the shot and a 0.3 s
   recovery, then regains orbit speed over 0.3 s. That makes 0.9 s still in every 1.5 s cycle. Pulses
-  (60 m/s, 0.25 s to 15 m) fired at a holding drone on the heading hit with no lead. A drone that is orbiting
-  moves 1.5 m during that flight, more than its 0.6 m radius, so straight shots at it miss: the player fires on the
-  glow. Each player choice has a cost:
-  - *Stand and trade:* face the drone, fire from the start of its wind-up, and the third pulse lands about 0.75 s
-    in, after the drone's own bolt has left, so a standing walker takes the hit.
-  - *Strafe and shoot:* dodge with Q/E while holding the heading on the drone with A/D (a 3.4 m/s strafe drifts
-    the bearing about 13 deg/s at 15 m, against a drone 2.3 deg wide).
+  (60 m/s, 0.25 s to 15 m) fired at a holding drone under the dot, with the weapon's reticle on it, hit with no
+  lead. A drone that is orbiting moves 1.5 m during that flight, more than its 0.6 m radius, so straight shots at it
+  miss: the player fires on the glow. Each player choice has a cost:
+  - *Stand and trade:* put the dot on the drone, fire from the start of its wind-up, and the third pulse lands about
+    0.75 s in, after the drone's own bolt has left, so a standing walker takes the hit.
+  - *Strafe and shoot:* dodge with Q/E while the mouse keeps the dot on the drone (a 3.4 m/s strafe drifts the
+    bearing about 13 deg/s at 15 m, well inside the cannon's 180 deg/s traverse, against a drone 2.3 deg wide).
   - *Strafe only:* take no hit and deal no damage.
 - **Encounters stagger the wind-ups:** drones in one encounter start their wind-ups >= 0.4 s apart, so their holds
-  rarely overlap and the walker swings between them. That is where turn rate decides a fight (Pillar 1).
+  rarely overlap and the guns swing between them. The swing time (gun traverse plus body turn, 8.3) decides a
+  fight (Pillar 1, risk 8).
 - **Bolt:** fired at the walker's chassis position at the moment of the shot, with no lead.
 - **Combat check:** a strafing Scout takes <= 40 % of the damage that an idle Scout takes in `drone_fight`, so
   speed matters in combat (Pillar 1). A strafing Scout clears its 0.53 m chassis half-width in about 0.25 s
@@ -454,8 +513,33 @@ can see, with no minimap.
 **Readability rules (in priority order):**
 1. At 8 m camera distance and any pitch from -10 to 60 deg, every foot of the player walker stays in frame and
    is >= 12 px tall at 1080p. Seen from behind, every foot is also clear of the chassis and the ground; side-on,
-   the near row is clear and the far row may hide behind the chassis. Its plant moment is readable: a dust puff of 0.2 s and a contact decal that fades
-   in 2 s. These two are readability, not polish, and cannot be cut (Pillar 2).
+   the near row is clear and the far row may hide behind the chassis. Its plant moment is readable: a dust puff and
+   a contact decal that fades in 2 s. These two are readability, not polish, and cannot be cut (Pillar 2). The dust
+   (Klas, 2026-10-10: it read as "white blobs"; it must read as dust and scale with weight per leg):
+   - *Size from weight per leg:* w = build `mass` / leg count (8.1: chassis plus every part, legs included). Puff
+     width W = clamp(0.5 m x w / 50 kg, 0.25, 1.0) m across; height 0.5 x W. Scout 315 / 6 = 52.5 kg -> 0.53 m;
+     Strider 285 / 6 = 47.5 kg -> 0.48 m; Crawler 535 / 8 = 66.9 kg -> 0.67 m (1.41x the Strider). The floor is at
+     25 kg per leg and the cap at 100 kg per leg (an M0 build tops out about 110 kg per leg: 4 short legs at full
+     load). Linear, so M0's narrow spread (47-67 kg) still shows: a heavy-footed build kicks up more dust than a
+     long-legged one.
+   - *Soft, not round:* each puff is 5 soft sprites at seeded offsets within 0.3 x W of the pad, each 0.5 x W
+     across, with a radial alpha falloff: at 0.9 of a sprite's radius the alpha is <= 0.1 x its centre's, and 0 at
+     the rim. No single disc, no hard edge.
+   - *Ground-tinted, never white:* colour `#D9C7AE` (the ground `#CAB294` family: hue 33 +/- 5 deg, saturation
+     0.15-0.30), lit by the scene, so it darkens in shadow with the ground. At its peak a puff lifts the floor's
+     grayscale luma by 0.03-0.12; no puff pixel has luma above 0.85, or saturation below 0.08 with luma above 0.75.
+   - *Low opacity:* peak alpha 0.45, reached within 0.08 s of the plant (that is the plant read), <= 0.25 by 0.4 s,
+     0 at the end of life.
+   - *Drift and settle:* life 0.8 s +/- 1 tick (was 0.2 s: a 12-frame flash reads as a blob). The sprites burst
+     outward at 0.8 m/s, slowing to 0 by 0.4 s; the puff rises to its full height by 0.3 s, then sinks by 30 % while
+     it fades. It stays in the world and does not follow the walker.
+   - *Cost:* <= 2 draw calls per walker for all its puffs; the pool covers the Crawler at top speed (about 29
+     plants/s x 0.8 s = 23 live puffs) with no allocation after `_ready`.
+   - *Tests:* W for the three fixtures within 0.005 m, plus the floor and the cap; the alpha curve at 0.08, 0.4 and
+     0.8 s; the sprite falloff; shot `foot_fx__dust_weight` (the Strider and the Crawler mid-walk on the valley
+     floor), checked with the pixels tool for the luma lift, no white pixel, and a measured Crawler / Strider puff
+     width ratio >= 1.3. Playtest question for Klas: "Does the dust read as dust, and does a heavier foot kick up
+     more?"
 2. Threats glow magenta-red. Nothing else in the world uses that hue. The drone wind-up ramps its emissive from
    0 to 3 over 0.6 s. Because the orange accent is only 39 deg from the threat hue, threats must also read in
    grayscale: the wind-up is a luminance change, and drones have a distinct ring silhouette.
@@ -533,28 +617,35 @@ World palette, from the 50 % style mix (look-test mockup):
   - **A blocked exit answers:** Tab or a click on the disabled exit pulses the reason text for 0.3 s, and the Load row
     shows a "!" while load is above 1.0.
 - **Field HUD:**
-  - **Aim: a camera dot and a world-space weapon reticle.** The camera is free, so the screen centre shows where
-    you look, and the reticle shows where the guns will hit. The gap between them is the "turn this way" cue.
-    Numbers are at 1080p and scale with resolution:
-    - *Camera dot:* 6 px, player body `#E6E1D6` with a 1 px ink `#14161A` outline, at the screen centre. It sets P
-      (8.3).
-    - *Weapon reticle:* a ring 28 px across with a 3 px stroke, in player accent `#FF8A3D` with a 2 px ink outline,
-      so it reads in grayscale against sky and ground. It sits at the screen projection of the first hit along the
-      line from the weapons to Q (layers 1 and 3, up to 120 m), computed from the same tick's weapon pose (no lag).
-      Over an enemy hurtbox the stroke goes from 3 to 5 px. It never takes the threat hue (rule 2).
-    - *Merge:* when the reticle centre is within 12 px of the dot, the dot hides and the ring shows a 4 px centre
-      pip: on target.
-    - *At an elevation limit (-10 or +45 deg):* the ring is drawn dashed (8 segments, about 50 % duty) only when it
-      matters: the dot is on an enemy hurtbox, or `fire` is held or was released less than 0.5 s ago. A shot that
-      cannot reach the dot then reads as such. Otherwise the ring stays solid at its true landing point, because at
-      the default pitch 20 the guns cannot reach the ground under the dot nearer than about 12 m, and an always-on
-      dashed ring teaches nothing.
-    - *Hit confirmation:* when a player projectile hits a hurtbox, the ring's stroke flashes player body `#E6E1D6`
-      for 0.06 s, so a hit reads even when the ring covers a distant target.
-    - *Off screen or behind the camera:* a 32 px accent chevron at the screen edge, 24 px inset, points to where the
-      guns aim. To bring them to the dot, the player turns the body toward the dot. No other HUD element sits within
-      40 px of the chevron.
+  - **Aim: one camera dot, and one reticle per weapon** (Klas, 2026-10-10). The dot is where the mouse aims. Each
+    reticle is where that weapon's shot goes now. A reticle trailing the dot is a weapon still swinging (heavy guns
+    trail further); a gray one is a weapon that cannot reach the dot from its mount. Numbers are at 1080p and scale
+    with resolution:
+    - *Camera dot:* 6 px, player body `#E6E1D6` with a 1 px ink `#14161A` outline, at the screen centre. It marks P
+      (8.3), never the walker's heading. Always drawn, on top of the reticles.
+    - *Weapon reticle, one per mounted weapon (0-3 in M0):* a ring 28 px across with a 3 px stroke, in player accent
+      `#FF8A3D` with a 2 px ink outline, so it reads in grayscale against sky and ground. It sits at the screen
+      projection of the first hit along that weapon's current barrel line (layers 1 and 3, up to 120 m; with no
+      hit, the point at 120 m), from the same tick's weapon pose: it lags the dot only by the weapon's own traverse.
+      A settled live weapon's ring is centred on the dot, so the dot inside the ring means on target, and the rings of
+      weapons that agree overlap as one. Over an enemy hurtbox the stroke goes from 3 to 5 px. It never takes the
+      threat hue (rule 2). The merge pip of the heading-aim HUD goes.
+    - *Gray, at the arc limit:* while P lies outside a weapon's arc, its ring stops at the furthest point the barrel
+      reaches (the first hit along the clamped line). It turns neutral gray `#646464` (saturation 0, >= 0.2 luma
+      below the live ring in grayscale), and it is drawn dashed (8 segments, about 50 % duty), so it reads by shape
+      as well as by tone; the ink outline stays. It shows whenever the weapon is gray, and that weapon does not
+      fire (8.3). It goes back to the solid accent ring on the tick P comes back inside the arc.
+    - *Hit confirmation:* when a player projectile hits a hurtbox, the stroke of the ring of the weapon that fired it
+      flashes player body `#E6E1D6` for 0.06 s, so a hit reads even when the ring covers a distant target.
+    - *Off screen or behind the camera:* a 32 px chevron per off-screen reticle, at the screen edge, 24 px inset,
+      points to where that weapon aims, in its ring's colour (accent or gray). It shows mostly mid-swing after a big
+      flick. No other HUD element sits within 40 px of a chevron.
     - All aim marks use `mouse_filter = IGNORE`.
+    - *Tests:* one ring per mounted weapon; each ring within 0.5 deg of where its weapon's next projectile first
+      hits; on flat ground at camera pitch 20 every ring is live; with the dot on the ground under the walker every
+      roof ring is gray and dashed and fires 0 shots; live and gray rings >= 0.2 luma apart in grayscale. Shots:
+      `drone_fight__reticle_swing` (rings trailing the dot mid-flick) and `drone_fight__reticle_gray` (the dot at
+      the walker's feet, gray dashed rings at the limit).
   - Chassis HP bar (bottom left).
   - Carried and banked scrap (top right).
   - Compass marker to the workshop and to the wreck cache.
@@ -578,6 +669,16 @@ World palette, from the 50 % style mix (look-test mockup):
 ## 14. Milestones
 - **M0 Playable loop (<= 2 weeks of agent work):** walk, build and fight on one map. Acceptance criteria are in
   `design/plan.md`.
+  - Criterion 5 (combat and aim), rewritten 2026-10-10 for per-weapon aim; the plan.md M0 row carries the same text:
+    the drone telegraphs >= 0.6 s before every shot, dies in 3 hits and holds still for 0.9 s of each 1.5 s cycle; a
+    strafing Scout takes <= 40 % of the damage an idle Scout takes. Each mounted weapon has its own reticle, within
+    0.5 deg of where its shot goes. With P inside its arc and the weapon settled, a shot at spread 0 passes within
+    0.2 deg of P. With P outside its arc (the dot under the walker) the weapon fires 0 shots over 2.0 s of `fire`
+    and its reticle is gray and dashed at the arc limit. The pulse cannon (40 kg) swings 90 deg in 0.50 s +/- 1
+    tick, as the traverse formula gives for its mass. Every M0 reference build brings a reticle onto a drone 90 deg
+    off in 0.50 s with the body still and in <= 0.35 s with A/D toward it. A no-lead tracker that keeps the dot on
+    the drone hits >= 80 % of shots fired during holds and kills within two holds, standing and strafing, with the
+    Scout and with the Crawler [5, 8.3, 8.4, 12, 16].
 - **M1 Vertical slice:** second zone behind a terrain gate, enemy walker sentinel, 5 legs and 5 top parts, real
   footstep audio, toon and outline shading at final quality, and a flatter chassis so the arched knees peak above it.
 - **M2 Content:** 3 zones, all parts, gamepad, main menu, save/load.
@@ -599,7 +700,8 @@ World palette, from the 50 % style mix (look-test mockup):
    before any content work.
 3. **Tank controls feel clunky with a free camera** (driving one way while looking another). Fallback: the body
    turns toward camera yaw, with Q/E strafe kept. Klas decides at the T03/T04 gate. Closed 2026-10-09: tank kept;
-   weapons follow the body's heading and the camera's pitch (sections 6, 8.3 and 12; Decisions log).
+   weapons follow the body's heading and the camera's pitch (sections 6, 8.3 and 12; Decisions log). After the M0
+   build (2026-10-10) tank steering stays, and the weapons aim at the mouse instead (8.3; risk 8).
 4. **Toon outline cost** on a 400 m terrain. The outline is built in M1; measure its draw calls there.
    M0 ships the toon ramp without it.
 5. **Kinematic body vs Jolt projectiles and drones.** Collision layers are fixed in T00 (section 13).
@@ -610,23 +712,38 @@ World palette, from the 50 % style mix (look-test mockup):
    centre-of-mass margin >= 0.1 x mean reach. Spike: a side-view pose search per build (Scout, Strider, Crawler) with
    the real chassis box, hip positions and bones, before any controller work. Fallback: climb 0.8 x reach and the
    ledge pocket at 1.07 m. Checked 2026-10-09: passes, with the descent drop raised to 0.32 x reach (Decisions log).
-8. **Sideways aim depends on turn rate** (Pillar 1). A drone orbiting faster than the walker can turn cannot be
-   tracked, and the fight turns into waiting. Bound: drone orbit speed <= 6 m/s (<= 29 deg/s at 12 m), so even the
-   slowest reference build while aiming (Crawler 109 x 0.6 = 65 deg/s) turns >= 2.2x faster than a drone moves
-   across its view. Builds near the 60 deg/s turn floor (aiming 36 deg/s, 1.2x) are the M1 heavy end and need a
-   check there. A drone's 0.9 s hold per 1.5 s cycle (8.4) is the opening, so hits need turn rate, not leading
-   skill. Spike (T07 `drone_fight`), all checks against a drone orbiting at 15 m, 6 m/s, 4 m up, cycling as in 8.4:
-   - Every M0 reference build brings its heading onto a drone 90 deg off in <= 1.0 s (Crawler 90 / 109 + 0.1 s
-     ramp = 0.93 s).
-   - A scripted tracker aims at the drone's current position, never ahead of it. It holds A/D toward the drone's
-     bearing, releases when the bearing error is within its own stopping distance (yaw rate x 0.1 s ramp / 2) +
-     0.5 deg, and fires continuously.
-   - With the Scout and with the Crawler, the tracker hits >= 80 % of shots fired between hold start + 0.15 s and
-     hold end - 0.25 s (so they land while the drone holds), and kills a drone within its first two holds
-     (<= 3.0 s from the first hold start).
-   - The hit rate on shots fired while the drone orbits is reported, not asserted. It shows that the opening, not
-     luck, carries the fight.
-   Fallback: a longer hold (1.1 s), or drop the x 0.6 aim turn penalty.
+8. **The heading and the build still matter when every gun aims itself** (Pillar 1; rewritten 2026-10-10 for
+   per-weapon aim). Turn rate no longer gates every shot. With a 360 deg roof mount and a 180 deg/s cannon a player
+   could fight without ever turning, and then turn rate and socket choice stop showing in fights, so every build
+   fights alike. The answer, in order of weight:
+   - *The body carries the guns.* Traverse is chassis-relative (8.3), so A/D toward a target adds the turn rate to
+     the swing: 90 deg takes 0.50 s on the gun alone and <= 0.35 s with A/D (Scout about 0.32 s). Turning into a
+     fight is faster, and a faster-turning build swings faster.
+   - *Heavy guns need the body.* A gun slower than its build's turn rate drifts off a still target while the body
+     turns, and its slow swing rewards turning the body instead. M0's cannon (180 deg/s) outturns every M0 build;
+     from M1 a 120 kg gun (60 deg/s) on a 120 deg/s walker makes gun mass against turn rate a pairing you feel.
+   - *The mount sets the arc.* Only top and bottom mounts turn 360 deg; front, back and side mounts (M1) reach
+     +/- 90 deg around their face, so a front gun needs the heading on the target. Roof guns cannot reach low and
+     near (-20 deg), and that dead zone grows with leg length (nearest ground about 2.2 m on the Crawler, 3.9 m on
+     the Strider).
+   - *Gun mass still loads the walker* (8.1): a second cannon costs speed and turn rate.
+   Bound: the traverse floor (45 deg/s) is >= 1.5x the fastest drone's angular rate (29 deg/s at 12 m), so no gun
+   is too slow to track; a drone's 0.9 s hold per 1.5 s cycle (8.4) stays the opening, so hits need aim, not leading
+   skill. Spike (T22 `drone_fight`), against a drone orbiting at 15 m, 6 m/s, 4 m up, cycling as in 8.4:
+   - *Swing:* for every M0 reference build, a reticle reaches a drone 90 deg off in yaw that has started its wind-up
+     in 0.50 s +/- 1 tick with the body still, and in <= 0.35 s with A/D toward it: turning cuts the swing by
+     >= 30 %.
+   - *Tracker:* a scripted tracker puts the dot on the drone's current position every tick (never ahead of it),
+     holds `fire` and does not turn the body. With the Scout and with the Crawler, standing and strafing (Q/E), it
+     hits >= 80 % of shots fired between hold start + 0.15 s and hold end - 0.25 s (so they land while the drone
+     holds) and kills a drone within its first two holds (<= 3.0 s from the first hold start).
+   - *Reported, not asserted:* the hit rate on shots fired while the drone orbits (the opening, not luck, carries
+     the fight); against two drones 90 deg apart with wind-ups >= 0.4 s apart, the time to kill both and the damage
+     taken, with and without A/D toward the next drone; in Klas's playtest, the share of fight time with A/D held.
+   - *Playtest question for Klas:* "Did you turn the body in fights, and did it help?"
+   Fallback if the heading stops mattering in play: narrow the roof yaw to +/- 150 deg (a 60 deg dead zone behind,
+   the 2026-10-08 turret arc), or lower the traverse constant 7200 -> 4800 (pulse cannon 120 deg/s, 90 deg in
+   0.75 s), so turning the body pays more.
 9. **Aiming up at close, high drones.** At camera pitch -10 the centre ray rises only 10 deg from a camera 8 m back,
    so a drone 12 m out and higher than about 4.2 m (drones hover 3-6 m) cannot be put under the dot. Mitigation:
    the aim-up range down to -20 deg (section 6). The spring arm shortens to about 5-6 m against flat ground, and
@@ -726,6 +843,12 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-10 | The foot dust cloud scales with weight per leg (walker mass / leg count) and must read as dust, not white blobs. Section 10 rule 1 is rewritten next | Klas, after playing the M0 build: "Dust doesn't look like dust", "I want the dust cloud to scale as a function of Walker weight divided by number of legs" | One puff size for every walker (2026-10-10, T19) |
 | 2026-10-10 | Direction for later milestones: no enemy simply spawns; every NPC has a purpose. At start, NPCs are out at various locations, each with a goal (for example walking from a far factory to a mine, loading resources and returning). New NPCs spawn at natural places (a building, the map edge) with a purpose at once (cross the map and despawn; leave a building, do a task elsewhere, return and despawn). The GDD says NPC (non-playable character) instead of enemy. A local AI model (for example Gemma) for NPC behaviour is to be considered. Sections 8.4, 7 and 9 are reworked in a later design pass (plan.md, 'After the M0 build') | Klas, 2026-10-10: "I don't want enemies to just spawn. I want every enemy to have a purpose" | Drones that wait at sites and respawn on every workshop visit (M0, provisional) |
 | 2026-10-10 | The GDD needs a story and a main goal: a larger reason to explore than the invent-explore loop alone. Section 15's "Story or dialogue" no longer rules story out; what form it takes is open (section 18) | Klas, 2026-10-10: "The invent-explore loop is satisfying to a point but there must be a larger reason for exploring" | Loop-only game with no overarching goal |
+| 2026-10-10 | Per-weapon aim model (8.3): every weapon aims from its pivot straight at P (the camera centre ray's hit, unchanged), within an arc that belongs to its socket face and is chassis-relative: top yaw 360 / pitch -20..+75 deg; front, back, left and right yaw and pitch +/- 90 deg (M1); bottom yaw 360 / pitch -75..+20 (M1). Traverse = clamp(7200 / weapon mass kg, 45, 720) deg/s in yaw and pitch, no ramp, relative to the chassis, so a body turn adds or subtracts. A weapon is live while P is inside its arc (0.5 deg tolerance) and then fires on its cooldown along its current line, even mid-swing; outside, it stops at the arc point nearest P, goes gray and does not fire. The M0 pulse cannon: 40 kg, any top socket, 180 deg/s. Projectiles pass through their own walker. Fixed firing phases by mount order; a gray weapon skips its slots. Retired: the convergence point Q, the 4-120 m range clamp, the world-relative -10..+45 deg elevation, the 360 deg/s slew and the 90 deg range-and-height hold. 8.1's M1 rule "a weapon on any face aims along the heading" and the heading wording in 8.4 now read per-weapon aim | Klas after the M0 build (row above): "The weapons must follow the mouse vertically, within their movement range ... a roof mounted gun could have a 360 degree range but limited range when aiming down. A front mounted gun could have 180 degree range both vertically and horizontally ... Heavy guns have their reticles follow more slowly. Small guns are almost instant." Arcs on the face make socket choice a build decision (Pillar 1); 1 / mass is the simplest curve with a wide spread (16x from cap to floor); -20 deg lets every reference build reach the dot at the default pitch 20, so the gray ring means something; the 45 deg/s floor still tracks any drone; firing mid-swing keeps the reticle honest with one rule | Arcs per weapon type (the same gun would feel the same everywhere, so placement stops mattering); world-relative arcs (a mount is a physical joint; the gray ring explains the tilt case); sqrt(mass) traverse (too flat: 40 vs 160 kg only 2x apart); an acceleration ramp (swing time no longer angle / rate, harder to test and to feel); fire only once within 2 deg of P (a second rule; heavy guns would go silent mid-swing with no cue); re-phasing the live weapons (rhythm jumps whenever a gun goes gray) |
+| 2026-10-10 | HUD for per-weapon aim (12): the camera dot marks P and is always drawn on top; one 28 px accent ring per mounted weapon at the first hit along that weapon's current barrel line; at the arc limit the ring stops at the furthest reachable point, turns gray `#646464` (>= 0.2 luma below the live ring) and dashed, and its weapon is silent; one chevron per off-screen ring in its ring's colour; the hit flash goes to the ring of the weapon that hit; the merge pip goes | Klas, after the M0 build: "Each weapon should have their own reticle ... Guns that can't follow the mouse have their reticle as far as they can reach but the reticle is grayed out and the gun won't shoot ... The dot reticle is where the mouse aims, not where the Walker is heading." Gray alone is about 0.2 luma from the accent; dashing (T06's existing pattern) keeps the read in grayscale and for colourblind players. With the dot always drawn, "dot inside the ring" is the on-target read for any number of rings | Gray only (weak in grayscale); hide a gray ring (Klas wants it shown); keep the merge pip (it would hide the dot that every other ring still chases) |
+| 2026-10-10 | Controls for mouse aim (6): the keys only drive the body; RMB keeps FOV 50 and gets mouse 0.10 deg/px, and the x 0.6 turn penalty while aiming goes; recentring also pauses while `fire` is held and restarts its 1.5 s timer on release | The body no longer aims, so slowing its turn while zoomed would only slow the swing assist and the dodge; 0.15 x tan(25) / tan(35) = 0.10 keeps the dot's screen motion per pixel; recentring now drags P and every gun with it, so it must not run mid-fight | Keep x 0.6 (no remaining purpose); same sensitivity zoomed (fine aim jumps by 1.4x); remove recentring outright (Klas has not asked; kept as the first knob, section 18) |
+| 2026-10-10 | Risk 8 rewritten: turn rate no longer gates every shot; the heading and the build stay meaningful through chassis-relative traverse (A/D toward a target cuts a 90 deg swing from 0.50 s to <= 0.35 s), heavy guns slower than the turn rate (M1), face arcs (front mounts need the heading, M1) and the roof's near-low dead zone that grows with leg length. Spike in T22 `drone_fight`; fallback: roof yaw +/- 150 deg or traverse constant 4800. M0 criterion 5 (14, mirrored in the plan.md M0 row) swaps the "weapon yaw equals the heading" and heading-onto-drone checks for the arc gate, traverse by mass, a reticle per weapon and shot-at-P checks; the telegraph, 3-hit kill, hold cycle and strafing damage bar are kept; the no-lead tracker now aims with the dot and runs standing and strafing | Klas's per-weapon aim (rows above). Pillar 1 must show in fights for M0's one gun, which a roof cannon could otherwise skip; making the body a traverse booster keeps A/D useful without narrowing the 360 deg roof Klas described | Narrow the roof to +/- 150 deg now (against Klas's example; kept as the fallback); a slow M0 cannon so the body must turn (fights would feel sluggish with the only gun in the game); accept that heading no longer matters in fights |
+| 2026-10-10 | Dust by weight per leg (10 rule 1): puff width W = clamp(0.5 m x (build mass / legs) / 50 kg, 0.25, 1.0) m, height 0.5 x W (Scout 0.53, Strider 0.48, Crawler 0.67 m); five soft sprites with a radial falloff; colour `#D9C7AE` from the ground family, lit by the scene, peak alpha 0.45, luma lift 0.03-0.12, no pixel above luma 0.85; life 0.8 s (was 0.2 s) with an outward burst, a rise and a settle; <= 2 draw calls per walker | Klas, after the M0 build: "Dust doesn't look like dust. It looks like white blobs" and "scale as a function of Walker weight divided by number of legs". The built puff (T19) was a near-white `#FAF2E0` at alpha 1.0 for 12 frames: an opaque bright flash. Linear scaling makes M0's 47-67 kg per leg spread show (Crawler 1.41x Strider); an energy-like cube root would show only 1.12x | Cube-root scaling (invisible in M0); scale with leg reach (Klas asked for weight per leg); per-surface sampled tint now (one ground family in M0; M1 zones); keep 0.2 s and only fix the colour (a short life still reads as a pop, not as dust) |
+| 2026-10-10 | Closes the two 2026-10-10 rows "Per-weapon aim" and "The foot dust cloud scales with weight per leg": GDD sections 3, 5, 6, 8.1 (M1 weapon rule), 8.3, 8.4 (heading wording), 10 rule 1, 12, 14 (criterion 5), 16 (risks 3 and 8) and 18 rewritten as in the five rows above | Game-designer pass, plan.md "After the M0 build", step 1 | |
 
 ## 18. Open questions
 - Story and main goal (Klas, 2026-10-10): what is the larger reason to explore, and how does the world tell it?
@@ -735,7 +858,17 @@ World palette, from the 50 % style mix (look-test mockup):
   does it cost in build size (the playtest zip must stay under 100 MB), frame time and test determinism? A spike
   before any commitment.
 - Answered at the gate (2026-10-09): tank controls hold up with a free camera; weapons follow the body's heading
-  and the camera's pitch (Decisions log).
+  and the camera's pitch (Decisions log). Superseded after the M0 build (2026-10-10): weapons aim at the mouse (8.3).
+- Per-weapon aim (2026-10-10), each with the default T22 builds until Klas answers after play:
+  - Pulse cannon traverse: 180 deg/s (40 kg, a 90 deg flick followed in 0.50 s) makes M0's only gun visibly
+    mid-weight. Should it feel almost instant instead? Default 180; one constant (7200) to retune.
+  - Do 360 deg roof guns make the drone fights too easy? Mouse aim plus Q/E makes strafe-and-shoot nearly free.
+    Default: keep the drones as tuned and read `drone_fight`'s damage and time-to-kill reports; the lever is the
+    encounter (more drones, staggered wind-ups) in the NPC pass, with roof yaw +/- 150 deg as the fallback (risk 8).
+  - Firing mid-swing: a live gun fires along its current line before it reaches P (a heavy gun sprays as it
+    sweeps). Default yes (the reticle shows it); the alternative is to hold fire until within 2 deg of P.
+  - Recentring behind the body now drags the aim. Default: it pauses while `fire` or `aim` is held; the
+    alternative is no recentring in the field.
 - Blueprints are kept on death (current default). Should they instead be carried like scrap, for more stakes?
 - The economy is estimated, not simulated: about 90 scrap per trip. Check real income in `loop_full` and retune
   prices before M1.
