@@ -53,7 +53,7 @@ func test_puff_lifetime_is_0_8s() -> void:
 
 
 func test_width_for_the_three_builds_from_weight_per_leg() -> void:
-	var expected := {&"scout": 0.5254, &"strider": 0.4753, &"crawler": 0.6698}
+	var expected := {&"scout": 1.0504, &"strider": 0.9504, &"crawler": 1.3396}
 	var widths := {}
 	for id: StringName in expected:
 		var body := FakeBody.new()
@@ -67,10 +67,10 @@ func test_width_for_the_three_builds_from_weight_per_leg() -> void:
 
 
 func test_width_floor_and_cap() -> void:
-	assert_almost_eq(_fx.puff_width_for(25.0), 0.25, 0.0001)
-	assert_almost_eq(_fx.puff_width_for(10.0), 0.25, 0.0001, "below 25 kg per leg stays 0.25")
-	assert_almost_eq(_fx.puff_width_for(100.0), 1.0, 0.0001)
-	assert_almost_eq(_fx.puff_width_for(300.0), 1.0, 0.0001, "above 100 kg per leg stays 1.0")
+	assert_almost_eq(_fx.puff_width_for(25.0), 0.5, 0.0001)
+	assert_almost_eq(_fx.puff_width_for(10.0), 0.5, 0.0001, "below 25 kg per leg stays 0.5")
+	assert_almost_eq(_fx.puff_width_for(100.0), 2.0, 0.0001)
+	assert_almost_eq(_fx.puff_width_for(300.0), 2.0, 0.0001, "above 100 kg per leg stays 2.0")
 
 
 func test_width_is_recomputed_after_build_applied() -> void:
@@ -78,13 +78,13 @@ func test_width_is_recomputed_after_build_applied() -> void:
 	add_child_autofree(body)
 	var fx := FootFx.new()
 	body.add_child(fx)
-	assert_almost_eq(fx.puff_width(), 0.5254, 0.005)
+	assert_almost_eq(fx.puff_width(), 1.0504, 0.005)
 	body.build = WalkerBuild.crawler()
 	body.build_applied.emit()
-	assert_almost_eq(fx.puff_width(), 0.6698, 0.005)
+	assert_almost_eq(fx.puff_width(), 1.3396, 0.005)
 	fx.advance(0.3)
 	fx.plant(Vector3.ZERO, Vector3.UP)
-	assert_almost_eq(fx.puff_sprite_size(0), 0.6698 * 0.5, 0.003, "sprites are 0.5 W across")
+	assert_almost_eq(fx.puff_sprite_size(0), 1.3396 * 0.5, 0.003, "sprites are 0.5 W across")
 
 
 func test_alpha_curve() -> void:

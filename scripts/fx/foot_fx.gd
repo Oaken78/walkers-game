@@ -7,10 +7,10 @@ extends Node3D
 
 ## Dust (GDD 10 rule 1): width W = clamp(width_per_kg_per_leg x mass per leg / 50 kg, min, max). Mass per leg is the build's
 ## mass / leg count (read through get_build(), recomputed on build_applied). Height of the whole puff is half of W.
-@export var puff_width_ref_m: float = 0.5
+@export var puff_width_ref_m: float = 1.0
 @export var puff_ref_mass_per_leg_kg: float = 50.0
-@export var puff_width_min_m: float = 0.25
-@export var puff_width_max_m: float = 1.0
+@export var puff_width_min_m: float = 0.5
+@export var puff_width_max_m: float = 2.0
 ## Mass per leg used when there is no walker (a lone FootFx in a test or a scene).
 @export var puff_default_mass_per_leg_kg: float = 50.0
 ## Soft sprites per puff, each puff_sprite_share x W across and started within puff_spread_share x W of the pad.
@@ -26,8 +26,8 @@ extends Node3D
 ## Share of the full height at the plant.
 @export_range(0.0, 1.0) var puff_start_height_share: float = 0.6
 @export var puff_life_s: float = 0.8
-## Dust tone: the ground family (ground is #CAB294), a touch under the spec #D9C7AE so the overlap of 5 sprites stays <= 0.85 luma. Unshaded: does not darken in shadow.
-@export var puff_color: Color = Color("D5C3AA")
+## Dust tone: the ground family (ground is #CAB294), near the spec #D9C7AE; lit with an up-facing normal.
+@export var puff_color: Color = Color("BFAF99")
 ## Opacity at the peak, reached at puff_peak_s; puff_mid_alpha at puff_burst_s; 0 at the end of the life.
 @export_range(0.0, 1.0) var puff_peak_alpha: float = 0.45
 @export var puff_peak_s: float = 0.08
@@ -419,7 +419,9 @@ func _pose_puff(i: int) -> void:
 	# The puff is width * 0.5 high: its sprites sit with their lower edge near the ground at full height.
 	var centre_y: float = size * 0.5 * puff_height_share(age)
 	var burst: float = puff_burst_distance(age)
-	var color := Color(puff_color.r, puff_color.g, puff_color.b, puff_alpha(age))
+	# The shader reads the instance colour as linear; puff_color is an sRGB tone.
+	var tone: Color = puff_color.srgb_to_linear()
+	var color := Color(tone.r, tone.g, tone.b, puff_alpha(age))
 	for k in puff_sprites:
 		var idx: int = i * puff_sprites + k
 		var flat: Vector2 = _sprite_off[idx] + _sprite_dir[idx] * burst
@@ -462,14 +464,10 @@ func _build_pools() -> void:
 	_rng.seed = puff_seed
 	var quad := QuadMesh.new()
 	quad.size = Vector2.ONE
-	var m := StandardMaterial3D.new()
-	# Unshaded flat ground tone: a lit camera-facing sprite read as grey smudges in the valley light. Billboard: each sprite faces the camera.
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	m.billboard_keep_scale = true
-	m.vertex_color_use_as_albedo = true
-	m.albedo_texture = make_puff_texture()
+	var m := ShaderMaterial.new()
+	# Lit with a world-up normal (assets/fx/dust.gdshader): darkens in shadow with the ground.
+	m.shader = load("res://assets/fx/dust.gdshader")
+	m.set_shader_parameter("sprite_tex", make_puff_texture())
 	quad.material = m
 	_mm = MultiMesh.new()
 	_mm.transform_format = MultiMesh.TRANSFORM_3D
