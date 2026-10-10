@@ -1,0 +1,18 @@
+{
+ "scene": "res://scenes/test/valley_run.tscn",
+ "seed": 1234,
+ "timeout_frames": 7100,
+ "steps": [
+  {"wait_frames": 20},
+  {"call": {"node": ".", "method": "run_bounds", "args": [8]}},
+  {"expect_signal": {"node": ".", "signal": "bounds_finished", "timeout_frames": 7000}},
+  {"assert_prop": {"node": ".", "prop": "bounds_points", "op": ">=", "value": 24}},
+  {"assert_prop": {"node": ".", "prop": "bounds_pushes", "op": ">=", "value": 48}},
+  {"assert_prop": {"node": ".", "prop": "bounds_outside_ticks", "op": "==", "value": 0}},
+  {"assert_prop": {"node": ".", "prop": "bounds_rise_excess_max", "op": "<=", "value": 0.0}},
+  {"assert_prop": {"node": ".", "prop": "scout_end_max_m", "op": "<=", "value": 2.0}},
+  {"assert_prop": {"node": ".", "prop": "crawler_end_max_m", "op": "<=", "value": 2.0}},
+  {"assert_prop": {"node": ".", "prop": "strider_end_max_m", "op": "<=", "value": 2.5}},
+  {"assert_no_errors": true}
+ ]
+}

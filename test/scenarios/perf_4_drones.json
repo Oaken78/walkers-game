@@ -1,0 +1,33 @@
+{
+ "scene": "res://scenes/test/valley_run.tscn",
+ "seed": 1234,
+ "timeout_frames": 3600,
+ "steps": [
+  {"wait_frames": 20},
+  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
+  {"call": {"node": ".", "method": "setup_band_fight", "args": []}},
+  {"call": {"node": ".", "method": "start_fight", "args": [24.0]}},
+  {"wait_frames": 240},
+  {"assert_prop": {"node": ".", "prop": "engaged_drones", "op": "==", "value": 4}},
+  {"assert_prop": {"node": ".", "prop": "drones_in_view", "op": "==", "value": 4}},
+  {"screenshot": "fight"},
+  {"metrics": {"name": "fight", "frames": 1200}},
+  {"call": {"node": ".", "method": "log_perf", "args": ["fight"]}},
+  {"assert_prop": {"node": ".", "prop": "bolts_live_max", "op": "<=", "value": 40}},
+  {"assert_prop": {"node": ".", "prop": "alive_min", "op": ">=", "value": 4}},
+  {"call": {"node": ".", "method": "start_view", "args": [14.0]}},
+  {"wait_frames": 180},
+  {"screenshot": "up_valley"},
+  {"metrics": {"name": "up_valley", "frames": 600}},
+  {"call": {"node": ".", "method": "log_perf", "args": ["up_valley"]}},
+  {"assert_prop": {"node": ".", "prop": "bolts_live_max", "op": "<=", "value": 40}},
+  {"call": {"node": ".", "method": "end_fight", "args": []}},
+  {"call": {"node": ".", "method": "setup_ledge_fight", "args": []}},
+  {"call": {"node": ".", "method": "start_fight", "args": [8.0]}},
+  {"wait_frames": 240},
+  {"screenshot": "ledge_guard"},
+  {"call": {"node": ".", "method": "measure_ledge_luma", "args": []}},
+  {"call": {"node": ".", "method": "log_perf", "args": ["ledge_guard"]}},
+  {"assert_no_errors": true}
+]
+}
