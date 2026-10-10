@@ -65,6 +65,11 @@ Next, in order (each starts after the one before it, unless noted):
    (look plus scale by weight per leg, in scripts/fx/foot_fx.gd; visuals-dev). Their owned paths are disjoint.
 3. **M0 review** after T22 merges (criterion 5 changes with the aim): tier 3 on every scenario, code-reviewer,
    playtest-critic, then a playtest build for Klas via the playtest-build skill.
+- **Later design gaps (Klas, 2026-10-10, recorded in the GDD Decisions log and section 18):** NPCs with a purpose
+  instead of spawning enemies (goals, routes, natural spawn and despawn points, the word NPC, maybe a local AI model
+  such as Gemma), and a story with a main goal that gives exploring a larger reason. Lead's proposal: a game-designer
+  pass on both before M1 is written, since M1's enemy walker sentinel should already be an NPC with a purpose. The
+  Gemma question gets its own spike.
 - Merged branches stay until Klas asks to delete them.
 
 ## Tasks
