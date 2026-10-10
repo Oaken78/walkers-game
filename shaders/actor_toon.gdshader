@@ -18,6 +18,9 @@ uniform float shadow_gain = 0.55;
 // shadow band; anything between is the base band. 0.72 = only faces turned toward the sun; -0.05 = faces turned away.
 uniform float lit_threshold = 0.72;
 uniform float shadow_threshold = -0.05;
+// A light weaker than this (energy, after the PI the engine folds into LIGHT_COLOR) is fill: it never sets a band, so a
+// 0.35 body light cannot flatten the walker into base. The key light and the sun (energy >= 1) do.
+uniform float min_light_energy = 0.5;
 // Self-lit colour added on top of the bands (threat glow, crate glow). Energy 0 = none.
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float emission_energy = 0.0;
@@ -40,7 +43,8 @@ void light() {
 	float nl = dot(NORMAL, LIGHT);
 	vec3 shadow_c = base_color.rgb * shadow_gain;
 	vec3 band = shadow_c;
-	if (ATTENUATION > 0.5 && nl > shadow_threshold) {
+	float energy = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722)) / PI;
+	if (energy >= min_light_energy && ATTENUATION > 0.5 && nl > shadow_threshold) {
 		band = nl > lit_threshold ? lit_band() : base_color.rgb;
 	}
 	DIFFUSE_LIGHT = max(DIFFUSE_LIGHT, band - shadow_c);

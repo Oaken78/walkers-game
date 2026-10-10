@@ -59,6 +59,7 @@ script = ExtResource("1_valley")
 environment = SubResource("Env_1")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
+light_cull_mask = 3
 rotation_degrees = Vector3(-55, 250, 0)
 light_color = Color(1, 0.98, 0.95, 1)
 light_energy = 1.0
@@ -67,6 +68,7 @@ shadow_opacity = 0.7
 directional_shadow_max_distance = 150.0
 
 [node name="LedgeFill" type="OmniLight3D" parent="."]
+light_cull_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -104, 4.6, 190)
 light_energy = 1.0
 shadow_enabled = false
@@ -102,6 +104,7 @@ collision_layer = 1
 collision_mask = 0
 
 [node name="TerrainMesh" type="MeshInstance3D" parent="Terrain"]
+layers = 2
 
 [node name="TerrainShape" type="CollisionShape3D" parent="Terrain"]
 
@@ -110,6 +113,7 @@ collision_layer = 1
 collision_mask = 0
 
 [node name="BoulderMesh" type="MultiMeshInstance3D" parent="."]
+layers = 2
 
 [node name="Sites" type="Node3D" parent="."]
 

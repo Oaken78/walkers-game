@@ -1,8 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3]
-
-[resource]
-resource_name = "world_ground_streak"
-diffuse_mode = 1
-albedo_color = Color(0.72549, 0.62353, 0.50980, 1)
-roughness = 1.0
-metallic_specular = 0.0

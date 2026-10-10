@@ -1,6 +1,6 @@
 shader_type spatial;
 // World flat bands (GDD 10 "Flat colour bands"): base, one lit band, one shadow band, no gradients on solids.
-// Only the directional sun picks the band, so a fill light for actors never changes the rocks. No ambient, no specular.
+// Only the Sun reaches the world's light layer, so a fill light for actors never changes the rocks. No ambient, no specular.
 render_mode ambient_light_disabled, specular_disabled, cull_back;
 
 // The three bands, sRGB. Base is the role's palette hex.
