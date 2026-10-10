@@ -13,8 +13,13 @@ const BONE_RADIUS: float = 0.06
 ## hip never turns the pole parallel to the leg and flips the knee; knee rise at +/-0.5 x reach fore-aft stays 0.105.
 const POLE_OUTWARD: float = 0.8
 
-static var _body_material: StandardMaterial3D
-static var _accent_material: StandardMaterial3D
+## The two actor materials (3-band toon ramp, GDD 10): palette hex is the base band. BODY_COLOR and ACCENT_COLOR stay the
+## palette source of truth; the .tres files carry the same hex and test_look checks they agree.
+const BODY_MATERIAL_PATH: String = "res://assets/materials/actor_body.tres"
+const ACCENT_MATERIAL_PATH: String = "res://assets/materials/actor_accent.tres"
+
+static var _body_material: Material
+static var _accent_material: Material
 
 ## Bones 0.46 + 0.69 x reach = 1.15 x reach: the leg never straightens inside the 0.99 x reach sphere (GDD 5).
 @export var upper_ratio: float = 0.46
@@ -40,17 +45,15 @@ var _foot_mesh: MeshInstance3D
 var _strut_mesh: MeshInstance3D
 
 
-static func body_material() -> StandardMaterial3D:
+static func body_material() -> Material:
 	if _body_material == null:
-		_body_material = StandardMaterial3D.new()
-		_body_material.albedo_color = BODY_COLOR
+		_body_material = load(BODY_MATERIAL_PATH) as Material
 	return _body_material
 
 
-static func accent_material() -> StandardMaterial3D:
+static func accent_material() -> Material:
 	if _accent_material == null:
-		_accent_material = StandardMaterial3D.new()
-		_accent_material.albedo_color = ACCENT_COLOR
+		_accent_material = load(ACCENT_MATERIAL_PATH) as Material
 	return _accent_material
 
 

@@ -1,10 +1,14 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/world_bands.gdshader" id="1_shader"]
 
 [resource]
 resource_name = "world_ground"
-diffuse_mode = 1
-vertex_color_use_as_albedo = true
-vertex_color_is_srgb = true
-albedo_color = Color(1, 1, 1, 1)
-roughness = 1.0
-metallic_specular = 0.0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(0.79216, 0.69804, 0.58039, 1)
+shader_parameter/lit_color = Color(0.84706, 0.7451, 0.61961, 1)
+shader_parameter/shadow_color = Color(0.63529, 0.55686, 0.46275, 1)
+shader_parameter/lit_threshold = 0.87
+shader_parameter/shadow_threshold = 0.76
+shader_parameter/use_vertex_flags = true
+shader_parameter/wash_color = Color(0.72549, 0.62353, 0.5098, 1)

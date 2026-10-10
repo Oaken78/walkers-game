@@ -1,6 +1,11 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/world_bands.gdshader" id="1_shader"]
 
 [resource]
 resource_name = "world_rock_far"
-albedo_color = Color(0.64706, 0.54510, 0.47059, 1)
-roughness = 1.0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(0.64706, 0.5451, 0.47059, 1)
+shader_parameter/lit_color = Color(0.64706, 0.5451, 0.47059, 1)
+shader_parameter/shadow_color = Color(0.51765, 0.43529, 0.37647, 1)
+

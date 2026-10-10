@@ -26,9 +26,11 @@ var carve: PackedFloat32Array = PackedFloat32Array()
 ## Streak weight per vertex (0 = ground colour, 1 = streak colour): wash channel and bump skirts.
 var streak: PackedFloat32Array = PackedFloat32Array()
 
-## Ground colours (GDD 10 palette, sRGB) blended per vertex on the single ground surface.
-var color_ground: Color = Color("#CAB294")
-var color_streak: Color = Color("#B99F82")
+## Vertex colour is a flag carrier for the world_bands shader, never a colour (GDD 10: flat bands, no gradients):
+## R = wash weight (the shader thresholds it into a flat band), G = ledge lip (always the lit band).
+## The palette hex lives in assets/world/*.tres.
+const FLAGS_NONE: Color = Color(0.0, 0.0, 0.0, 1.0)
+const FLAGS_LIP: Color = Color(0.0, 1.0, 0.0, 1.0)
 ## The visible streak starts at the workshop pad's front edge (z), not behind the workshop.
 var streak_start_z: float = 10.5
 ## Wash half-width at its start and after taper_length metres of path (width 6 m -> 10 m).
@@ -64,9 +66,7 @@ func make_mesh(materials: Array) -> ArrayMesh:
 		arrays.resize(Mesh.ARRAY_MAX)
 		arrays[Mesh.ARRAY_VERTEX] = v
 		arrays[Mesh.ARRAY_NORMAL] = _norms[i]
-		var cols: PackedColorArray = _cols[i]
-		if cols.size() == v.size():
-			arrays[Mesh.ARRAY_COLOR] = cols
+		arrays[Mesh.ARRAY_COLOR] = _cols[i]
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		mesh.surface_set_material(mesh.get_surface_count() - 1, materials[i] as Material)
 	return mesh
@@ -315,19 +315,19 @@ func _emit_floor_cells() -> void:
 			var nb: Vector3 = Vector3.UP
 			var nc: Vector3 = Vector3.UP
 			var nd: Vector3 = Vector3.UP
-			var cla: Color = color_ground
-			var clb: Color = color_ground
-			var clc: Color = color_ground
-			var cld: Color = color_ground
+			var cla: Color = FLAGS_NONE
+			var clb: Color = FLAGS_NONE
+			var clc: Color = FLAGS_NONE
+			var cld: Color = FLAGS_NONE
 			if k == KIND_FLOOR:
 				na = _grid_normal(ix, iz)
 				nb = _grid_normal(ix + 1, iz)
 				nc = _grid_normal(ix + 1, iz + 1)
 				nd = _grid_normal(ix, iz + 1)
-				cla = color_ground.lerp(color_streak, streak[v])
-				clb = color_ground.lerp(color_streak, streak[v + 1])
-				clc = color_ground.lerp(color_streak, streak[v + stride + 1])
-				cld = color_ground.lerp(color_streak, streak[v + stride])
+				cla = Color(streak[v], 0.0, 0.0, 1.0)
+				clb = Color(streak[v + 1], 0.0, 0.0, 1.0)
+				clc = Color(streak[v + stride + 1], 0.0, 0.0, 1.0)
+				cld = Color(streak[v + stride], 0.0, 0.0, 1.0)
 			var pa := Vector3(xa, ha, za)
 			var pb := Vector3(xb, hb, za)
 			var pc := Vector3(xb, hc, zb)
@@ -338,15 +338,14 @@ func _emit_floor_cells() -> void:
 
 func _add_tri(
 	surf: int, a: Vector3, b: Vector3, c: Vector3, na: Vector3, nb: Vector3, nc: Vector3,
-	ca: Color = Color.TRANSPARENT, cb: Color = Color.TRANSPARENT, cc: Color = Color.TRANSPARENT
+	ca: Color = FLAGS_NONE, cb: Color = FLAGS_NONE, cc: Color = FLAGS_NONE
 ) -> void:
 	var vs: PackedVector3Array = _verts[surf]
 	var ns: PackedVector3Array = _norms[surf]
-	if surf == Surf.GROUND:
-		var cs: PackedColorArray = _cols[surf]
-		cs.push_back(color_ground if ca.a == 0.0 else ca)
-		cs.push_back(color_ground if cb.a == 0.0 else cb)
-		cs.push_back(color_ground if cc.a == 0.0 else cc)
+	var cs: PackedColorArray = _cols[surf]
+	cs.push_back(ca)
+	cs.push_back(cb)
+	cs.push_back(cc)
 	vs.push_back(a)
 	vs.push_back(b)
 	vs.push_back(c)
@@ -359,14 +358,16 @@ func _add_tri(
 
 
 ## Quad p0..p3 (a planar quad) facing `normal`; winding is fixed up so the front face points along it.
-func _add_quad(surf: int, p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, normal: Vector3) -> void:
+func _add_quad(
+	surf: int, p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, normal: Vector3, flags: Color = FLAGS_NONE
+) -> void:
 	var g: Vector3 = (p1 - p0).cross(p2 - p0)
 	if g.dot(normal) > 0.0:
 		var t: Vector3 = p1
 		p1 = p3
 		p3 = t
-	_add_tri(surf, p0, p1, p2, normal, normal, normal)
-	_add_tri(surf, p0, p2, p3, normal, normal, normal)
+	_add_tri(surf, p0, p1, p2, normal, normal, normal, flags, flags, flags)
+	_add_tri(surf, p0, p2, p3, normal, normal, normal, flags, flags, flags)
 
 
 ## Plateau and ruin tops, merged into one quad per row run (their height only varies with z, so quads are planar).
@@ -451,7 +452,8 @@ func _wall_x(ka: int, kb: int, xe: float, za: float, zb: float, a0: float, a1: f
 	var hi1: float = b1 if west_lower else a1
 	var normal: Vector3 = Vector3.LEFT if west_lower else Vector3.RIGHT
 	var surf: int = Surf.RUINS if (ka >= KIND_RUIN or kb >= KIND_RUIN) else Surf.ROCK
-	_add_quad(surf, Vector3(xe, lo0, za), Vector3(xe, lo1, zb), Vector3(xe, hi1, zb), Vector3(xe, hi0, za), normal)
+	var flags: Color = FLAGS_LIP if _is_lip(ka, kb) else FLAGS_NONE
+	_add_quad(surf, Vector3(xe, lo0, za), Vector3(xe, lo1, zb), Vector3(xe, hi1, zb), Vector3(xe, hi0, za), normal, flags)
 
 
 ## Wall on the plane z = ze between the north cell (heights a0, a1 at xa, xb) and the south cell (b0, b1).
@@ -465,4 +467,10 @@ func _wall_z(ka: int, kb: int, ze: float, xa: float, xb: float, a0: float, a1: f
 	var hi1: float = b1 if north_lower else a1
 	var normal: Vector3 = Vector3.FORWARD if north_lower else Vector3.BACK
 	var surf: int = Surf.RUINS if (ka >= KIND_RUIN or kb >= KIND_RUIN) else Surf.ROCK
-	_add_quad(surf, Vector3(xa, lo0, ze), Vector3(xb, lo1, ze), Vector3(xb, hi1, ze), Vector3(xa, hi0, ze), normal)
+	var flags: Color = FLAGS_LIP if _is_lip(ka, kb) else FLAGS_NONE
+	_add_quad(surf, Vector3(xa, lo0, ze), Vector3(xb, lo1, ze), Vector3(xb, hi1, ze), Vector3(xa, hi0, ze), normal, flags)
+
+
+## The 1.2 m step between the apron floor and the ledge floor: its face is drawn in the lit band (the ledge lip).
+func _is_lip(ka: int, kb: int) -> bool:
+	return (ka == KIND_FLOOR and kb == KIND_LEDGE) or (ka == KIND_LEDGE and kb == KIND_FLOOR)

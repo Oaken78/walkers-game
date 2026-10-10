@@ -1,6 +1,11 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/world_bands.gdshader" id="1_shader"]
 
 [resource]
 resource_name = "world_ruins"
-albedo_color = Color(0.57647, 0.50196, 0.43137, 1)
-roughness = 1.0
+shader = ExtResource("1_shader")
+shader_parameter/base_color = Color(0.57647, 0.50196, 0.43137, 1)
+shader_parameter/lit_color = Color(0.73333, 0.63922, 0.54902, 1)
+shader_parameter/shadow_color = Color(0.39608, 0.3451, 0.29804, 1)
+shader_parameter/strata = true

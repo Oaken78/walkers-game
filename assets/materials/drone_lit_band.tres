@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/lit_band_overlay.gdshader" id="1_shader"]
+
+[resource]
+resource_name = "drone_lit_band"
+render_priority = 1
+shader = ExtResource("1_shader")
+shader_parameter/lit_add = Color(0.19, 0.19, 0.22, 1)
+shader_parameter/lit_threshold = 0.5
