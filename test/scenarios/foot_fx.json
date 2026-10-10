@@ -545,6 +545,49 @@
    }
   },
   {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "report",
+    "args": [
+     "foot_fx crawler dust"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "peak_live_puffs",
+    "op": "<=",
+    "value": 28
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "peak_live_puffs",
+    "op": ">",
+    "value": 10
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "puff_draw_calls",
+    "op": "<=",
+    "value": 2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
    "assert_no_errors": true
   }
  ]

@@ -1,0 +1,388 @@
+{
+ "scene": "res://scenes/test/valley_pockets.tscn",
+ "seed": 1234,
+ "timeout_frames": 3000,
+ "steps": [
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledge"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.1
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "dust_weight"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledge"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.1
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "screenshot": "dust_weight_crawler"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledge"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     6.0,
+     6.0,
+     90.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.25
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "demo_row",
+    "args": [
+     1,
+     0.0,
+     1.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "screenshot": "dust_shadow"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledge"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 4
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.25
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "demo_row",
+    "args": [1, 2.0, 1.0, 2.5]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "screenshot": "width_strider"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "ledge"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 4
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.25
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "demo_row",
+    "args": [1, 2.0, 1.0, 2.5]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "screenshot": "width_crawler"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_no_errors": true
+  }
+ ]
+}

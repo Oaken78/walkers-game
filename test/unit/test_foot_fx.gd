@@ -9,7 +9,13 @@ var _fx: FootFx
 ## Stands in for a WalkerBody: only the teleport counter.
 class FakeBody:
 	extends Node3D
+	signal foot_planted(leg: int, pos: Vector3, normal: Vector3)
+	signal build_applied
 	var teleport_count: int = 0
+	var build: WalkerBuild = WalkerBuild.scout()
+
+	func get_build() -> WalkerBuild:
+		return build.copy()
 
 
 func before_each() -> void:
@@ -38,35 +44,109 @@ func test_decal_opacity_falls_linearly_to_zero_at_2s() -> void:
 	assert_eq(_fx.decal_ticks_max, 120)
 
 
-func test_puff_lifetime_is_0_2s() -> void:
+func test_puff_lifetime_is_0_8s() -> void:
 	_fx.plant(Vector3.ZERO, Vector3.UP)
-	var puff: MeshInstance3D = _fx.puff_nodes()[0]
-	_ticks(11)
-	assert_true(puff.visible, "still there at 11 ticks")
-	assert_eq(_fx.live_puffs(), 1)
+	_ticks(47)
+	assert_eq(_fx.live_puffs(), 1, "still there at 47 ticks")
 	_ticks(1)
-	assert_false(puff.visible, "gone at 12 ticks (0.2 s)")
-	assert_eq(_fx.live_puffs(), 0)
+	assert_eq(_fx.live_puffs(), 0, "gone at 48 ticks (0.8 s)")
 
 
-func test_puff_is_0_6m_across_and_its_visible_top_is_at_most_0_3m_up() -> void:
-	_fx.plant(Vector3(1, 2, 3), Vector3.UP)
-	for t in [0, 3, 6, 9, 11]:
-		var lo := Vector2(INF, INF)
-		var hi := Vector2(-INF, -INF)
-		var top: float = -INF
-		for i in _fx.puff_discs:
-			var disc: MeshInstance3D = _fx.puff_nodes()[i]
-			var p := Vector2(disc.global_position.x, disc.global_position.z)
-			lo = lo.min(p - Vector2.ONE * disc.scale.x * 0.5)
-			hi = hi.max(p + Vector2.ONE * disc.scale.x * 0.5)
-			# A billboard disc is vertical: its top is its centre plus half its size.
-			top = maxf(top, disc.global_position.y + disc.scale.y * 0.5)
-		assert_true(top - 2.0 <= 0.3 + 0.001, "visible top at tick %d" % t)
-		if t == 11:
-			assert_almost_eq(hi.x - lo.x, 0.6, 0.06, "about 0.6 m across at the end")
-		_ticks(3 if t < 9 else 2)
+func test_width_for_the_three_builds_from_weight_per_leg() -> void:
+	var expected := {&"scout": 1.0504, &"strider": 0.9504, &"crawler": 1.3396}
+	var widths := {}
+	for id: StringName in expected:
+		var body := FakeBody.new()
+		body.build = {&"scout": WalkerBuild.scout(), &"strider": WalkerBuild.strider(), &"crawler": WalkerBuild.crawler()}[id]
+		add_child_autofree(body)
+		var fx := FootFx.new()
+		body.add_child(fx)
+		widths[id] = fx.puff_width()
+		assert_almost_eq(fx.puff_width(), expected[id], 0.005, "W of the %s" % id)
+	assert_almost_eq(widths[&"crawler"] / widths[&"strider"], 1.41, 0.02)
 
+
+func test_width_floor_and_cap() -> void:
+	assert_almost_eq(_fx.puff_width_for(25.0), 0.5, 0.0001)
+	assert_almost_eq(_fx.puff_width_for(10.0), 0.5, 0.0001, "below 25 kg per leg stays 0.5")
+	assert_almost_eq(_fx.puff_width_for(100.0), 2.0, 0.0001)
+	assert_almost_eq(_fx.puff_width_for(300.0), 2.0, 0.0001, "above 100 kg per leg stays 2.0")
+
+
+func test_width_is_recomputed_after_build_applied() -> void:
+	var body := FakeBody.new()
+	add_child_autofree(body)
+	var fx := FootFx.new()
+	body.add_child(fx)
+	assert_almost_eq(fx.puff_width(), 1.0504, 0.005)
+	body.build = WalkerBuild.crawler()
+	body.build_applied.emit()
+	assert_almost_eq(fx.puff_width(), 1.3396, 0.005)
+	fx.advance(0.3)
+	fx.plant(Vector3.ZERO, Vector3.UP)
+	assert_almost_eq(fx.puff_sprite_size(0), 1.3396 * 0.5, 0.003, "sprites are 0.5 W across")
+
+
+func test_alpha_curve() -> void:
+	assert_almost_eq(_fx.puff_alpha(0.08), 0.45, 0.001, "peak within 0.08 s")
+	assert_true(_fx.puff_alpha(0.04) < 0.45)
+	assert_true(_fx.puff_alpha(0.4) <= 0.25, "0.4 s")
+	assert_almost_eq(_fx.puff_alpha(0.8), 0.0, 0.0001, "0 at the end")
+	_fx.plant(Vector3.ZERO, Vector3.UP)
+	_ticks(4)
+	assert_almost_eq(_fx.puff_alpha(_fx.puff_age(0)), 0.45 * (4.0 * DT / 0.08), 0.01)
+
+
+func test_five_sprites_start_within_0_3_w_of_the_pad_and_burst_out() -> void:
+	var pad := Vector3(1, 2, 3)
+	_fx.plant(pad, Vector3.UP)
+	var w: float = _fx.puff_width()
+	assert_eq(_fx.puff_sprites, 5)
+	var far: float = 0.0
+	for k in 5:
+		var p: Vector3 = _fx.puff_sprite_position(0, k)
+		var d: float = Vector2(p.x - pad.x, p.z - pad.z).length()
+		assert_true(d <= 0.3 * w + 0.001, "sprite %d starts inside 0.3 W" % k)
+		far = maxf(far, d)
+	assert_true(far > 0.0, "not all on the pad")
+	_ticks(24)
+	for k in 5:
+		var p2: Vector3 = _fx.puff_sprite_position(0, k)
+		assert_true(Vector2(p2.x - pad.x, p2.z - pad.z).length() > 0.0)
+	assert_almost_eq(_fx.puff_burst_distance(0.4), 0.16, 0.001, "0.8 m/s slowing to 0 by 0.4 s")
+	assert_almost_eq(_fx.puff_burst_distance(0.8), 0.16, 0.001, "stops")
+
+
+func test_puff_stays_where_it_was_planted_and_sinks_after_rising() -> void:
+	_fx.plant(Vector3(1, 0, 3), Vector3.UP)
+	var y_full: float = 0.0
+	_ticks(18)
+	y_full = _fx.puff_sprite_position(0, 0).y
+	_ticks(29)
+	assert_true(_fx.puff_sprite_position(0, 0).y < y_full, "sinks while it fades")
+	assert_almost_eq(_fx.puff_height_share(0.3), 1.0, 0.001)
+	assert_almost_eq(_fx.puff_height_share(0.8), 0.7, 0.001, "sinks by 30 %")
+
+
+func test_sprite_texture_falls_off_to_nothing() -> void:
+	var img: Image = _fx.make_puff_texture().get_image()
+	var res: int = img.get_width()
+	var centre: float = img.get_pixel(res / 2, res / 2).a
+	assert_true(centre > 0.9)
+	var at_09: float = img.get_pixel(res / 2 + int(0.9 * res * 0.5), res / 2).a
+	assert_true(at_09 <= 0.1 * centre, "alpha at 0.9 radius")
+	assert_eq(img.get_pixel(0, res / 2).a, 0.0, "0 at the rim")
+	assert_eq(img.get_pixel(0, 0).a, 0.0)
+
+
+func test_puff_is_one_multimesh_draw() -> void:
+	assert_eq(_fx.puff_draw_calls, 1)
+	var found: int = 0
+	for c in _fx.get_children():
+		if c is MultiMeshInstance3D:
+			found += 1
+			assert_eq((c as MultiMeshInstance3D).multimesh.instance_count, _fx.puff_pool_size * _fx.puff_sprites)
+	assert_eq(found, 1)
 
 func test_pool_reuses_oldest_at_capacity() -> void:
 	var count: int = _fx.decal_pool_size
@@ -94,12 +174,12 @@ func test_puff_pool_reuses_oldest_at_capacity() -> void:
 		_fx.plant(Vector3(i, 0, 0), Vector3.UP)
 		_fx.advance(0.001)
 	assert_eq(_fx.live_puffs(), _fx.puff_pool_size, "capacity, not more")
-	# The first puff's discs now stand at the 17th plant (x = 16), with a fresh life.
-	assert_almost_eq(_fx.puff_nodes()[0].global_position.x, 16.0, 0.5)
-	_ticks(11)
-	assert_true(_fx.puff_nodes()[0].visible, "reused puff lives its own 0.2 s")
+	# The first puff's sprites now stand at the newest plant, with a fresh life.
+	assert_almost_eq(_fx.puff_sprite_position(0, 0).x, float(count - 1), 0.5)
+	_ticks(47)
+	assert_true(_fx.puff_age(0) >= 0.0, "reused puff lives its own 0.8 s")
 	_ticks(1)
-	assert_false(_fx.puff_nodes()[0].visible)
+	assert_true(_fx.puff_age(0) < 0.0)
 
 
 func test_no_nodes_created_after_warm_up() -> void:
