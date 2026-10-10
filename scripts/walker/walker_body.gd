@@ -270,7 +270,7 @@ const SIGHT_MARGIN: float = 0.1
 @export var decel_time: float = 0.20
 @export var turn_ramp_time: float = 0.10
 @export var strafe_ratio: float = 0.75
-@export var aim_turn_factor: float = 0.6
+@export var aim_turn_factor: float = 1.0
 @export var body_height_ratio: float = 0.6
 ## Each hip sits this x its own reach above the foot plane, on a strut under the chassis side.
 @export var hip_height_ratio: float = 0.5

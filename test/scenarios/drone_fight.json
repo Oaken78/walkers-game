@@ -1,229 +1,2327 @@
 {
  "scene": "res://scenes/test/drone_fight.tscn",
  "seed": 1234,
- "timeout_frames": 7000,
+ "timeout_frames": 7100,
  "steps": [
-  {"wait_frames": 10},
-  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
-  {"call": {"node": ".", "method": "duel", "args": ["idle", 20.0]}},
-  {"expect_signal": {"node": ".", "signal": "run_finished", "timeout_frames": 1300}},
-  {"call": {"node": ".", "method": "log_run", "args": ["idle"]}},
-  {"call": {"node": ".", "method": "mark_idle", "args": []}},
-  {"assert_prop": {"node": ".", "prop": "seen_alert", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "seen_strafe", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "seen_wind_up", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "seen_recover", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "deaths", "op": "==", "value": 0}},
-  {"assert_prop": {"node": ".", "prop": "windups", "op": ">=", "value": 10}},
-  {"assert_prop": {"node": ".", "prop": "shots_by_drones", "op": ">=", "value": 10}},
-  {"assert_prop": {"node": ".", "prop": "telegraph_min_s", "op": ">=", "value": 0.5999}},
-  {"assert_prop": {"node": ".", "prop": "cycle_min_s", "op": ">=", "value": 1.4999}},
-  {"assert_prop": {"node": ".", "prop": "windup_gap_min_s", "op": ">=", "value": 0.3999}},
-  {"assert_prop": {"node": ".", "prop": "hold_ticks_seen", "op": ">=", "value": 300}},
-  {"assert_prop": {"node": ".", "prop": "hold_speed_max", "op": "<=", "value": 0.05}},
-  {"assert_prop": {"node": ".", "prop": "hold_drift_max_m", "op": "<=", "value": 0.1}},
-  {"assert_prop": {"node": ".", "prop": "brake_s_max", "op": "<=", "value": 0.1001}},
-  {"assert_prop": {"node": ".", "prop": "resume_s_min", "op": ">=", "value": 0.25}},
-  {"assert_prop": {"node": ".", "prop": "resume_s_max", "op": "<=", "value": 0.32}},
-  {"assert_prop": {"node": ".", "prop": "orbit_speed_max", "op": "<=", "value": 6.001}},
-  {"assert_prop": {"node": ".", "prop": "orbit_radius_min", "op": ">=", "value": 11.9}},
-  {"assert_prop": {"node": ".", "prop": "orbit_radius_max", "op": "<=", "value": 18.1}},
-  {"assert_prop": {"node": ".", "prop": "bolt_aim_err_max_deg", "op": "<=", "value": 0.01}},
-  {"assert_prop": {"node": ".", "prop": "bolts_missed", "op": "==", "value": 0}},
-  {"assert_prop": {"node": ".", "prop": "engaged_max", "op": "<=", "value": 4}},
-  {"call": {"node": ".", "method": "duel", "args": ["strafe", 20.0, 1.0]}},
-  {"expect_signal": {"node": ".", "signal": "run_finished", "timeout_frames": 1300}},
-  {"call": {"node": ".", "method": "log_run", "args": ["strafe"]}},
-  {"call": {"node": ".", "method": "mark_strafe", "args": []}},
-  {"assert_prop": {"node": ".", "prop": "seen_wind_up", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "hold_speed_max", "op": "<=", "value": 0.05}},
-  {"assert_prop": {"node": ".", "prop": "hold_drift_max_m", "op": "<=", "value": 0.1}},
-  {"assert_prop": {"node": ".", "prop": "windup_gap_min_s", "op": ">=", "value": 0.3999}},
-  {"assert_prop": {"node": ".", "prop": "strafe_ratio", "op": "<=", "value": 0.4}},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "set_spread", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 15.0, 4.0, "dormant"]}},
-  {"call": {"node": ".", "method": "look_at_drone", "args": []}},
-  {"wait_frames": 40},
-  {"assert_prop": {"node": ".", "prop": "aim_on_enemy", "op": "==", "value": true}},
-  {"call": {"node": ".", "method": "hold_action", "args": ["fire", true]}},
-  {"wait_frames": 70},
-  {"call": {"node": ".", "method": "hold_action", "args": ["fire", false]}},
-  {"assert_prop": {"node": ".", "prop": "first_hits", "op": "==", "value": 3}},
-  {"assert_prop": {"node": ".", "prop": "first_dead", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "deaths", "op": "==", "value": 1}},
-  {"assert_prop": {"node": ".", "prop": "field_deaths", "op": "==", "value": 1}},
-  {"wait_frames": 150},
-  {"call": {"node": ".", "method": "log_run", "args": ["kill"]}},
-  {"assert_prop": {"node": ".", "prop": "scrap_drop_min", "op": ">=", "value": 3}},
-  {"assert_prop": {"node": ".", "prop": "scrap_drop_max", "op": "<=", "value": 8}},
-  {"assert_prop": {"node": ".", "prop": "scrap_dropped_total", "op": ">=", "value": 3}},
-  {"assert_prop": {"node": ".", "prop": "pieces_match_drop", "op": "==", "value": true}},
-  {"call": {"node": ".", "method": "walk_to_drop", "args": []}},
-  {"wait_frames": 90},
-  {"assert_prop": {"node": ".", "prop": "carried_scrap", "op": ">=", "value": 3}},
-  {"assert_prop": {"node": ".", "prop": "scrap_matched", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "scrap_conserved", "op": "==", "value": true}},
-  {"call": {"node": ".", "method": "log_scrap", "args": ["kill"]}},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 15.0, 4.0, "engaged"]}},
-  {"call": {"node": ".", "method": "set_orbit", "args": [0, 15.0, 1, 0.0]}},
-  {"wait_frames": 20},
-  {"assert_prop": {"node": ".", "prop": "first_state", "op": "==", "value": "WIND_UP"}},
-  {"call": {"node": ".", "method": "hit_first", "args": [15.0]}},
-  {"call": {"node": ".", "method": "hit_first", "args": [15.0]}},
-  {"wait_frames": 30},
-  {"assert_prop": {"node": ".", "prop": "first_hits", "op": "==", "value": 2}},
-  {"assert_prop": {"node": ".", "prop": "first_dead", "op": "==", "value": false}},
-  {"assert_prop": {"node": ".", "prop": "shots_by_drones", "op": "==", "value": 1}},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 15.0, 4.0, "engaged"]}},
-  {"call": {"node": ".", "method": "set_orbit", "args": [0, 15.0, 1, 0.0]}},
-  {"wait_frames": 20},
-  {"assert_prop": {"node": ".", "prop": "first_state", "op": "==", "value": "WIND_UP"}},
-  {"call": {"node": ".", "method": "hit_first", "args": [45.0]}},
-  {"assert_prop": {"node": ".", "prop": "first_dead", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "deaths", "op": "==", "value": 1}},
-  {"assert_prop": {"node": ".", "prop": "shots_by_drones", "op": "==", "value": 0}},
-  {"wait_frames": 100},
-  {"assert_prop": {"node": ".", "prop": "shots_by_drones", "op": "==", "value": 1}},
-  {"assert_prop": {"node": ".", "prop": "telegraph_min_s", "op": ">=", "value": 0.5999}},
-  {"assert_prop": {"node": ".", "prop": "bolts_hit_player", "op": "==", "value": 1}},
-  {"call": {"node": ".", "method": "log_run", "args": ["killed_in_wind_up"]}},
-  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["still"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["still"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["scout_still"]}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": ">", "value": 0.0}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": "<=", "value": 1.0}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["away"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["away"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["scout_away"]}},
-  {"assert_prop": {"node": ".", "prop": "race_away_s", "op": ">", "value": 0.0}},
-  {"call": {"node": ".", "method": "use_build", "args": ["strider"]}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["still"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["still"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["strider_still"]}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": ">", "value": 0.0}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": "<=", "value": 1.0}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["away"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["away"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["strider_away"]}},
-  {"assert_prop": {"node": ".", "prop": "race_away_s", "op": ">", "value": 0.0}},
-  {"call": {"node": ".", "method": "use_build", "args": ["crawler"]}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["still"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["still"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["crawler_still"]}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": ">", "value": 0.0}},
-  {"assert_prop": {"node": ".", "prop": "race_still_s", "op": "<=", "value": 1.0}},
-  {"call": {"node": ".", "method": "begin_race", "args": ["away"]}},
-  {"expect_signal": {"node": ".", "signal": "race_finished", "timeout_frames": 200}},
-  {"call": {"node": ".", "method": "end_race", "args": ["away"]}},
-  {"call": {"node": ".", "method": "log_race", "args": ["crawler_away"]}},
-  {"assert_prop": {"node": ".", "prop": "race_away_s", "op": ">", "value": 0.0}},
-  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
-  {"call": {"node": ".", "method": "set_spread", "args": [-1.0]}},
-  {"call": {"node": ".", "method": "begin_tracker_set", "args": [false]}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [1, 40.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [1, 90.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [-1, 40.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [-1, 90.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "log_tracker", "args": ["scout"]}},
-  {"assert_prop": {"node": ".", "prop": "tracker_trials", "op": "==", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "tracker_kills", "op": "==", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "tracker_kill_max_s", "op": "<=", "value": 3.0}},
-  {"assert_prop": {"node": ".", "prop": "tracker_hold_rate", "op": ">=", "value": 0.8}},
-  {"call": {"node": ".", "method": "use_build", "args": ["crawler"]}},
-  {"call": {"node": ".", "method": "set_spread", "args": [-1.0]}},
-  {"call": {"node": ".", "method": "begin_tracker_set", "args": [false]}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [1, 40.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [1, 90.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [-1, 40.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "tracker_trial", "args": [-1, 90.0]}},
-  {"expect_signal": {"node": ".", "signal": "trial_finished", "timeout_frames": 500}},
-  {"call": {"node": ".", "method": "log_tracker", "args": ["crawler"]}},
-  {"assert_prop": {"node": ".", "prop": "tracker_trials", "op": "==", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "tracker_kills", "op": "==", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "tracker_kill_max_s", "op": "<=", "value": 3.0}},
-  {"assert_prop": {"node": ".", "prop": "tracker_hold_rate", "op": ">=", "value": 0.8}},
-  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_group", "args": [3, 60.0, 22.0]}},
-  {"call": {"node": ".", "method": "add_group", "args": [3, -60.0, 22.0]}},
-  {"call": {"node": ".", "method": "begin_cost", "args": []}},
-  {"wait_frames": 600},
-  {"call": {"node": ".", "method": "end_cost", "args": ["six_drones_four_active"]}},
-  {"call": {"node": ".", "method": "log_run", "args": ["cap"]}},
-  {"assert_prop": {"node": ".", "prop": "drone_count", "op": "==", "value": 6}},
-  {"assert_prop": {"node": ".", "prop": "engaged_max", "op": "==", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "field_active_max", "op": "<=", "value": 4}},
-  {"assert_prop": {"node": ".", "prop": "windup_gap_min_s", "op": ">=", "value": 0.3999}},
-  {"assert_prop": {"node": ".", "prop": "cost_p99_ms", "op": "<=", "value": 1.5}},
-  {"assert_prop": {"node": ".", "prop": "bolts_refused", "op": "==", "value": 0}},
-  {"call": {"node": ".", "method": "move_walker_to", "args": [0.0, 120.0]}},
-  {"wait_frames": 420},
-  {"assert_prop": {"node": ".", "prop": "seen_patrol", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "engaged_now", "op": "==", "value": 0}},
-  {"assert_prop": {"node": ".", "prop": "all_idle", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "max_home_dist", "op": "<=", "value": 0.1}},
-  {"call": {"node": ".", "method": "use_build", "args": ["scout"]}},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [15.0, 15.0, 6.0, "engaged"]}},
-  {"call": {"node": ".", "method": "set_orbit", "args": [0, 15.0, 1, 0.3]}},
-  {"call": {"node": ".", "method": "freeze_at_wind_up", "args": [0.5]}},
-  {"wait_frames": 90},
-  {"assert_prop": {"node": ".", "prop": "frozen", "op": "==", "value": true}},
-  {"assert_prop": {"node": ".", "prop": "first_state", "op": "==", "value": "WIND_UP"}},
-  {"assert_prop": {"node": ".", "prop": "first_glow", "op": ">=", "value": 0.8}},
-  {"wait_frames": 3},
-  {"call": {"node": ".", "method": "keep_frame", "args": []}},
-  {"screenshot": "windup"},
-  {"call": {"node": ".", "method": "set_grayscale", "args": [true]}},
-  {"wait_frames": 3},
-  {"screenshot": "windup_gray"},
-  {"call": {"node": ".", "method": "set_grayscale", "args": [false]}},
-  {"call": {"node": ".", "method": "paint_glow", "args": [0.0]}},
-  {"wait_frames": 3},
-  {"call": {"node": ".", "method": "keep_frame", "args": []}},
-  {"screenshot": "windup_idle"},
-  {"call": {"node": ".", "method": "hide_first_drone", "args": [true]}},
-  {"wait_frames": 3},
-  {"call": {"node": ".", "method": "keep_frame", "args": []}},
-  {"call": {"node": ".", "method": "hide_first_drone", "args": [false]}},
-  {"call": {"node": ".", "method": "measure_luma", "args": []}},
-  {"assert_prop": {"node": ".", "prop": "luma_ok", "op": "==", "value": true}},
-  {"call": {"node": ".", "method": "spawn", "args": [30.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 25.0, 3.0, "dormant"]}},
-  {"call": {"node": ".", "method": "look_at_drone", "args": []}},
-  {"wait_frames": 40},
-  {"call": {"node": ".", "method": "log_marks", "args": ["reticle_offset"]}},
-  {"assert_prop": {"node": ".", "prop": "aim_on_enemy", "op": "==", "value": true}},
-  {"assert_prop": {"node": "%AimMarks", "prop": "ring_visible", "op": "==", "value": true}},
-  {"assert_prop": {"node": "%AimMarks", "prop": "pip_visible", "op": "==", "value": false}},
-  {"assert_prop": {"node": "%AimMarks", "prop": "dot_visible", "op": "==", "value": true}},
-  {"assert_prop": {"node": "%AimMarks", "prop": "ring_to_dot_px", "op": ">", "value": 150.0}},
-  {"screenshot": "reticle_offset"},
-  {"call": {"node": ".", "method": "spawn", "args": [0.0]}},
-  {"call": {"node": ".", "method": "add_drone", "args": [0.0, 12.0, 6.0, "dormant"]}},
-  {"call": {"node": ".", "method": "set_camera", "args": [0.0, -20.0]}},
-  {"wait_frames": 40},
-  {"call": {"node": ".", "method": "log_marks", "args": ["aim_up"]}},
-  {"assert_prop": {"node": ".", "prop": "camera_pitch_deg", "op": "==", "value": -20.0}},
-  {"assert_prop": {"node": ".", "prop": "aim_on_enemy", "op": "==", "value": true}},
-  {"assert_prop": {"node": "%AimMarks", "prop": "pip_visible", "op": "==", "value": true}},
-  {"screenshot": "aim_up"},
-  {"assert_no_errors": true}
+  {
+   "wait_frames": 10
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "duel",
+    "args": [
+     "idle",
+     16.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "run_finished",
+    "timeout_frames": 1100
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_run",
+    "args": [
+     "idle"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark_idle",
+    "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_alert",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_strafe",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_wind_up",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_recover",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "deaths",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "windups",
+    "op": ">=",
+    "value": 10
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_by_drones",
+    "op": ">=",
+    "value": 10
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "telegraph_min_s",
+    "op": ">=",
+    "value": 0.5999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "cycle_min_s",
+    "op": ">=",
+    "value": 1.4999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "windup_gap_min_s",
+    "op": ">=",
+    "value": 0.3999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hold_ticks_seen",
+    "op": ">=",
+    "value": 300
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hold_speed_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hold_drift_max_m",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "brake_s_max",
+    "op": "<=",
+    "value": 0.1001
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "resume_s_min",
+    "op": ">=",
+    "value": 0.25
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "resume_s_max",
+    "op": "<=",
+    "value": 0.32
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_speed_max",
+    "op": "<=",
+    "value": 6.001
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_radius_min",
+    "op": ">=",
+    "value": 11.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "orbit_radius_max",
+    "op": "<=",
+    "value": 18.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "bolt_aim_err_max_deg",
+    "op": "<=",
+    "value": 0.01
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "bolts_missed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "engaged_max",
+    "op": "<=",
+    "value": 4
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "duel",
+    "args": [
+     "strafe",
+     16.0,
+     1.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "run_finished",
+    "timeout_frames": 1100
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_run",
+    "args": [
+     "strafe"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "mark_strafe",
+    "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_wind_up",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hold_speed_max",
+    "op": "<=",
+    "value": 0.05
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "hold_drift_max_m",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "windup_gap_min_s",
+    "op": ">=",
+    "value": 0.3999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "strafe_ratio",
+    "op": "<=",
+    "value": 0.4
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     0.0,
+     15.0,
+     4.0,
+     "dormant"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_drone",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 70
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_hits",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_dead",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "deaths",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "field_deaths",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_run",
+    "args": [
+     "kill"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "scrap_drop_min",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "scrap_drop_max",
+    "op": "<=",
+    "value": 8
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "scrap_dropped_total",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pieces_match_drop",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "walk_to_drop",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "carried_scrap",
+    "op": ">=",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "scrap_matched",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "scrap_conserved",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_scrap",
+    "args": [
+     "kill"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     0.0,
+     15.0,
+     4.0,
+     "engaged"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_orbit",
+    "args": [
+     0,
+     15.0,
+     1,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_state",
+    "op": "==",
+    "value": "WIND_UP"
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hit_first",
+    "args": [
+     15.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hit_first",
+    "args": [
+     15.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_hits",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_dead",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_by_drones",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     0.0,
+     15.0,
+     4.0,
+     "engaged"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_orbit",
+    "args": [
+     0,
+     15.0,
+     1,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 20
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_state",
+    "op": "==",
+    "value": "WIND_UP"
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hit_first",
+    "args": [
+     45.0
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_dead",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "deaths",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_by_drones",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_by_drones",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "telegraph_min_s",
+    "op": ">=",
+    "value": 0.5999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "bolts_hit_player",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_run",
+    "args": [
+     "killed_in_wind_up"
+    ]
+   }
+  },
+  {
+   "wait_frames": 1
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "scout still"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": ">=",
+    "value": 29
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": "<=",
+    "value": 31
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "scout with A toward it"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": ">",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_gain",
+    "op": ">=",
+    "value": 0.3
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "strider still"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": ">=",
+    "value": 29
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": "<=",
+    "value": 31
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "strider with A toward it"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": ">",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_gain",
+    "op": ">=",
+    "value": 0.3
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "crawler still"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": ">=",
+    "value": 29
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_still_ticks",
+    "op": "<=",
+    "value": 31
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "swing_finished",
+    "timeout_frames": 200
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_swing",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_swing",
+    "args": [
+     "crawler with A toward it"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": ">",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_assist_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "swing_gain",
+    "op": ">=",
+    "value": 0.3
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_tracker_set",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     40.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     -1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_tracker",
+    "args": [
+     "scout standing"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_trials",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kills",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kill_max_s",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_hold_rate",
+    "op": ">=",
+    "value": 0.8
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_tracker_set",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     40.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     -1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_tracker",
+    "args": [
+     "scout strafing"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_trials",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kills",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kill_max_s",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_hold_rate",
+    "op": ">=",
+    "value": 0.8
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_tracker_set",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     40.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     -1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_tracker",
+    "args": [
+     "crawler standing"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_trials",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kills",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kill_max_s",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_hold_rate",
+    "op": ">=",
+    "value": 0.8
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_tracker_set",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     40.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     -1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "tracker_trial",
+    "args": [
+     1,
+     90.0
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "trial_finished",
+    "timeout_frames": 500
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_tracker",
+    "args": [
+     "crawler strafing"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_trials",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kills",
+    "op": "==",
+    "value": 3
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_kill_max_s",
+    "op": "<=",
+    "value": 3.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "tracker_hold_rate",
+    "op": ">=",
+    "value": 0.8
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_pair",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "pair_finished",
+    "timeout_frames": 700
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_pair",
+    "args": [
+     "scout body still"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_pair",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "pair_finished",
+    "timeout_frames": 700
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_pair",
+    "args": [
+     "scout with A/D toward the next drone"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_pair",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "pair_finished",
+    "timeout_frames": 700
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_pair",
+    "args": [
+     "crawler body still"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     -1.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_pair",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "expect_signal": {
+    "node": ".",
+    "signal": "pair_finished",
+    "timeout_frames": 700
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_pair",
+    "args": [
+     "crawler with A/D toward the next drone"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_group",
+    "args": [
+     3,
+     60.0,
+     22.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_group",
+    "args": [
+     3,
+     -60.0,
+     22.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_cost",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 600
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_cost",
+    "args": [
+     "six_drones_four_active"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_run",
+    "args": [
+     "cap"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "drone_count",
+    "op": "==",
+    "value": 6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "engaged_max",
+    "op": "==",
+    "value": 4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "field_active_max",
+    "op": "<=",
+    "value": 4
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "windup_gap_min_s",
+    "op": ">=",
+    "value": 0.3999
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "cost_p99_ms",
+    "op": "<=",
+    "value": 1.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "bolts_refused",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "move_walker_to",
+    "args": [
+     0.0,
+     120.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 420
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "seen_patrol",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "engaged_now",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "all_idle",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "max_home_dist",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     15.0,
+     15.0,
+     6.0,
+     "engaged"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_orbit",
+    "args": [
+     0,
+     15.0,
+     1,
+     0.3
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "freeze_at_wind_up",
+    "args": [
+     0.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "frozen",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_state",
+    "op": "==",
+    "value": "WIND_UP"
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "first_glow",
+    "op": ">=",
+    "value": 0.8
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "keep_frame",
+    "args": []
+   }
+  },
+  {
+   "screenshot": "windup"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_grayscale",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "screenshot": "windup_gray"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_grayscale",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "paint_glow",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "keep_frame",
+    "args": []
+   }
+  },
+  {
+   "screenshot": "windup_idle"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hide_first_drone",
+    "args": [
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "keep_frame",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hide_first_drone",
+    "args": [
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "measure_luma",
+    "args": []
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "luma_ok",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     0.0,
+     12.0,
+     6.0,
+     "dormant"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     -20.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "aim_up"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "camera_pitch_deg",
+    "op": "==",
+    "value": -20.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 12.0
+   }
+  },
+  {
+   "screenshot": "aim_up"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_drone",
+    "args": [
+     40.0,
+     20.0,
+     3.0,
+     "dormant"
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_drone",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 6
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "reticle_swing"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "cannons",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": ">",
+    "value": 60.0
+   }
+  },
+  {
+   "screenshot": "reticle_swing"
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "reticle_settled"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     45.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "reticle_gray"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "screenshot": "reticle_gray"
+  },
+  {
+   "assert_no_errors": true
+  }
  ]
 }

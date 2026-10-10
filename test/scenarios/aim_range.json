@@ -1,7 +1,7 @@
 {
  "scene": "res://scenes/test/aim_range.tscn",
  "seed": 1234,
- "timeout_frames": 7000,
+ "timeout_frames": 7100,
  "steps": [
   {
    "wait_frames": 10
@@ -44,7 +44,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 25
   },
   {
    "call": {
@@ -54,7 +54,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 50
   },
   {
    "assert_prop": {
@@ -66,10 +66,58 @@
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "limited",
+    "node": ".",
+    "prop": "gray_cannons",
     "op": "==",
-    "value": false
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "chevrons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_thick",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_line_err_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
    }
   },
   {
@@ -90,7 +138,7 @@
    }
   },
   {
-   "wait_frames": 100
+   "wait_frames": 75
   },
   {
    "call": {
@@ -103,45 +151,21 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 30
   },
   {
    "call": {
     "node": ".",
     "method": "log_checks",
     "args": [
-     "on_target scout 25 m"
+     "on_target scout"
     ]
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "convergence_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shot_yaw_err_max_deg",
+    "prop": "barrel_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -151,7 +175,7 @@
     "node": ".",
     "prop": "shots_checked",
     "op": ">=",
-    "value": 7
+    "value": 5
    }
   },
   {
@@ -213,115 +237,6 @@
   {
    "call": {
     "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "set_spread",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "add_target",
-    "args": [
-     15.0,
-     4.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "look_at_target",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_marks",
-    "args": [
-     "on_target"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_visible",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dot_visible",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "thick",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "chevron_visible",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_on_enemy",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "screenshot": "on_target"
-  },
-  {
-   "call": {
-    "node": ".",
     "method": "use_build",
     "args": [
      "strider"
@@ -357,7 +272,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 25
   },
   {
    "call": {
@@ -367,7 +282,71 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 50
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "chevrons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_thick",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_line_err_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
+   }
   },
   {
    "call": {
@@ -387,7 +366,7 @@
    }
   },
   {
-   "wait_frames": 100
+   "wait_frames": 75
   },
   {
    "call": {
@@ -400,7 +379,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 30
   },
   {
    "call": {
@@ -414,23 +393,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shot_yaw_err_max_deg",
+    "prop": "barrel_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -440,7 +403,7 @@
     "node": ".",
     "prop": "shots_checked",
     "op": ">=",
-    "value": 7
+    "value": 5
    }
   },
   {
@@ -505,7 +468,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 25
   },
   {
    "call": {
@@ -515,7 +478,71 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 50
+  },
+  {
+   "assert_prop": {
+    "node": "%WeaponRig",
+    "prop": "aim_on_enemy",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "chevrons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_thick",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_line_err_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
+   }
   },
   {
    "call": {
@@ -535,7 +562,7 @@
    }
   },
   {
-   "wait_frames": 100
+   "wait_frames": 75
   },
   {
    "call": {
@@ -548,7 +575,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 30
   },
   {
    "call": {
@@ -562,23 +589,7 @@
   {
    "assert_prop": {
     "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shot_yaw_err_max_deg",
+    "prop": "barrel_err_max_deg",
     "op": "<=",
     "value": 0.1
    }
@@ -588,7 +599,7 @@
     "node": ".",
     "prop": "shots_checked",
     "op": ">=",
-    "value": 14
+    "value": 10
    }
   },
   {
@@ -596,7 +607,7 @@
     "node": ".",
     "prop": "shots_unsettled",
     "op": "<=",
-    "value": 2
+    "value": 1
    }
   },
   {
@@ -616,19 +627,12 @@
    }
   },
   {
-   "assert_prop": {
+   "call": {
     "node": ".",
-    "prop": "convergence_max_deg",
-    "op": ">=",
-    "value": 0.3
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "convergence_max_deg",
-    "op": "<=",
-    "value": 4.0
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
    }
   },
   {
@@ -652,11 +656,21 @@
   {
    "call": {
     "node": ".",
-    "method": "set_camera",
+    "method": "add_target",
     "args": [
-     0.0,
-     35.0
+     15.0,
+     4.0
     ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
    }
   },
   {
@@ -665,60 +679,372 @@
   {
    "call": {
     "node": ".",
-    "method": "reset_checks",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_checks",
+    "method": "log_marks",
     "args": [
-     "close crawler d=4"
+     "on_target"
     ]
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
+    "node": ".",
+    "prop": "rings_visible",
     "op": "==",
-    "value": 4.0
+    "value": 1
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
+    "prop": "rings_thick",
+    "op": "==",
+    "value": 1
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "convergence_max_deg",
+    "prop": "chevrons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "screenshot": "on_target"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_watch",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_watch",
+    "args": [
+     "scout walking 3 s at pitch 20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_ticks",
     "op": ">=",
-    "value": 3.0
+    "value": 95
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "convergence_max_deg",
-    "op": "<=",
-    "value": 4.0
+    "prop": "gray_share",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_watch",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_watch",
+    "args": [
+     "strider walking 3 s at pitch 20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_ticks",
+    "op": ">=",
+    "value": 95
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_share",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_watch",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 100
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "end_watch",
+    "args": [
+     "crawler walking 3 s at pitch 20"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "watch_ticks",
+    "op": ">=",
+    "value": 95
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_share",
+    "op": "==",
+    "value": 0.0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
    }
   },
   {
@@ -740,164 +1066,230 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
-    "method": "begin_dash_watch",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
+    "method": "set_spread",
     "args": [
-     "move_forward",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 180
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "move_forward",
-     false
+     0.0
     ]
    }
   },
   {
    "call": {
     "node": ".",
-    "method": "end_dash_watch",
+    "method": "set_p_chassis",
     "args": [
-     "scout walking 3 s at pitch 20, no target"
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 35
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     90.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 45
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "swing yaw 90 scout"
     ]
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "watch_ticks",
+    "prop": "track_swing_deg",
     "op": ">=",
-    "value": 175
+    "value": 89.5
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "limited_share",
-    "op": ">=",
-    "value": 0.9
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "watch_dashed",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "watch_marks_dashed",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "fire",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 4
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "dash_on_latency_ticks",
-    "op": ">=",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "dash_on_latency_ticks",
+    "prop": "track_swing_deg",
     "op": "<=",
-    "value": 1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "ring_dashed",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "wait_frames": 20
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "fire",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_marks",
-    "args": [
-     "after fire"
-    ]
+    "value": 90.5
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "dash_off_latency_ticks",
+    "prop": "track_reach_ticks",
     "op": ">=",
-    "value": 28
+    "value": 29
    }
   },
   {
    "assert_prop": {
     "node": ".",
-    "prop": "dash_off_latency_ticks",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 31
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_step_yaw_max_deg",
+    "op": "<=",
+    "value": 3.015
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_step_yaw_max_deg",
+    "op": ">=",
+    "value": 2.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 35
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     0.0,
+     30.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 25
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "swing pitch 30 scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_swing_deg",
+    "op": ">=",
+    "value": 29.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_swing_deg",
+    "op": "<=",
+    "value": 30.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 11
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_step_pitch_max_deg",
+    "op": "<=",
+    "value": 3.015
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 35
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     -90.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 45
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "swing yaw -90 scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 29
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
     "op": "<=",
     "value": 31
    }
@@ -905,34 +1297,69 @@
   {
    "call": {
     "node": ".",
-    "method": "log_checks",
+    "method": "set_p_chassis",
     "args": [
-     "dash rule"
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 35
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     150.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "swing yaw 150 scout"
     ]
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "ring_dashed",
-    "op": "==",
-    "value": false
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 49
    }
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": false
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 51
    }
   },
   {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "limited",
-    "op": "==",
-    "value": true
+   "call": {
+    "node": ".",
+    "method": "stop_swing",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
    }
   },
   {
@@ -947,19 +1374,371 @@
   {
    "call": {
     "node": ".",
-    "method": "add_slab",
+    "method": "set_spread",
     "args": [
-     6.0
+     0.0
     ]
    }
   },
   {
    "call": {
     "node": ".",
-    "method": "set_camera",
+    "method": "set_p_chassis",
     "args": [
      0.0,
-     30.0
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     90.0,
+     0.0,
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "stop_swing",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "assist scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     90.0,
+     0.0,
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "stop_swing",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "assist strider"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     0.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "swing_to",
+    "args": [
+     90.0,
+     0.0,
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "stop_swing",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
+    "args": [
+     "assist crawler"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": ">=",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "track_reach_ticks",
+    "op": "<=",
+    "value": 21
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_fixed",
+    "args": [
+     30.0,
+     0.0,
+     50.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 50
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_yaw_deg",
+    "op": ">=",
+    "value": 29.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_track",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "turn_body",
+    "args": [
+     "turn_left"
     ]
    }
   },
@@ -969,56 +1748,101 @@
   {
    "call": {
     "node": ".",
-    "method": "log_marks",
+    "method": "stop_swing",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_track",
     "args": [
-     "limited on an enemy"
+     "hold strider turning 1.0 s"
     ]
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "limited",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "track_yaw_rate_max_dps",
+    "op": ">=",
+    "value": 120.0
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_on_enemy",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "track_err_max_deg",
+    "op": "<=",
+    "value": 1.0
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "ring_dashed",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
    }
   },
   {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": true
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "turn_left",
+     false
+    ]
    }
   },
   {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "thick",
-    "op": "==",
-    "value": true
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
    }
   },
   {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     20.0,
+     -19.0,
+     6.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_visible",
+    "node": ".",
+    "prop": "live_0",
     "op": "==",
     "value": true
    }
@@ -1026,7 +1850,722 @@
   {
    "call": {
     "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w0",
+    "op": ">=",
+    "value": 7
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w0",
+    "op": "<=",
+    "value": 9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "arc gate -19.0"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     20.0,
+     -20.4,
+     6.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "live_0",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_chassis",
+    "args": [
+     20.0,
+     -20.6,
+     6.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "live_0",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "arc gate -20.6"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w0",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": ">=",
+    "value": -20.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": "<=",
+    "value": -19.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_yaw_deg",
+    "op": ">=",
+    "value": 19.9
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_yaw_deg",
+    "op": "<=",
+    "value": 20.1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "arc gate -20.6"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     0.0,
+     5.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 0 dist 5"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     90.0,
+     5.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 90 dist 5"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     180.0,
+     5.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 180 dist 5"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     0.0,
+     15.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 0 dist 15"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     90.0,
+     15.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 90 dist 15"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     180.0,
+     15.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 180 dist 15"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     0.0,
+     60.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 165
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 0 dist 60"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     90.0,
+     60.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 165
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 90 dist 60"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_land",
+    "args": [
+     180.0,
+     60.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 165
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_land",
+    "args": [
+     "yaw 180 dist 60"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_done",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_shots",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_impacts",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "land_err_max_deg",
+    "op": "<=",
+    "value": 0.2
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
     "args": [
      0.0
     ]
@@ -1053,23 +2592,961 @@
    }
   },
   {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "begin_cost",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 240
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
    "wait_frames": 30
   },
   {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
-    "op": ">=",
-    "value": 24.0
+   "call": {
+    "node": ".",
+    "method": "end_cost",
+    "args": [
+     "crawler two cannons"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "crawler two cannons"
+    ]
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
-    "op": "<=",
-    "value": 25.0
+    "node": ".",
+    "prop": "shots_w0",
+    "op": ">=",
+    "value": 14
    }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w1",
+    "op": ">=",
+    "value": 14
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_min_ticks",
+    "op": ">=",
+    "value": 7
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_max_ticks",
+    "op": "<=",
+    "value": 8
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_mean_s",
+    "op": ">=",
+    "value": 0.115
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_mean_s",
+    "op": "<=",
+    "value": 0.135
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shot_err_max_deg",
+    "op": "<=",
+    "value": 0.5
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "barrel_err_max_deg",
+    "op": "<=",
+    "value": 0.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pool_refused",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rig_p99_ms",
+    "op": "<=",
+    "value": 0.9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_p_split",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "live_0",
+    "op": "==",
+    "value": true
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "live_1",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 120
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_checks",
+    "args": [
+     "crawler top_1 gray"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w1",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_w0",
+    "op": ">=",
+    "value": 7
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_count",
+    "op": ">=",
+    "value": 6
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_min_ticks",
+    "op": "==",
+    "value": 15
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gap_max_ticks",
+    "op": "==",
+    "value": 15
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     45.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "feet scout"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": ">=",
+    "value": -20.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": "<=",
+    "value": -19.9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 70
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_total",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "screenshot": "limit"
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     20.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "strider"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     45.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "feet strider"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": ">=",
+    "value": -20.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": "<=",
+    "value": -19.9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 70
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_total",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     20.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     45.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "feet crawler"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": ">=",
+    "value": -20.1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "pose_pitch_deg",
+    "op": "<=",
+    "value": -19.9
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "reset_checks",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 70
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "fire",
+     false
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "shots_total",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     20.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 3
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     60.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "straight down"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "live_0",
+    "op": "==",
+    "value": false
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_slab",
+    "args": [
+     4.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_camera",
+    "args": [
+     0.0,
+     45.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 90
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "gray on an enemy"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "gray_cannons",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_dashed",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_thick",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "add_target",
+    "args": [
+     25.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 40
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "look_at_target",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1082,7 +3559,7 @@
    }
   },
   {
-   "wait_frames": 30
+   "wait_frames": 4
   },
   {
    "call": {
@@ -1095,70 +3572,49 @@
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "held_off_heading",
+    "node": ".",
+    "prop": "chevrons",
     "op": "==",
-    "value": true
+    "value": 1
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
-    "op": ">=",
-    "value": 24.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
-    "op": "<=",
-    "value": 25.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_height_m",
-    "op": ">=",
-    "value": 2.8
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_height_m",
-    "op": "<=",
-    "value": 3.2
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "chevron_visible",
+    "node": ".",
+    "prop": "rings_visible",
     "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_visible",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dot_visible",
-    "op": "==",
-    "value": true
+    "value": 0
    }
   },
   {
    "screenshot": "chevron"
+  },
+  {
+   "wait_frames": 80
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "chevrons",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "rings_visible",
+    "op": "==",
+    "value": 1
+   }
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
+   }
   },
   {
    "call": {
@@ -1171,28 +3627,58 @@
    }
   },
   {
-   "wait_frames": 30
+   "wait_frames": 8
   },
   {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "held_off_heading",
-    "op": "==",
-    "value": false
+   "call": {
+    "node": ".",
+    "method": "log_marks",
+    "args": [
+     "mid-swing"
+    ]
    }
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "aim_range_m",
-    "op": "<",
-    "value": 10.0
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": ">",
+    "value": 40.0
+   }
+  },
+  {
+   "wait_frames": 60
+  },
+  {
+   "assert_prop": {
+    "node": ".",
+    "prop": "ring_to_dot_max_px",
+    "op": "<=",
+    "value": 8.0
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
    }
   },
   {
    "call": {
     "node": ".",
     "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
     "args": [
      0.0
     ]
@@ -1240,43 +3726,6 @@
     "prop": "yaw_deg",
     "op": "==",
     "value": 60.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "held_off_heading",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "mouse_motion",
-    "args": [
-     -400.0,
-     0.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 5
-  },
-  {
-   "assert_prop": {
-    "node": "%OrbitCamera",
-    "prop": "yaw_deg",
-    "op": "==",
-    "value": 120.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "held_off_heading",
-    "op": "==",
-    "value": true
    }
   },
   {
@@ -1324,93 +3773,9 @@
   {
    "call": {
     "node": ".",
-    "method": "spawn",
-    "args": [
-     30.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "add_target",
-    "args": [
-     25.0,
-     3.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "look_at_target",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_marks",
-    "args": [
-     "reticle_offset"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_visible",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dot_visible",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "thick",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_to_dot_px",
-    "op": ">",
-    "value": 150.0
-   }
-  },
-  {
-   "screenshot": "reticle_offset"
-  },
-  {
-   "call": {
-    "node": ".",
     "method": "set_camera",
     "args": [
-     30.0,
+     0.0,
      20.0
     ]
    }
@@ -1418,102 +3783,60 @@
   {
    "call": {
     "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "set_camera",
-    "args": [
-     0.0,
-     35.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 60
-  },
-  {
-   "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "limited",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "ring_visible",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": false
-   }
-  },
-  {
-   "call": {
-    "node": ".",
     "method": "hold_action",
     "args": [
-     "fire",
+     "aim",
      true
     ]
    }
   },
   {
-   "wait_frames": 10
-  },
-  {
    "call": {
     "node": ".",
-    "method": "log_marks",
+    "method": "mouse_motion",
     "args": [
-     "limit"
+     -400.0,
+     0.0
     ]
    }
   },
   {
+   "wait_frames": 5
+  },
+  {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "dashed",
-    "op": "==",
-    "value": true
+    "node": "%OrbitCamera",
+    "prop": "yaw_deg",
+    "op": ">=",
+    "value": 39.99
    }
   },
   {
-   "screenshot": "limit"
+   "assert_prop": {
+    "node": "%OrbitCamera",
+    "prop": "yaw_deg",
+    "op": "<=",
+    "value": 40.01
+   }
   },
   {
    "call": {
     "node": ".",
     "method": "hold_action",
     "args": [
-     "fire",
+     "aim",
      false
     ]
    }
   },
   {
-   "wait_frames": 40
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
   },
   {
    "call": {
@@ -1544,7 +3867,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 60
   },
   {
    "call": {
@@ -1606,10 +3929,10 @@
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "risk9_ring_to_dot_px",
+    "op": "<=",
+    "value": 12.0
    }
   },
   {
@@ -1686,9 +4009,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9",
@@ -1696,7 +4016,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -1759,9 +4079,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9",
@@ -1769,7 +4086,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -1832,9 +4149,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9",
@@ -1842,7 +4156,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -1905,9 +4219,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9_reach",
@@ -1915,7 +4226,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -1977,10 +4288,10 @@
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "risk9_ring_to_dot_px",
+    "op": "<=",
+    "value": 12.0
    }
   },
   {
@@ -2001,7 +4312,7 @@
    }
   },
   {
-   "wait_frames": 60
+   "wait_frames": 50
   },
   {
    "call": {
@@ -2014,7 +4325,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 35
   },
   {
    "call": {
@@ -2061,9 +4372,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9_reach",
@@ -2071,7 +4379,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -2133,10 +4441,10 @@
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "risk9_ring_to_dot_px",
+    "op": "<=",
+    "value": 12.0
    }
   },
   {
@@ -2157,7 +4465,7 @@
    }
   },
   {
-   "wait_frames": 60
+   "wait_frames": 50
   },
   {
    "call": {
@@ -2170,7 +4478,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 35
   },
   {
    "call": {
@@ -2217,9 +4525,6 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
    "call": {
     "node": ".",
     "method": "begin_risk9_reach",
@@ -2227,7 +4532,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 45
   },
   {
    "call": {
@@ -2289,10 +4594,10 @@
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "pip_visible",
-    "op": "==",
-    "value": true
+    "node": ".",
+    "prop": "risk9_ring_to_dot_px",
+    "op": "<=",
+    "value": 12.0
    }
   },
   {
@@ -2313,7 +4618,7 @@
    }
   },
   {
-   "wait_frames": 60
+   "wait_frames": 50
   },
   {
    "call": {
@@ -2326,7 +4631,7 @@
    }
   },
   {
-   "wait_frames": 40
+   "wait_frames": 35
   },
   {
    "call": {
@@ -2393,7 +4698,7 @@
    }
   },
   {
-   "wait_frames": 30
+   "wait_frames": 60
   },
   {
    "call": {
@@ -2425,18 +4730,18 @@
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "ring_flashing",
+    "node": ".",
+    "prop": "weapon0_flashing",
     "op": "==",
     "value": true
    }
   },
   {
    "assert_prop": {
-    "node": "%AimMarks",
-    "prop": "flashing",
+    "node": ".",
+    "prop": "rings_flashing",
     "op": "==",
-    "value": true
+    "value": 1
    }
   },
   {
@@ -2489,8 +4794,8 @@
   },
   {
    "assert_prop": {
-    "node": "%WeaponRig",
-    "prop": "ring_flashing",
+    "node": ".",
+    "prop": "weapon0_flashing",
     "op": "==",
     "value": false
    }
@@ -2498,7 +4803,25 @@
   {
    "call": {
     "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
     "method": "spawn",
+    "args": [
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "set_spread",
     "args": [
      0.0
     ]
@@ -2554,15 +4877,6 @@
   {
    "call": {
     "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
     "method": "use_build",
     "args": [
      "scout"
@@ -2579,457 +4893,9 @@
    }
   },
   {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "begin_heading_run",
-    "args": [
-     90.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 170
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_checks",
-    "args": [
-     "heading scout"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_run_done",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": ">",
-    "value": 0.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_final_error_deg",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "strider"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "begin_heading_run",
-    "args": [
-     90.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 170
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_checks",
-    "args": [
-     "heading strider"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_run_done",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": ">",
-    "value": 0.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_final_error_deg",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "crawler"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "begin_heading_run",
-    "args": [
-     90.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 170
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_checks",
-    "args": [
-     "heading crawler"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_run_done",
-    "op": "==",
-    "value": true
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": ">",
-    "value": 0.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_time_s",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "heading_final_error_deg",
-    "op": "<=",
-    "value": 1.0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "use_build",
-    "args": [
-     "crawler"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
    "call": {
     "node": ".",
     "method": "set_spread",
-    "args": [
-     0.0
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "add_target",
-    "args": [
-     25.0,
-     3.0
-    ]
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "look_at_target",
-    "args": []
-   }
-  },
-  {
-   "wait_frames": 40
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "reset_checks",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "begin_cost",
-    "args": []
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "fire",
-     true
-    ]
-   }
-  },
-  {
-   "wait_frames": 240
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "hold_action",
-    "args": [
-     "fire",
-     false
-    ]
-   }
-  },
-  {
-   "wait_frames": 30
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "end_cost",
-    "args": [
-     "crawler two cannons"
-    ]
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "log_checks",
-    "args": [
-     "crawler"
-    ]
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shots_checked",
-    "op": ">=",
-    "value": 30
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "gap_min_ticks",
-    "op": ">=",
-    "value": 7
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "gap_max_ticks",
-    "op": "<=",
-    "value": 8
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "gap_mean_s",
-    "op": ">=",
-    "value": 0.115
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "gap_mean_s",
-    "op": "<=",
-    "value": 0.135
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "q_bearing_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shot_yaw_err_max_deg",
-    "op": "<=",
-    "value": 0.1
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "shot_err_max_deg",
-    "op": "<=",
-    "value": 0.5
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "pool_refused",
-    "op": "==",
-    "value": 0
-   }
-  },
-  {
-   "assert_prop": {
-    "node": ".",
-    "prop": "rig_p99_ms",
-    "op": "<=",
-    "value": 0.9
-   }
-  },
-  {
-   "call": {
-    "node": ".",
-    "method": "spawn",
     "args": [
      0.0
     ]

@@ -1,220 +1,194 @@
 extends GutTest
 ## Unit tests for scripts/weapons/aim_math.gd and ui/aim/aim_layout.gd (GDD 8.3 aim model, 12 aim marks).
 
-const PIVOT_LOCAL := Vector3(0.0, 0.9, -0.1)
+const DT: float = 1.0 / 60.0
+const PIVOT := Vector3(0.0, 2.0, 0.0)
 
 
-func _heading_error_deg(yaw: float, elevation_deg: float) -> float:
-	var forward: Vector3 = AimMath.barrel_basis(yaw, elevation_deg) * Vector3(0.0, 0.0, -1.0)
-	var flat: Vector3 = Vector3(forward.x, 0.0, forward.z).normalized()
-	return AimMath.angle_between_deg(flat, AimMath.heading(yaw))
+func _top() -> Dictionary:
+	return AimMath.mount_arc(&"top")
 
 
-# --- P, d, h, Q -------------------------------------------------------------------------------------------------
+## The world point `range_m` away from PIVOT along the chassis-frame pose (identity chassis).
+func _point(pose: Vector2, range_m: float = 20.0) -> Vector3:
+	return PIVOT + AimMath.barrel_basis(Basis.IDENTITY, pose) * Vector3.FORWARD * range_m
 
 
-func test_range_is_clamped_to_4_m_when_the_camera_looks_straight_down() -> void:
-	var origin := Vector3(10.0, 1.0, -5.0)
-	# Looking straight down at the walker's own feet: P is almost under the body origin.
-	var feet := Vector3(10.2, 0.0, -5.1)
-	var rh: Vector2 = AimMath.range_and_height(Vector2(30.0, 3.0), feet, origin, 0.0, 0.0)
-	assert_eq(rh.x, 4.0, "d never drops under 4 m, so the guns never point into the ground under the walker")
-	assert_eq(rh.y, 0.0, "h is P's height")
+# --- Traverse rate (GDD 8.3) ----------------------------------------------------------------------------------
 
 
-func test_range_is_clamped_to_120_m() -> void:
-	var rh: Vector2 = AimMath.range_and_height(Vector2(30.0, 3.0), Vector3(0.0, 40.0, -300.0), Vector3.ZERO, 0.0, 0.0)
-	assert_eq(rh.x, 120.0)
-	assert_eq(rh.y, 40.0)
+func test_traverse_rate_by_mass() -> void:
+	assert_almost_eq(AimMath.traverse_rate(5.0), 720.0, 0.01)
+	assert_almost_eq(AimMath.traverse_rate(10.0), 720.0, 0.01)
+	assert_almost_eq(AimMath.traverse_rate(40.0), 180.0, 0.01)
+	assert_almost_eq(AimMath.traverse_rate(80.0), 90.0, 0.01)
+	assert_almost_eq(AimMath.traverse_rate(160.0), 45.0, 0.01)
+	assert_almost_eq(AimMath.traverse_rate(300.0), 45.0, 0.01)
 
 
-func test_range_is_the_horizontal_distance_not_the_straight_one() -> void:
-	var rh: Vector2 = AimMath.range_and_height(Vector2.ZERO, Vector3(3.0, 20.0, -4.0), Vector3.ZERO, 0.0, 0.0)
-	assert_almost_eq(rh.x, 5.0, 0.0001)
+func test_traverse_rate_never_rises_with_mass() -> void:
+	var previous: float = INF
+	for mass in range(1, 400):
+		var rate: float = AimMath.traverse_rate(float(mass))
+		assert_lte(rate, previous, "mass %d" % mass)
+		previous = rate
 
 
-func test_d_and_h_hold_when_the_camera_yaw_is_more_than_90_deg_off_the_heading() -> void:
-	var previous := Vector2(17.0, 2.5)
-	var p := Vector3(0.0, 9.0, -50.0)
-	assert_eq(AimMath.range_and_height(previous, p, Vector3.ZERO, 91.0, 0.0), previous, "91 deg off: held")
-	assert_eq(AimMath.range_and_height(previous, p, Vector3.ZERO, -120.0, 0.0), previous, "behind: held")
-	assert_eq(AimMath.range_and_height(previous, p, Vector3.ZERO, 180.0, 0.0), previous)
-	var fresh: Vector2 = AimMath.range_and_height(previous, p, Vector3.ZERO, 90.0, 0.0)
-	assert_almost_eq(fresh.x, 50.0, 0.0001, "exactly 90 deg is not more than 90: P is read again")
-	assert_eq(fresh.y, 9.0)
-	var near: Vector2 = AimMath.range_and_height(previous, p, Vector3.ZERO, 89.0, 0.0)
-	assert_eq(near, Vector2(50.0, 9.0), "back inside 90 deg the guns pick P up again")
+# --- Mount arcs --------------------------------------------------------------------------------------------------
 
 
-func test_the_90_deg_gap_is_measured_from_the_body_heading_and_wraps() -> void:
-	assert_almost_eq(AimMath.yaw_gap_deg(-170.0, deg_to_rad(170.0)), 20.0, 0.0001, "across the +-180 seam")
-	assert_almost_eq(AimMath.yaw_gap_deg(100.0, deg_to_rad(30.0)), 70.0, 0.0001)
-	assert_false(AimMath.holds(100.0, deg_to_rad(30.0)))
-	assert_true(AimMath.holds(100.0, deg_to_rad(-30.0)), "130 deg off")
+func test_the_top_arc_is_360_in_yaw_and_minus_20_to_75_in_pitch() -> void:
+	var arc: Dictionary = _top()
+	assert_true(arc["unlimited"])
+	assert_eq(arc["pitch_min_deg"], -20.0)
+	assert_eq(arc["pitch_max_deg"], 75.0)
 
 
-func test_q_lies_d_along_the_heading_at_height_h() -> void:
-	var origin := Vector3(2.0, 1.0, 3.0)
-	var q: Vector3 = AimMath.convergence_point(origin, 0.0, 10.0, 4.0)
-	assert_eq(q, Vector3(2.0, 4.0, -7.0), "yaw 0 looks along -Z")
-	q = AimMath.convergence_point(origin, deg_to_rad(90.0), 10.0, 4.0)
-	assert_almost_eq(q.x, -8.0, 0.0001, "yaw +90 turns left, toward -X")
-	assert_almost_eq(q.z, 3.0, 0.0001)
-	assert_eq(q.y, 4.0)
+func test_the_other_faces_are_data_only_rows_of_the_gdd() -> void:
+	for face in [&"front", &"back", &"left", &"right"]:
+		var arc: Dictionary = AimMath.mount_arc(face)
+		assert_false(arc["unlimited"], str(face))
+		assert_eq(arc["yaw_half_deg"], 90.0)
+		assert_eq(arc["pitch_min_deg"], -90.0)
+		assert_eq(arc["pitch_max_deg"], 90.0)
+	assert_eq(AimMath.mount_arc(&"back")["face_yaw_deg"], 180.0)
+	assert_eq(AimMath.mount_arc(&"left")["face_yaw_deg"], 90.0)
+	var bottom: Dictionary = AimMath.mount_arc(&"bottom")
+	assert_true(bottom["unlimited"])
+	assert_eq(bottom["pitch_min_deg"], -75.0)
+	assert_eq(bottom["pitch_max_deg"], 20.0)
 
 
-# --- Yaw and elevation ------------------------------------------------------------------------------------------
+func test_inside_and_outside_with_half_a_degree_of_tolerance() -> void:
+	var arc: Dictionary = _top()
+	assert_true(AimMath.is_inside(Vector2(10.0, -19.0), arc))
+	assert_true(AimMath.is_inside(Vector2(10.0, -20.4), arc), "-20.4 is still live")
+	assert_false(AimMath.is_inside(Vector2(10.0, -20.6), arc), "-20.6 is gray")
+	assert_true(AimMath.is_inside(Vector2(-170.0, 75.4), arc))
+	assert_false(AimMath.is_inside(Vector2(-170.0, 75.6), arc))
+	var front: Dictionary = AimMath.mount_arc(&"front")
+	assert_true(AimMath.is_inside(Vector2(90.4, 0.0), front))
+	assert_false(AimMath.is_inside(Vector2(90.6, 0.0), front))
+	assert_false(AimMath.is_inside(Vector2(180.0, 0.0), front), "behind a front mount is outside")
 
 
-func test_a_barrel_points_along_its_yaw_at_any_elevation() -> void:
-	var worst: float = 0.0
-	for yaw_step in range(-18, 19):
-		for elevation in range(-10, 46, 5):
-			worst = maxf(worst, _heading_error_deg(deg_to_rad(float(yaw_step) * 10.0), float(elevation)))
-	assert_lt(worst, 0.1, "worst yaw error %.5f deg" % worst)
+func test_the_nearest_reachable_pose_keeps_the_bearing_and_clamps_the_pitch() -> void:
+	var solved: Dictionary = AimMath.solve(PIVOT, Basis.IDENTITY, _point(Vector2(40.0, -30.0)), _top(), Vector2.ZERO)
+	assert_false(solved["live"])
+	var target: Vector2 = solved["target"]
+	assert_almost_eq(target.x, 40.0, 0.001, "on P's bearing")
+	assert_almost_eq(target.y, -20.0, 0.001, "at the arc limit")
+	var high: Dictionary = AimMath.solve(PIVOT, Basis.IDENTITY, _point(Vector2(-60.0, 80.0)), _top(), Vector2.ZERO)
+	assert_false(high["live"])
+	assert_almost_eq((high["target"] as Vector2).y, 75.0, 0.001)
 
 
-func test_q_lies_on_the_heading_line_whatever_the_range_and_height() -> void:
-	var origin := Vector3(4.0, 1.0, -9.0)
-	for yaw_deg in [-170.0, -45.0, 0.0, 30.0, 90.0, 179.0]:
-		for range_m in [4.0, 20.0, 120.0]:
-			var q: Vector3 = AimMath.convergence_point(origin, deg_to_rad(yaw_deg), range_m, 7.0)
-			var bearing: float = AimMath.bearing_to(origin, q)
-			assert_almost_eq(rad_to_deg(wrapf(bearing - deg_to_rad(yaw_deg), -PI, PI)), 0.0, 0.01)
+func test_a_limited_mount_aims_at_the_nearest_edge_of_its_yaw_arc() -> void:
+	var front: Dictionary = AimMath.mount_arc(&"front")
+	var target: Vector2 = AimMath.clamp_to_arc(Vector2(150.0, 10.0), front)
+	assert_almost_eq(target.x, 90.0, 0.001)
+	target = AimMath.clamp_to_arc(Vector2(-150.0, 10.0), front)
+	assert_almost_eq(target.x, -90.0, 0.001)
 
 
-func test_a_weapon_on_the_centre_line_yaws_exactly_along_the_heading() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var pivot := Vector3(2.0, 2.0, 5.0)
-	for yaw_deg in [-120.0, 0.0, 35.0, 90.0]:
-		var yaw: float = deg_to_rad(yaw_deg)
-		var q: Vector3 = AimMath.convergence_point(pivot, yaw, 12.0, 3.0)
-		var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-		assert_almost_eq(rad_to_deg(wrapf(aim.x - yaw, -PI, PI)), 0.0, 0.001, "yaw %d" % yaw_deg)
+func test_a_p_inside_the_arc_is_live_and_aimed_at_exactly() -> void:
+	var p: Vector3 = _point(Vector2(-120.0, 12.0))
+	var solved: Dictionary = AimMath.solve(PIVOT, Basis.IDENTITY, p, _top(), Vector2.ZERO)
+	assert_true(solved["live"])
+	var pose: Vector2 = solved["target"]
+	var along: Vector3 = AimMath.barrel_basis(Basis.IDENTITY, pose) * Vector3.FORWARD
+	assert_lt(AimMath.angle_between_deg(along, (p - PIVOT).normalized()), 0.001)
 
 
-func test_a_weapon_at_the_side_yaws_from_its_muzzle_toward_q() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	# The Crawler's right cannon: 0.23 m right of the heading line, its muzzle about 1.1 m ahead of the body origin.
-	var origin := Vector3(0.0, 1.0, 0.0)
-	var pivot := Vector3(0.23, 2.0, -0.27)
-	var worst_at_4: float = 0.0
-	for range_m in [4.0, 12.0, 25.0, 120.0]:
-		var q: Vector3 = AimMath.convergence_point(origin, 0.0, range_m, 3.0)
-		var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-		var off: float = rad_to_deg(aim.x)
-		assert_gt(off, 0.0, "a cannon on the right yaws left, toward the line")
-		if range_m == 4.0:
-			worst_at_4 = off
-		var from: Vector3 = AimMath.muzzle_position(pivot, aim.x, aim.y, muzzle)
-		var shot: Vector3 = AimMath.barrel_basis(aim.x, aim.y) * Vector3(0.0, 0.0, -1.0)
-		assert_lt(AimMath.angle_between_deg(shot, q - from), 0.01, "its shot passes through Q at %.0f m" % range_m)
-	assert_lt(worst_at_4, 4.0, "under the GDD's 4 deg at 4 m (%.2f)" % worst_at_4)
-	assert_gt(worst_at_4, 3.0, "and a real toe-in there (%.2f)" % worst_at_4)
-	var far: Vector2 = AimMath.solve_aim(pivot, muzzle, AimMath.convergence_point(origin, 0.0, 120.0, 3.0))
-	assert_lt(rad_to_deg(far.x), 0.2, "nearly parallel at 120 m")
+func test_a_p_within_1_5_m_of_the_pivot_holds_the_pose_gray() -> void:
+	var held := Vector2(33.0, 5.0)
+	var solved: Dictionary = AimMath.solve(PIVOT, Basis.IDENTITY, PIVOT + Vector3(0.0, -1.4, 0.0), _top(), held)
+	assert_true(solved["hold"])
+	assert_false(solved["live"])
+	assert_eq(solved["target"], held)
+	var outside: Dictionary = AimMath.solve(PIVOT, Basis.IDENTITY, PIVOT + Vector3(0.0, -1.6, 0.0), _top(), held)
+	assert_false(outside["hold"], "1.6 m is outside the hold radius")
 
 
-func test_two_weapons_either_side_cross_on_q() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var origin := Vector3(0.0, 1.0, 0.0)
-	var q: Vector3 = AimMath.convergence_point(origin, 0.0, 25.0, 3.0)
-	for side in [-1.0, 1.0]:
-		var pivot := Vector3(0.23 * side, 2.0, -0.27)
-		var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-		var from: Vector3 = AimMath.muzzle_position(pivot, aim.x, aim.y, muzzle)
-		var shot: Vector3 = AimMath.barrel_basis(aim.x, aim.y) * Vector3(0.0, 0.0, -1.0)
-		assert_lt(AimMath.angle_between_deg(shot, q - from), 0.01, "side %d" % int(side))
+func test_the_arc_is_in_the_chassis_frame() -> void:
+	# A body tilted 39 deg nose-up: the lowest the roof arc goes straight ahead is world +19 deg.
+	var tilt := Basis(Vector3.RIGHT, deg_to_rad(39.0))
+	var lowest: Vector3 = AimMath.barrel_basis(tilt, Vector2(0.0, -20.0)) * Vector3.FORWARD
+	assert_almost_eq(rad_to_deg(asin(lowest.y)), 19.0, 0.5)
+	# Straight behind, the same arc reaches down to world -59.
+	var behind: Vector3 = AimMath.barrel_basis(tilt, Vector2(180.0, -20.0)) * Vector3.FORWARD
+	assert_almost_eq(rad_to_deg(asin(behind.y)), -59.0, 0.5)
+	# And a P on the level at 30 m ahead is gray on that body, live on a level one.
+	var p := Vector3(0.0, 2.0, -30.0)
+	assert_false(AimMath.solve(PIVOT, tilt, p, _top(), Vector2.ZERO)["live"])
+	assert_true(AimMath.solve(PIVOT, Basis.IDENTITY, p, _top(), Vector2.ZERO)["live"])
 
 
-func test_the_yaw_check_sees_a_barrel_that_ignores_the_muzzle_offset() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var pivot := Vector3(0.23, 2.0, -0.27)
-	var q: Vector3 = AimMath.convergence_point(Vector3(0.0, 1.0, 0.0), 0.0, 8.0, 3.0)
-	var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-	var solved := Transform3D(AimMath.barrel_basis(aim.x, aim.y), pivot)
-	assert_lt(AimMath.yaw_error_deg(solved, muzzle, q), 0.01)
-	var straight := Transform3D(AimMath.barrel_basis(0.0, aim.y), pivot)
-	assert_gt(AimMath.yaw_error_deg(straight, muzzle, q), 1.0, "a barrel locked to the heading would fail it")
+# --- Step ----------------------------------------------------------------------------------------------------------
 
 
-func test_yaw_follows_the_muzzle_where_the_barrel_really_is_while_it_slews() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var origin := Vector3(0.0, 1.0, 0.0)
-	var pivot := Vector3(0.23, 2.0, -0.27)
-	var q: Vector3 = AimMath.convergence_point(origin, 0.0, 4.0, 3.0)
-	var wanted: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-	# Elevation still 20 deg short of where it will end up: yaw must still match this tick's muzzle.
-	for elevation in [wanted.y - 20.0, 0.0, 45.0]:
-		var yaw: float = AimMath.solve_yaw(pivot, muzzle, elevation, q, wanted.x)
-		var barrel := Transform3D(AimMath.barrel_basis(yaw, elevation), pivot)
-		assert_lt(AimMath.yaw_error_deg(barrel, muzzle, q), 0.1, "elevation %.1f" % elevation)
-
-
-func test_solved_aim_makes_the_muzzle_line_end_on_q() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var pivot := Vector3(1.0, 2.0, -1.0)
-	var worst: float = 0.0
-	for height in [-3.0, 0.0, 2.0, 6.0, 20.0]:
-		for range_m in [4.0, 12.0, 60.0, 120.0]:
-			var yaw: float = deg_to_rad(33.0)
-			var q: Vector3 = AimMath.convergence_point(pivot, yaw, range_m, height)
-			var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-			var from: Vector3 = AimMath.muzzle_position(pivot, aim.x, aim.y, muzzle)
-			var shot: Vector3 = AimMath.barrel_basis(aim.x, aim.y) * Vector3(0.0, 0.0, -1.0)
-			worst = maxf(worst, AimMath.angle_between_deg(shot, q - from))
-			worst = maxf(worst, absf(AimMath.elevation_to(from, q) - aim.y))
-	assert_lt(worst, 0.01, "the barrel points from its muzzle at Q within 0.01 deg (worst %.5f)" % worst)
-
-
-func test_a_target_on_the_heading_is_hit_by_a_shot_from_the_solved_aim() -> void:
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	var pivot := Vector3(0.0, 2.0, 0.0)
-	var target := Vector3(0.0, 3.0, -25.0)
-	var q: Vector3 = AimMath.convergence_point(pivot, 0.0, AimMath.horizontal_distance(pivot, target), target.y)
-	var aim: Vector2 = AimMath.solve_aim(pivot, muzzle, q)
-	var from: Vector3 = AimMath.muzzle_position(pivot, aim.x, aim.y, muzzle)
-	var shot: Vector3 = AimMath.barrel_basis(aim.x, aim.y) * Vector3(0.0, 0.0, -1.0)
-	assert_lt(AimMath.angle_between_deg(shot, target - from), 0.01, "the shot line passes through the target")
-
-
-func test_elevation_clamps_to_minus_10_and_45_world_relative_on_a_body_tilted_39_deg() -> void:
-	var tilt: Vector3 = Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(39.0))
-	var pose: Transform3D = WalkerBody.pose_transform(Vector3(0.0, 5.0, 0.0), 0.0, tilt)
-	assert_almost_eq(rad_to_deg(Vector3.UP.angle_to(pose.basis.y)), 39.0, 0.01, "the body is tilted 39 deg nose up")
-	var pivot: Vector3 = pose * PIVOT_LOCAL
-	var muzzle := Vector3(0.0, 0.0, -0.75)
-	# Level shot for a body-relative clamp would be 39 deg; world-relative, level is 0.
-	var level: float = AimMath.solve_aim(pivot, muzzle, Vector3(0.0, pivot.y, -30.0)).y
-	assert_almost_eq(AimMath.clamp_elevation(level), 0.0, 0.1, "a level target on a tilted body still aims level")
-	var high: float = AimMath.solve_aim(pivot, muzzle, Vector3(0.0, pivot.y + 40.0, -30.0)).y
-	assert_gt(high, 45.0)
-	assert_eq(AimMath.clamp_elevation(high), 45.0, "world-relative +45, not 45 on top of the tilt")
-	var low: float = AimMath.solve_aim(pivot, muzzle, Vector3(0.0, pivot.y - 15.0, -30.0)).y
-	assert_lt(low, -10.0)
-	assert_eq(AimMath.clamp_elevation(low), -10.0, "world-relative -10, not -10 relative to the nose")
-	assert_true(AimMath.is_limited(high))
-	assert_true(AimMath.is_limited(low))
-	assert_false(AimMath.is_limited(level))
-	var drawn: Vector3 = AimMath.barrel_basis(0.0, AimMath.clamp_elevation(high)) * Vector3(0.0, 0.0, -1.0)
-	assert_almost_eq(rad_to_deg(asin(drawn.y)), 45.0, 0.001, "the drawn barrel is 45 deg above the horizon")
-
-
-func test_elevation_slews_at_360_deg_per_s() -> void:
-	var tick: float = 1.0 / 60.0
-	var elevation: float = 0.0
-	for i in 7:
-		elevation = AimMath.slew(elevation, 45.0, tick)
-	assert_almost_eq(elevation, 42.0, 0.0001, "6 deg per 60 Hz tick")
-	elevation = AimMath.slew(elevation, 45.0, tick)
-	assert_eq(elevation, 45.0, "arrives without overshooting")
-	# The longest flick, -10 to +45, is followed within 0.15 s plus one tick.
-	elevation = -10.0
+func test_a_90_deg_yaw_swing_at_180_deg_per_s_takes_30_ticks_and_never_exceeds_3_deg_per_tick() -> void:
+	var pose := Vector2.ZERO
+	var target := Vector2(90.0, 0.0)
 	var ticks: int = 0
-	while elevation < 45.0:
-		elevation = AimMath.slew(elevation, 45.0, tick)
+	var worst: float = 0.0
+	while absf(target.x - pose.x) > 0.0001 and ticks < 100:
+		var next: Vector2 = AimMath.step(pose, target, 180.0, DT, _top())
+		worst = maxf(worst, absf(next.x - pose.x))
+		pose = next
 		ticks += 1
-	assert_lte(float(ticks) * tick, 0.15 + tick)
+	assert_eq(ticks, 30)
+	assert_lte(worst, 3.0 * 1.005)
+
+
+func test_a_30_deg_pitch_swing_takes_10_ticks() -> void:
+	var pose := Vector2.ZERO
+	var ticks: int = 0
+	while absf(30.0 - pose.y) > 0.0001 and ticks < 100:
+		pose = AimMath.step(pose, Vector2(0.0, 30.0), 180.0, DT, _top())
+		ticks += 1
+	assert_eq(ticks, 10)
+
+
+func test_each_axis_is_limited_on_its_own() -> void:
+	var next: Vector2 = AimMath.step(Vector2.ZERO, Vector2(90.0, 20.0), 180.0, DT, _top())
+	assert_almost_eq(next.x, 3.0, 0.0001, "yaw uses its whole 3 deg")
+	assert_almost_eq(next.y, 3.0, 0.0001, "pitch uses its own 3 deg")
+	var small: Vector2 = AimMath.step(Vector2.ZERO, Vector2(90.0, 1.0), 180.0, DT, _top())
+	assert_almost_eq(small.y, 1.0, 0.0001, "arrives without overshooting")
+
+
+func test_the_step_never_exceeds_rate_times_delta_on_any_axis() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 22
+	for i in 200:
+		var from := Vector2(rng.randf_range(-180.0, 180.0), rng.randf_range(-20.0, 75.0))
+		var to := Vector2(rng.randf_range(-180.0, 180.0), rng.randf_range(-20.0, 75.0))
+		var rate: float = [45.0, 90.0, 180.0, 720.0][i % 4]
+		var next: Vector2 = AimMath.step(from, to, rate, DT, _top())
+		assert_lte(absf(wrapf(next.x - from.x, -180.0, 180.0)), rate * DT + 0.0001)
+		assert_lte(absf(next.y - from.y), rate * DT + 0.0001)
+
+
+func test_a_360_mount_swings_the_shortest_way_round() -> void:
+	var next: Vector2 = AimMath.step(Vector2(170.0, 0.0), Vector2(-170.0, 0.0), 180.0, DT, _top())
+	assert_almost_eq(next.x, 173.0, 0.0001, "170 -> 173: on toward 180 and across it, not back through 0")
+	var back: Vector2 = AimMath.step(Vector2(-170.0, 0.0), Vector2(170.0, 0.0), 180.0, DT, _top())
+	assert_almost_eq(back.x, -173.0, 0.0001)
+
+
+func test_a_limited_mount_never_swings_through_its_dead_zone() -> void:
+	for face in [&"front", &"back", &"left", &"right"]:
+		var arc: Dictionary = AimMath.mount_arc(face)
+		var face_yaw: float = arc["face_yaw_deg"]
+		var pose := Vector2(face_yaw - 85.0, 0.0)
+		var target := Vector2(face_yaw + 85.0, 0.0)
+		var ticks: int = 0
+		while absf(wrapf(target.x - pose.x, -180.0, 180.0)) > 0.0001 and ticks < 200:
+			pose = AimMath.step(pose, target, 180.0, DT, arc)
+			assert_lte(absf(wrapf(pose.x - face_yaw, -180.0, 180.0)), 90.0 + 0.0001, "%s tick %d" % [face, ticks])
+			ticks += 1
+		assert_eq(ticks, 57, "170 deg the long way inside the arc: %s" % face)
 
 
 # --- Spread -----------------------------------------------------------------------------------------------------
@@ -257,25 +231,21 @@ func test_the_ring_is_28_px_across_whatever_the_stroke() -> void:
 			assert_almost_eq(across, 28.0 * scale, 0.0001, "thick %s at scale %.2f" % [thick, scale])
 
 
-func test_the_enemy_stroke_and_the_pip_stay_at_least_3_px_at_720p() -> void:
+func test_the_enemy_stroke_stays_at_least_3_px_at_720p() -> void:
 	var scale: float = AimLayout.ui_scale(720.0)
 	assert_gte(AimLayout.stroke_screen_px(true, scale), 3.0, "5 px at 1080p is 3.3 px at 720p")
-	assert_gte(AimLayout.pip_screen_px(scale), 3.0, "4 px at 1080p is 2.7 px at 720p, rounded up")
-	assert_eq(AimLayout.pip_screen_px(scale), 3.0, "a whole number of pixels")
-	assert_gte(AimLayout.pip_outline_px(scale), 1.0, "with the ink outside it")
-	assert_eq(AimLayout.pip_screen_px(2.0), 8.0, "4 px at 1080p is 8 px at 4K")
 	assert_gt(AimLayout.stroke_screen_px(true, scale), AimLayout.stroke_screen_px(false, scale), "still thicker")
 	assert_eq(AimLayout.stroke_screen_px(true, 1.0), 5.0, "at 1080p the numbers are the GDD's")
 	assert_eq(AimLayout.stroke_screen_px(false, 1.0), 3.0)
-	assert_eq(AimLayout.pip_screen_px(1.0), 4.0)
 
 
-func test_the_ring_merges_with_the_dot_within_12_px() -> void:
-	var dot := Vector2(960.0, 540.0)
-	assert_true(AimLayout.is_merged(dot + Vector2(12.0, 0.0), dot, 1.0))
-	assert_false(AimLayout.is_merged(dot + Vector2(12.5, 0.0), dot, 1.0))
-	assert_true(AimLayout.is_merged(dot + Vector2(8.0, 0.0), dot, 2.0 / 3.0), "12 px at 1080p is 8 px at 720p")
-	assert_false(AimLayout.is_merged(dot + Vector2(9.0, 0.0), dot, 2.0 / 3.0))
+func test_the_gray_ring_is_neutral_and_at_least_0_2_luma_below_the_accent() -> void:
+	var gray: Color = AimLayout.GRAY
+	assert_eq(gray, Color("646464"))
+	assert_almost_eq(gray.r, gray.g, 0.0001, "saturation 0")
+	assert_almost_eq(gray.g, gray.b, 0.0001)
+	var accent_luma: float = AimLayout.ACCENT.get_luminance()
+	assert_gte(accent_luma - gray.get_luminance(), 0.2, "luma %.3f vs %.3f" % [accent_luma, gray.get_luminance()])
 
 
 func test_the_chevron_sits_24_px_in_from_the_screen_edge() -> void:

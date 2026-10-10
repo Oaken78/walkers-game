@@ -390,3 +390,23 @@ func test_a_wobbling_measurement_moves_the_shown_pitch_under_half_a_degree_per_f
 			worst = maxf(worst, absf(rig.shown_pitch_deg - last))
 			last = rig.shown_pitch_deg
 	assert_lt(worst, 0.5, "target eases at 20 deg/s = 0.33 deg per frame")
+
+
+func test_the_mouse_drops_to_0_10_deg_per_px_while_aim_is_held() -> void:
+	assert_eq(OrbitCamera.look_sensitivity(0.15, 0.10, false), 0.15)
+	assert_eq(OrbitCamera.look_sensitivity(0.15, 0.10, true), 0.10)
+	var cam: Node = load("res://scenes/camera/orbit_camera.tscn").instantiate()
+	assert_eq(cam.sensitivity_deg_per_px, 0.15, "the normal value is unchanged")
+	assert_eq(cam.aim_sensitivity_deg_per_px, 0.10)
+	cam.free()
+	var turned: Vector2 = OrbitMath.mouse_to_angles(0.0, 0.0, 100.0, 0.0, OrbitCamera.look_sensitivity(0.15, 0.10, true), false, -20.0, 60.0)
+	assert_almost_eq(turned.x, -10.0, 0.0001, "100 px is 10 deg with aim held")
+
+
+func test_recentring_pauses_while_aim_or_fire_is_held() -> void:
+	assert_false(OrbitCamera.recenter_paused(false, false))
+	assert_true(OrbitCamera.recenter_paused(true, false))
+	assert_true(OrbitCamera.recenter_paused(false, true))
+	assert_true(OrbitCamera.recenter_paused(true, true))
+	var held: float = OrbitMath.recenter_step(90.0, 0.0, 5.0, 4.5, 0.1, 1.5, 90.0, 0.5, OrbitCamera.recenter_paused(false, true))
+	assert_eq(held, 90.0, "fire held: the camera stays where the mouse put it")

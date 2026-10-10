@@ -608,7 +608,7 @@
     "node": "%Telemetry",
     "prop": "max_yaw_rate_dps",
     "op": ">=",
-    "value": 70.0
+    "value": 118.0
    }
   },
   {
@@ -616,7 +616,7 @@
     "node": "%Telemetry",
     "prop": "max_yaw_rate_dps",
     "op": "<=",
-    "value": 74.0
+    "value": 122.0
    }
   },
   {
