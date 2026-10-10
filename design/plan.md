@@ -67,6 +67,12 @@ Next, in order (each starts after the one before it, unless noted):
    mid-swing, recentring paused while `fire` or `aim` is held. Klas judges them in the M0 build.
 3. **M0 review** after T22 merges (criterion 5 changes with the aim): tier 3 on every scenario, code-reviewer,
    playtest-critic, then a playtest build for Klas via the playtest-build skill.
+   2026-10-10: T22 (299a05d) and T23 (a4179b4) merged, each with its own test-runner, code review and critique, and
+   their baselines approved. Playable first: the build goes to Klas after tier 3 on main; the M0 acceptance review
+   (criteria 1-9 against the scenarios) runs while he plays. Playtest questions: does the dust read as dust, and does
+   a heavier foot kick up more? Did you turn the body in fights, and did it help? Too easy? Does a gun's ring flicker
+   between live and gray when the dot sits just ahead of the feet while walking? Is the 180 deg/s cannon swing right,
+   or should it be near-instant?
 - **Later design gaps (Klas, 2026-10-10, recorded in the GDD Decisions log and section 18):** NPCs with a purpose
   instead of spawning enemies (goals, routes, natural spawn and despawn points, the word NPC, maybe a local AI model
   such as Gemma), and a story with a main goal that gives exploring a larger reason. Lead's proposal: a game-designer
@@ -101,7 +107,7 @@ Status: ready, in-progress, review-passed, done.
 | T20 | Field HUD: HP bar, carried/banked scrap, compass, enter and recall prompts, toast; `bind` API for T12 | ui/hud/, scenes/test/hud_check.tscn, scripts/test/hud_check.gd, test/unit/test_field_hud.gd, test/scenarios/hud_check.json | 3 | done | art/walkers-field-hud, merged 5ff8813 |
 | T21 | M0 proof runs on the real valley: map_bounds (three builds push every wall) and perf_4_drones (four drones, up-valley view, ledge-guard read) | scenes/test/valley_run.tscn, scripts/test/valley_run.gd, test/scenarios/map_bounds.json, test/scenarios/perf_4_drones.json | 3 | done | feat/walkers-proof-runs, merged 308be56 |
 | T22 | Per-weapon aim: the mouse aims, roof arc, traverse by mass, fire gate, one reticle per weapon (gray at the limit), aim turn penalty off, recentring paused on fire, aim_range and drone_fight reworked | scripts/weapons/, scenes/weapons/, ui/aim/, scripts/camera/orbit_camera.gd (aim sensitivity, recentring pause), scripts/walker/walker_body.gd (aim_turn_factor only), scripts/test/aim_range.gd, scenes/test/aim_range.tscn, scripts/test/drone_fight.gd, scenes/test/drone_fight.tscn, test/scenarios/aim_range.json, test/scenarios/drone_fight.json, test/unit/test_aim_math.gd, test/unit/test_weapon.gd, test/unit/test_orbit_camera.gd, test/unit/test_walker_body.gd (aim factor only), test/scenarios/walk_flat.json (aim-turn block only, lead 2026-10-10) | 3 | done | feat/walkers-weapon-aim, merged 299a05d |
-| T23 | Foot dust that reads as dust, sized by weight per leg (GDD 10 rule 1) | scripts/fx/, scenes/fx/, assets/fx/, test/unit/test_foot_fx.gd, test/scenarios/foot_fx.json, test/scenarios/foot_fx_valley.json (new, round 2) | 3 | in-progress | art/walkers-dust |
+| T23 | Foot dust that reads as dust, sized by weight per leg (GDD 10 rule 1) | scripts/fx/, scenes/fx/, assets/fx/, test/unit/test_foot_fx.gd, test/scenarios/foot_fx.json, test/scenarios/foot_fx_valley.json (new, round 2) | 3 | done | art/walkers-dust, merged a4179b4 |
 
 ## Notes for packets not yet written (from the T01-T05 reviews, 2026-10-09)
 - Gate (lead): give the camera an un-bobbed anchor (its 0.1 s lag only half-filters the 2.8 Hz body bob). Judge
@@ -187,6 +193,8 @@ Status: ready, in-progress, review-passed, done.
   (placeholder art); turning cuts the swing 33-37 % but a two-drone fight only 8-15 % with no damage saved, and every
   drone dies in its first hold: ask Klas "Did you turn the body in fights, and did it help?" and "too easy?"; the
   fallbacks are in GDD 16 risk 8.
+- T23 merge note (lead, 2026-10-10): at a low camera (gait_slopes crawler_crest_b, crawler_talus_edge) the Crawler's
+  1.34 m puffs lay a light haze over its knees and chassis; legs and pads still read. Judge in play.
 - T22 follow-ups (code review of c2c9f3c, no blocking findings; deferred under playable-first):
   - **watch in Klas's playtest:** live/gray can flicker at the arc edge while walking (the 0.5 deg tolerance has no
     hysteresis; step bob moves the chassis pitch more than that when P sits about -20.5 deg); fix with enter/exit
