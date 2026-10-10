@@ -80,6 +80,8 @@ func clear_all() -> void:
 	_engaged.clear()
 	bolts.clear()
 	for encounter in encounters:
+		# A husk still falling must not think, fire or step in the frame before the free (DroneEncounter.clear does it).
+		encounter.clear()
 		encounter.queue_free()
 	encounters.clear()
 

@@ -1,29 +1,133 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/world/valley.tscn" id="2_valley"]
+[ext_resource type="PackedScene" path="res://scenes/walker/walker.tscn" id="3_walker"]
+[ext_resource type="PackedScene" path="res://scenes/camera/orbit_camera.tscn" id="4_orbit"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/weapon_rig.tscn" id="5_rig"]
+[ext_resource type="Script" path="res://scripts/combat/player_hurtbox.gd" id="6_hurtbox"]
+[ext_resource type="Script" path="res://scripts/economy/collector.gd" id="7_collector"]
+[ext_resource type="Script" path="res://scripts/economy/salvage_field.gd" id="8_salvage"]
+[ext_resource type="Script" path="res://scripts/enemies/drone_field.gd" id="9_drones"]
+[ext_resource type="Script" path="res://scripts/economy/recall_hold.gd" id="10_recall"]
+[ext_resource type="Script" path="res://ui/aim/aim_marks.gd" id="11_marks"]
+[ext_resource type="Script" path="res://scripts/game/pause_gate.gd" id="12_pause"]
+[ext_resource type="Script" path="res://scripts/test/loop_pilot.gd" id="13_pilot"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
-[node name="Background" type="ColorRect" parent="."]
-offset_right = 1280.0
-offset_bottom = 720.0
-color = Color(0.13, 0.17, 0.24, 1)
+[node name="Valley" parent="." instance=ExtResource("2_valley")]
+unique_name_in_owner = true
 
-[node name="Title" type="Label" parent="."]
-offset_left = 40.0
-offset_top = 32.0
-offset_right = 700.0
-offset_bottom = 96.0
+[node name="Actors" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="Walker" parent="Actors" instance=ExtResource("3_walker")]
+unique_name_in_owner = true
+
+[node name="Collector" type="Area3D" parent="Actors"]
+unique_name_in_owner = true
+script = ExtResource("7_collector")
+
+[node name="PlayerHurtbox" type="Area3D" parent="Actors" node_paths=PackedStringArray("walker")]
+unique_name_in_owner = true
+script = ExtResource("6_hurtbox")
+walker = NodePath("../Walker")
+
+[node name="SalvageField" type="Node3D" parent="Actors"]
+unique_name_in_owner = true
+script = ExtResource("8_salvage")
+
+[node name="DroneField" type="Node3D" parent="Actors"]
+unique_name_in_owner = true
+script = ExtResource("9_drones")
+
+[node name="OrbitCamera" parent="Actors" node_paths=PackedStringArray("target") instance=ExtResource("4_orbit")]
+unique_name_in_owner = true
+target = NodePath("../Walker")
+capture_mouse = false
+
+[node name="WeaponRig" parent="Actors" node_paths=PackedStringArray("walker", "orbit") instance=ExtResource("5_rig")]
+unique_name_in_owner = true
+walker = NodePath("../Walker")
+orbit = NodePath("../OrbitCamera")
+
+[node name="RecallHold" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("10_recall")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+
+[node name="AimMarks" type="Control" parent="Hud" node_paths=PackedStringArray("rig", "orbit")]
+unique_name_in_owner = true
+mouse_filter = 2
+script = ExtResource("11_marks")
+rig = NodePath("../../Actors/WeaponRig")
+orbit = NodePath("../../Actors/OrbitCamera")
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="Fade" type="ColorRect" parent="Overlay"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Toast" type="Label" parent="Overlay"]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 60.0
+offset_right = 300.0
+offset_bottom = 100.0
+grow_horizontal = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+text = ""
+
+[node name="PauseLayer" type="CanvasLayer" parent="."]
+layer = 30
+
+[node name="PausePanel" type="ColorRect" parent="PauseLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="PausedLabel" type="Label" parent="PauseLayer/PausePanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -30.0
+offset_right = 150.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 theme_override_font_sizes/font_size = 40
-text = "Game template - replace me"
+text = "Paused"
 
-[node name="Player" type="Node2D" parent="."]
-position = Vector2(640, 360)
+[node name="Pilot" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_pilot")
 
-[node name="PlayerBody" type="ColorRect" parent="Player"]
-offset_left = -24.0
-offset_top = -24.0
-offset_right = 24.0
-offset_bottom = 24.0
-color = Color(0.95, 0.69, 0.2, 1)
+[node name="PauseGate" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("12_pause")
