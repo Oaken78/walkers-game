@@ -34,6 +34,40 @@ Source of truth for numbers: `design/gdd.md` (section refs in brackets).
   all of them: the M0 review (tier 3 on every scenario, code-reviewer, playtest-critic, Klas plays the build).
 - Cut first if scope slips: the armor plate, then the compass. The ink outline is already moved to M1.
 
+## After the M0 build (Klas played it, 2026-10-10)
+Klas's verdict on walkers-playtest-20261010-1224 (built from 53f1370):
+1. Loop: "Yes, the loop is satisfying."
+2. Legs: "Planted feet reads well, prints are good. Dust doesn't look like dust. It looks like white blobs." Dust
+   change: "I want the dust cloud to scale as a function of Walker weight divided by number of legs, so essentially
+   weight per leg."
+3. Look: "Orange stands out but I assume that any graphics is placeholders at this point. Nothing I want in the
+   final game." "The color palette is fine for now. It's hard to judge since we are working with placeholder models
+   and no textures." So until real models and textures exist, playtest questions ask about reads and feel, not
+   about hues or materials.
+4. HUD and aim: "HUD is fine for now but the aiming must change. The weapons must follow the mouse vertically,
+   within their movement range. Each weapon should have their own reticle. For example, a roof mounted gun could
+   have a 360 degree range but limited range when aiming down. A front mounted gun could have 180 degree range both
+   vertically and horizontally. Guns that can't follow the mouse have their reticle as far as they can reach but the
+   reticle is grayed out and the gun won't shoot. Heavy guns have their reticles follow more slowly. Small guns are
+   almost instant. The dot "reticle" is where the mouse aims, not where the Walker is heading."
+
+Next, in order (each starts after the one before it, unless noted):
+1. **game-designer: per-weapon aim and dust by weight per leg.** Rewrite GDD 6 (controls), 8.3 (weapons: a yaw and
+   pitch arc per mount position, a traverse rate that falls with the weapon's mass, fire only while the target lies
+   inside the arc), 12 (the camera dot is the mouse aim point; one reticle per weapon, gray and silent at its arc
+   limit), 16 risk 8 (turn rate no longer gates every shot: what keeps the body heading and Pillar 1 meaningful?), 10
+   rule 1 (dust size from chassis-and-parts mass / leg count, with a curve and a cap, reading as dust, not as white
+   blobs), and M0 criterion 5 (its "weapon yaw equals the body heading" checks go). Close the 2026-10-10 Decisions log
+   rows. List open questions for Klas (for example: where the M0 pulse cannon mounts and what its arc is, and whether
+   the top mount's 360 deg breaks the fights the drones were tuned for).
+2. **Packets (lead), then dispatch in parallel:** T22 per-weapon aim (mount arcs, traverse, fire gate, reticles,
+   drone_fight and aim_range rework; gameplay-dev, with the reticles possibly split out to visuals-dev) and T23 dust
+   (look plus scale by weight per leg, in scripts/fx/foot_fx.gd; visuals-dev). Their owned paths are disjoint.
+3. **M0 review** after T22 merges (criterion 5 changes with the aim): tier 3 on every scenario, code-reviewer,
+   playtest-critic, then a playtest build for Klas via the playtest-build skill.
+- Open housekeeping: the empty locked folder games/walkers--feat-walkers-walker-api (left by the T18 removal; delete
+  when nothing holds it). Merged branches stay until Klas asks to delete them.
+
 ## Tasks
 Status: ready, in-progress, review-passed, done.
 
