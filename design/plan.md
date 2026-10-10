@@ -168,7 +168,13 @@ Status: ready, in-progress, review-passed, done.
   - the MultiMesh `custom_aabb` is 10 km wide centred 400 m up, so transparent sorting against other effects can go
     wrong;
   - on the light test stripes the sand-coloured puff barely shows (a value question for the game-designer if it
-    also shows on the valley floor); no settle sequence or ledge shot yet.
+    also shows on the valley floor); no settle sequence or ledge shot yet;
+  - round 2 (code review of c25c24c, no blocking findings): `foot_fx_valley__dust_shadow` plants under the chassis
+    centre, but the -55 deg sun throws the shadow about 0.7 x ride height off-centre, so the puff may sit in sun
+    (move the plant by the shadow offset, and sample the floor beside it); no unit test pins the rendering contract
+    (instance colour = `puff_color.srgb_to_linear()`, the dust ShaderMaterial, `cast_shadow` off); the valley
+    scenario only asserts no errors (width and lift are manual pixels reads); `foot_fx.gd:219` doc comment still
+    states the old width rule.
 - T22 follow-ups (code review of c2c9f3c, no blocking findings; deferred under playable-first):
   - **watch in Klas's playtest:** live/gray can flicker at the arc edge while walking (the 0.5 deg tolerance has no
     hysteresis; step bob moves the chassis pitch more than that when P sits about -20.5 deg); fix with enter/exit
