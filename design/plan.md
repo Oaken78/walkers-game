@@ -65,8 +65,7 @@ Next, in order (each starts after the one before it, unless noted):
    (look plus scale by weight per leg, in scripts/fx/foot_fx.gd; visuals-dev). Their owned paths are disjoint.
 3. **M0 review** after T22 merges (criterion 5 changes with the aim): tier 3 on every scenario, code-reviewer,
    playtest-critic, then a playtest build for Klas via the playtest-build skill.
-- Open housekeeping: the empty locked folder games/walkers--feat-walkers-walker-api (left by the T18 removal; delete
-  when nothing holds it). Merged branches stay until Klas asks to delete them.
+- Merged branches stay until Klas asks to delete them.
 
 ## Tasks
 Status: ready, in-progress, review-passed, done.
