@@ -156,6 +156,19 @@ Status: ready, in-progress, review-passed, done.
 - T20 follow-ups: the top-centre stack (compass, toast, prompt or recall) reaches y 166 at 720p over the sky where
   drones fly; check in play that no wind-up hides under a plate; the `MarkLabel` theme-notification counter exists
   only for a test.
+- T23 follow-ups (round 1 code review and critique, deferred under playable-first):
+  - checks that cannot fail: `puff_draw_calls` is a getter that always returns 1 (measure a draw-call delta with the
+    holder shown and hidden); `peak_live_puffs <= 28` cannot exceed the pool, so add a `puffs_stolen` counter and
+    assert 0;
+  - puffs pose only on physics ticks with interpolation off (60 Hz steps on a 144 Hz screen, as in T19; turn it on
+    and reset each instance on show and hide);
+  - `get_build()` on a WalkerBody with no build yet errors (latent: every caller applies a build first);
+  - tests that miss the rule: the width tests never cover the real "no build at `_ready`" case; "burst out" only
+    checks the distance is > 0;
+  - the MultiMesh `custom_aabb` is 10 km wide centred 400 m up, so transparent sorting against other effects can go
+    wrong;
+  - on the light test stripes the sand-coloured puff barely shows (a value question for the game-designer if it
+    also shows on the valley floor); no settle sequence or ledge shot yet.
 - T21 follow-ups (code review, deferred under playable-first): perf_4_drones checks `drones_in_view == 4` on one
   frame only; the drones orbit at 13-17.5 m at one speed and drift apart (in_view 2 at the window's end): give them
   one radius with phase offsets and assert `in_view_min >= 4` over the window; the up-valley drones circle behind

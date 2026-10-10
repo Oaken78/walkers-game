@@ -517,17 +517,20 @@ can see, with no minimap.
    a contact decal that fades in 2 s. These two are readability, not polish, and cannot be cut (Pillar 2). The dust
    (Klas, 2026-10-10: it read as "white blobs"; it must read as dust and scale with weight per leg):
    - *Size from weight per leg:* w = build `mass` / leg count (8.1: chassis plus every part, legs included). Puff
-     width W = clamp(0.5 m x w / 50 kg, 0.25, 1.0) m across; height 0.5 x W. Scout 315 / 6 = 52.5 kg -> 0.53 m;
-     Strider 285 / 6 = 47.5 kg -> 0.48 m; Crawler 535 / 8 = 66.9 kg -> 0.67 m (1.41x the Strider). The floor is at
+     width W = clamp(1.0 m x w / 50 kg, 0.5, 2.0) m across; height 0.5 x W. Scout 315 / 6 = 52.5 kg -> 1.05 m;
+     Strider 285 / 6 = 47.5 kg -> 0.95 m; Crawler 535 / 8 = 66.9 kg -> 1.34 m (1.41x the Strider). The floor is at
      25 kg per leg and the cap at 100 kg per leg (an M0 build tops out about 110 kg per leg: 4 short legs at full
      load). Linear, so M0's narrow spread (47-67 kg) still shows: a heavy-footed build kicks up more dust than a
-     long-legged one.
+     long-legged one. (Doubled 2026-10-10 after T23's first shots: at 0.5 m per 50 kg the Crawler's puff was only
+     about 10 px wider than the Strider's at the play camera.)
    - *Soft, not round:* each puff is 5 soft sprites at seeded offsets within 0.3 x W of the pad, each 0.5 x W
      across, with a radial alpha falloff: at 0.9 of a sprite's radius the alpha is <= 0.1 x its centre's, and 0 at
      the rim. No single disc, no hard edge.
    - *Ground-tinted, never white:* colour `#D9C7AE` (the ground `#CAB294` family: hue 33 +/- 5 deg, saturation
-     0.15-0.30), lit by the scene, so it darkens in shadow with the ground. At its peak a puff lifts the floor's
-     grayscale luma by 0.03-0.12; no puff pixel has luma above 0.85, or saturation below 0.08 with luma above 0.75.
+     0.15-0.30), lit by the scene as the ground is (an up-facing normal, not a camera-facing one), so it darkens in
+     shadow with the ground. At its peak a puff lifts the local floor's grayscale luma by 0.03-0.12, measured on the
+     valley floor in sun and in shadow (the striped test flats are lighter than the valley and are not the measure);
+     no puff pixel has saturation below 0.08 with luma above 0.75 (never white).
    - *Low opacity:* peak alpha 0.45, reached within 0.08 s of the plant (that is the plant read), <= 0.25 by 0.4 s,
      0 at the end of life.
    - *Drift and settle:* life 0.8 s +/- 1 tick (was 0.2 s: a 12-frame flash reads as a blob). The sprites burst
@@ -537,8 +540,9 @@ can see, with no minimap.
      plants/s x 0.8 s = 23 live puffs) with no allocation after `_ready`.
    - *Tests:* W for the three fixtures within 0.005 m, plus the floor and the cap; the alpha curve at 0.08, 0.4 and
      0.8 s; the sprite falloff; shot `foot_fx__dust_weight` (the Strider and the Crawler mid-walk on the valley
-     floor), checked with the pixels tool for the luma lift, no white pixel, and a measured Crawler / Strider puff
-     width ratio >= 1.3. Playtest question for Klas: "Does the dust read as dust, and does a heavier foot kick up
+     floor at the play camera, 8 m and pitch 20), checked with the pixels tool for the luma lift, no white pixel, a
+     measured Crawler / Strider puff width ratio >= 1.3 and a width gap >= 20 px at 720p; and a plant in the
+     chassis's shadow with a lift <= 0.12. Playtest question for Klas: "Does the dust read as dust, and does a heavier foot kick up
      more?"
 2. Threats glow magenta-red. Nothing else in the world uses that hue. The drone wind-up ramps its emissive from
    0 to 3 over 0.6 s. Because the orange accent is only 39 deg from the threat hue, threats must also read in
@@ -849,6 +853,7 @@ World palette, from the 50 % style mix (look-test mockup):
 | 2026-10-10 | Risk 8 rewritten: turn rate no longer gates every shot; the heading and the build stay meaningful through chassis-relative traverse (A/D toward a target cuts a 90 deg swing from 0.50 s to <= 0.35 s), heavy guns slower than the turn rate (M1), face arcs (front mounts need the heading, M1) and the roof's near-low dead zone that grows with leg length. Spike in T22 `drone_fight`; fallback: roof yaw +/- 150 deg or traverse constant 4800. M0 criterion 5 (14, mirrored in the plan.md M0 row) swaps the "weapon yaw equals the heading" and heading-onto-drone checks for the arc gate, traverse by mass, a reticle per weapon and shot-at-P checks; the telegraph, 3-hit kill, hold cycle and strafing damage bar are kept; the no-lead tracker now aims with the dot and runs standing and strafing | Klas's per-weapon aim (rows above). Pillar 1 must show in fights for M0's one gun, which a roof cannon could otherwise skip; making the body a traverse booster keeps A/D useful without narrowing the 360 deg roof Klas described | Narrow the roof to +/- 150 deg now (against Klas's example; kept as the fallback); a slow M0 cannon so the body must turn (fights would feel sluggish with the only gun in the game); accept that heading no longer matters in fights |
 | 2026-10-10 | Dust by weight per leg (10 rule 1): puff width W = clamp(0.5 m x (build mass / legs) / 50 kg, 0.25, 1.0) m, height 0.5 x W (Scout 0.53, Strider 0.48, Crawler 0.67 m); five soft sprites with a radial falloff; colour `#D9C7AE` from the ground family, lit by the scene, peak alpha 0.45, luma lift 0.03-0.12, no pixel above luma 0.85; life 0.8 s (was 0.2 s) with an outward burst, a rise and a settle; <= 2 draw calls per walker | Klas, after the M0 build: "Dust doesn't look like dust. It looks like white blobs" and "scale as a function of Walker weight divided by number of legs". The built puff (T19) was a near-white `#FAF2E0` at alpha 1.0 for 12 frames: an opaque bright flash. Linear scaling makes M0's 47-67 kg per leg spread show (Crawler 1.41x Strider); an energy-like cube root would show only 1.12x | Cube-root scaling (invisible in M0); scale with leg reach (Klas asked for weight per leg); per-surface sampled tint now (one ground family in M0; M1 zones); keep 0.2 s and only fix the colour (a short life still reads as a pop, not as dust) |
 | 2026-10-10 | Closes the two 2026-10-10 rows "Per-weapon aim" and "The foot dust cloud scales with weight per leg": GDD sections 3, 5, 6, 8.1 (M1 weapon rule), 8.3, 8.4 (heading wording), 10 rule 1, 12, 14 (criterion 5), 16 (risks 3 and 8) and 18 rewritten as in the five rows above | Game-designer pass, plan.md "After the M0 build", step 1 | |
+| 2026-10-10 | Dust tuning after T23's first shots (10 rule 1): W doubles to clamp(1.0 m x w / 50 kg, 0.5, 2.0) (Scout 1.05, Strider 0.95, Crawler 1.34 m); the dust is lit with an up-facing normal so it darkens in shadow like the ground; the 0.03-0.12 lift is measured on the valley floor in sun and shadow, and the absolute "no pixel above luma 0.85" cap goes (the saturation rule still bans white); the proof shot moves to the play camera (8 m, pitch 20) with a >= 20 px width gap at 720p | Playtest-critic on T23 round 1: at 0.5 m per 50 kg the Crawler's puff was about 10 px wider than the Strider's at the play camera, so Klas could not answer "does a heavier foot kick up more?". Code-reviewer and critic: the unshaded puff lifted shadowed ground by 0.14-0.18 (a grey glow, and doubling the size would double it). The light test stripes render at 0.865, above the old 0.85 cap, so the cap was unmeetable there | Raise alpha (pushes shadow and dark ground toward blobs); a non-linear law such as (w / 50)^2 for a 2x gap (Klas asked for weight per leg; ask him after he plays); keep the dust unshaded (kept only as the fallback if the lit material reads darker than the floor) |
 
 ## 18. Open questions
 - Story and main goal (Klas, 2026-10-10): what is the larger reason to explore, and how does the world tell it?
