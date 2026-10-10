@@ -221,6 +221,8 @@ func _process(_delta: float) -> void:
 func move_mouse(x: float, y: float, rel_x: float = 0.0, rel_y: float = 0.0) -> void:
 	var moved := _motion(Vector2(x, y))
 	moved.relative = get_viewport().get_final_transform().basis_xform(Vector2(rel_x, rel_y))
+	# A windowed viewport keeps its own mouse position and ignores injected motion; a visit that starts later reads it.
+	get_viewport().warp_mouse(Vector2(x, y))
 	_dispatch(moved)
 
 
