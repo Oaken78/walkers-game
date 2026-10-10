@@ -11,6 +11,8 @@ const MAT_FAR: Material = preload("res://assets/world/rock_far.tres")
 const MAT_RUINS: Material = preload("res://assets/world/ruins.tres")
 const MAT_BOULDER: Material = preload("res://assets/world/boulder.tres")
 const MAT_SMOKE: Material = preload("res://assets/world/smoke.tres")
+## Visual layer of every world mesh: only the Sun's light_cull_mask reaches it (actors stay on layer 1).
+const WORLD_LIGHT_LAYER: int = 2
 
 ## Smoke column: z of its centre, height, radii (330-370 m out, at least 80 m tall, no collision).
 @export var smoke_z: float = 350.0
@@ -196,6 +198,7 @@ func _build_crowns() -> void:
 		box.size = size
 		mi.mesh = box
 		mi.material_override = MAT_RUINS
+		mi.layers = WORLD_LIGHT_LAYER
 		mi.transform = Transform3D(rot, centre)
 		_crowns.add_child(mi)
 		var shape := BoxShape3D.new()

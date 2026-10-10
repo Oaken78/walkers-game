@@ -14,6 +14,8 @@ const SPEED_MPS: float = 25.0
 const DAMAGE: float = 10.0
 const LIFETIME_S: float = 3.0
 const THREAT_COLOR: Color = Color("E8345A")
+## Unshaded materials ignore emission, so the bolt is HDR in its albedo (sRGB gain 1.6 = about 2.8x linear): it blooms.
+const BOLT_HDR_GAIN: float = 1.6
 const BOLT_SIZE: Vector3 = Vector3(0.22, 0.22, 0.9)
 
 static var _mesh: BoxMesh
@@ -72,7 +74,7 @@ func _ready() -> void:
 		_mesh = BoxMesh.new()
 		_mesh.size = BOLT_SIZE
 		_material = StandardMaterial3D.new()
-		_material.albedo_color = THREAT_COLOR
+		_material.albedo_color = Color(THREAT_COLOR.r * BOLT_HDR_GAIN, THREAT_COLOR.g * BOLT_HDR_GAIN, THREAT_COLOR.b * BOLT_HDR_GAIN)
 		_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		_material.emission_enabled = true
 		_material.emission = THREAT_COLOR
