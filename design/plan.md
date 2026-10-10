@@ -174,7 +174,19 @@ Status: ready, in-progress, review-passed, done.
     (move the plant by the shadow offset, and sample the floor beside it); no unit test pins the rendering contract
     (instance colour = `puff_color.srgb_to_linear()`, the dust ShaderMaterial, `cast_shadow` off); the valley
     scenario only asserts no errors (width and lift are manual pixels reads); `foot_fx.gd:219` doc comment still
-    states the old width rule.
+    states the old width rule;
+  - round 2 critique (no blocking): next to a chassis shadow the lit puff lifts the shade by up to +0.18
+    (midstride) and +0.41 (under the Crawler, crawler_abeam_flat), because sprites standing in sun sit in front of
+    the shadow on screen; it reads as pale haze, not a glow. Game-designer: should rule 1 measure the plant pixel
+    only, or should the shader take a darker share of the ground's shadow? The valley shots seem to sit in the
+    cliff's shadow (floor 0.566 vs sunlit sand 0.705), so add a step on sunlit valley floor with a visible chassis
+    shadow; settle motion and the puff draw cost are not yet measured.
+- T22 critique follow-ups (no blocking): the 6 px dot (4 px at 720p) nearly vanishes on sand when no ring is near it
+  (8 px or a 2 px ink outline; chevron.png dot >= 0.3 luma from its neighbours); the Crawler's two gray rings sit
+  10 px apart and merge into one; drones are ring-shaped too, so a trailing ring and a drone share a silhouette
+  (placeholder art); turning cuts the swing 33-37 % but a two-drone fight only 8-15 % with no damage saved, and every
+  drone dies in its first hold: ask Klas "Did you turn the body in fights, and did it help?" and "too easy?"; the
+  fallbacks are in GDD 16 risk 8.
 - T22 follow-ups (code review of c2c9f3c, no blocking findings; deferred under playable-first):
   - **watch in Klas's playtest:** live/gray can flicker at the arc edge while walking (the 0.5 deg tolerance has no
     hysteresis; step bob moves the chassis pitch more than that when P sits about -20.5 deg); fix with enter/exit
