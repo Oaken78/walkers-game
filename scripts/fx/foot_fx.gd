@@ -8,14 +8,14 @@ extends Node3D
 ## Dust puff across at its biggest (m). Same for every walker, not scaled by leg length.
 @export var puff_diameter_m: float = 0.6
 ## Share of the full diameter the puff starts at.
-@export_range(0.1, 1.0) var puff_start_scale: float = 0.7
-## Height of the puff centre above the ground at the plant and at the end of its life (m); the end is the "rise" (<= 0.3).
-@export var puff_base_height_m: float = 0.18
-@export var puff_top_height_m: float = 0.30
+@export_range(0.1, 1.0) var puff_start_scale: float = 0.85
+## Height of the puff disc centres above the ground at the plant and at the end of its life (m). The visible top is this + half a disc (0.15 m) <= 0.3.
+@export var puff_base_height_m: float = 0.10
+@export var puff_top_height_m: float = 0.148
 @export var puff_life_s: float = 0.2
 ## Dust tone: the ground family, lighter than the floor so it reads in grayscale.
-@export var puff_color: Color = Color(1.0, 0.98, 0.92)
-## Opacity at the plant, falling linearly to 0 at the end of the life.
+@export var puff_color: Color = Color("FAF2E0")
+## Opacity at the plant; it falls as 1 - t^2 to 0 at the end of the life (stays bright for the first frames).
 @export_range(0.0, 1.0) var puff_peak_alpha: float = 1.0
 @export var puff_pool_size: int = 16
 ## A puff is this many soft discs round the pad (one disc would hide behind the pad), together puff_diameter_m across.
@@ -27,15 +27,17 @@ extends Node3D
 ## Dark value of the mark, at full opacity.
 @export var decal_color: Color = Color(0.07, 0.06, 0.05)
 ## Opacity of the texture at the pad's middle at full life.
-@export_range(0.0, 1.0) var decal_peak_alpha: float = 0.9
-## 8 legs x one plant per 0.25 s (fastest cadence) x 2 s.
-@export var decal_pool_size: int = 64
+@export_range(0.0, 1.0) var decal_peak_alpha: float = 0.40
+## Crawler measured peak 60 live decals; the pool is >= 1.25x the highest peak.
+@export var decal_pool_size: int = 80
 ## Surfaces turned away from the decal's up axis fade out: the pad's sides and the legs are not stained.
 @export_range(0.0, 1.0) var decal_normal_fade: float = 0.5
 ## No puff or decal this long after build_applied or a teleport (a spawn plants every foot at once).
 @export var quiet_after_build_s: float = 0.2
 ## A decal centre this far (m) from the drawn pad 0.1 s after the plant counts as a snap mismatch.
 @export var snap_check_m: float = 0.1
+## Plants this high count as ledge-top plants for the alignment check (flat tops).
+@export var ledge_y_m: float = 1.0
 
 ## Plants heard, plants shown (a puff and a decal each) and plants ignored in the quiet time.
 var plants_seen: int = 0
@@ -59,8 +61,11 @@ var unaccounted_plants: int:
 var live_decal_count: int:
 	get:
 		return live_decals()
-## Worst angle (deg) between a decal's up axis and the plant normal, and the highest plant point seen (m).
-var max_align_err_deg: float = 0.0
+## Plants at y >= ledge_y_m (a ledge top) and the worst angle (deg) between their decal's up axis and world up.
+var ledge_plants: int = 0
+var ledge_align_err_deg: float = 0.0
+## Decals that ran out by themselves, and the highest plant point seen (m).
+var decals_expired: int = 0
 var highest_plant_y: float = -INF
 
 var _decals: Array[Decal] = []
@@ -88,14 +93,12 @@ func _ready() -> void:
 		_body.foot_planted.connect(_on_foot_planted)
 		if _body.has_signal("build_applied"):
 			_body.build_applied.connect(_on_build_applied)
-		if "teleport_count" in _body:
-			_teleports = _body.teleport_count
+	if _body != null and "teleport_count" in _body:
+		_teleports = _body.teleport_count
 
 
 func _physics_process(delta: float) -> void:
-	if _body != null and "teleport_count" in _body and _body.teleport_count != _teleports:
-		_teleports = _body.teleport_count
-		_quiet_left = quiet_after_build_s
+	_sync_teleports()
 	advance(delta)
 
 
@@ -105,17 +108,34 @@ func arm_freeze_after_plant(seconds: float) -> void:
 	_freeze_left = seconds
 
 
+## Screenshot aid: `count` plants on the ground in a row ahead of the walker (local -z, `step_m` apart, `side_m` to the
+## right), so one still shows the puff and decal over both floor tones. Needs a physics frame to have run.
+func demo_row(count: int, first_m: float, step_m: float, side_m: float) -> void:
+	if not (_body is Node3D):
+		return
+	var body: Node3D = _body
+	for i in count:
+		var spot: Vector3 = body.global_position + body.global_basis * Vector3(side_m, 0.0, -(first_m + step_m * i))
+		var query := PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 5.0, spot + Vector3.DOWN * 5.0, 1)
+		var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+		if not hit.is_empty():
+			plant(hit["position"], hit["normal"])
+
+
 func release_freeze() -> void:
+	_freeze_armed = false
+	_freeze_left = -1.0
 	get_tree().paused = false
 
 
 ## Prints the counters for the scenario report.
 func report(label: String) -> void:
 	print(
-		"FOOTFX %s plants=%d puffs=%d decals=%d ignored=%d peak_decals=%d/%d life_ticks=%d..%d snap_mismatches=%d snap_max_m=%.3f align_err_deg=%.3f highest_y=%.2f"
+		"FOOTFX %s plants=%d puffs=%d decals=%d ignored=%d peak_decals=%d/%d expired=%d life_ticks=%d..%d snap_mismatches=%d snap_max_m=%.3f ledge_plants=%d ledge_align_err_deg=%.3f highest_y=%.2f"
 		% [
 			label, plants_seen, puffs_spawned, decals_spawned, plants_ignored, peak_live_decals, decal_pool_size,
-			decal_ticks_min, decal_ticks_max, snap_mismatches, snap_max_m, max_align_err_deg, highest_plant_y
+			decals_expired, decal_ticks_min, decal_ticks_max, snap_mismatches, snap_max_m, ledge_plants, ledge_align_err_deg,
+			highest_plant_y
 		]
 	)
 
@@ -131,8 +151,11 @@ func reset_counts() -> void:
 	decal_ticks_max = 0
 	snap_mismatches = 0
 	snap_max_m = 0.0
-	max_align_err_deg = 0.0
+	ledge_plants = 0
+	ledge_align_err_deg = 0.0
+	decals_expired = 0
 	highest_plant_y = -INF
+	_checks.clear()
 
 
 ## Opacity of a decal of age `age` (1 at the plant, 0 at `life`).
@@ -176,6 +199,7 @@ func advance(delta: float) -> void:
 		if _decal_age[i] >= decal_life_s - 0.0001:
 			decal_ticks_min = mini(decal_ticks_min, _decal_ticks[i])
 			decal_ticks_max = maxi(decal_ticks_max, _decal_ticks[i])
+			decals_expired += 1
 			_decal_age[i] = -1.0
 			_decals[i].visible = false
 		else:
@@ -207,6 +231,7 @@ func advance(delta: float) -> void:
 
 ## Shows a puff and a decal at `pos` on a surface with `normal`. Returns false in the quiet time.
 func plant(pos: Vector3, normal: Vector3, leg: int = -1) -> bool:
+	_sync_teleports()
 	plants_seen += 1
 	if _quiet_left > 0.0:
 		plants_ignored += 1
@@ -227,6 +252,15 @@ func _on_foot_planted(leg: int, pos: Vector3, normal: Vector3) -> void:
 
 func _on_build_applied() -> void:
 	_quiet_left = quiet_after_build_s
+	_checks.clear()
+
+
+## A teleport starts the quiet time (checked every tick and at every plant: the plant can come before the next tick).
+func _sync_teleports() -> void:
+	if _body != null and "teleport_count" in _body and _body.teleport_count != _teleports:
+		_teleports = _body.teleport_count
+		_quiet_left = quiet_after_build_s
+		_checks.clear()
 
 
 func _run_check(check: Array) -> void:
@@ -263,7 +297,9 @@ func _show_decal(pos: Vector3, n: Vector3) -> Decal:
 		side = n.cross(Vector3.FORWARD)
 	side = side.normalized()
 	decal.global_transform = Transform3D(Basis(side, n, side.cross(n)), pos)
-	max_align_err_deg = maxf(max_align_err_deg, rad_to_deg(decal.global_basis.y.angle_to(n)))
+	if pos.y >= ledge_y_m:
+		ledge_plants += 1
+		ledge_align_err_deg = maxf(ledge_align_err_deg, rad_to_deg(decal.global_basis.y.angle_to(Vector3.UP)))
 	highest_plant_y = maxf(highest_plant_y, pos.y)
 	decal.modulate = Color(1, 1, 1, 1)
 	decal.visible = true
@@ -287,16 +323,16 @@ func _show_puff(pos: Vector3) -> void:
 func _pose_puff(i: int) -> void:
 	var t: float = clampf(_puff_age[i] / puff_life_s, 0.0, 1.0)
 	var grow: float = lerpf(puff_start_scale, 1.0, sqrt(t))
-	# Each disc is 0.6 of the puff across, centred 0.2 of it from the plant point: the whole puff spans puff_diameter_m.
-	var disc: float = puff_diameter_m * 0.6 * grow
-	var ring: float = puff_diameter_m * 0.2 * grow
+	# Each disc is 0.5 of the puff across, centred 0.25 of it from the plant point: the whole puff spans puff_diameter_m.
+	var disc: float = puff_diameter_m * 0.5 * grow
+	var ring: float = puff_diameter_m * 0.25 * grow
 	var height: float = lerpf(puff_base_height_m, puff_top_height_m, t)
 	for k in puff_discs:
 		var angle: float = TAU * (float(k) / float(puff_discs)) + float(i) * 0.9
 		var mi: MeshInstance3D = _puffs[i * puff_discs + k]
 		mi.global_position = _puff_pos[i] + Vector3(cos(angle) * ring, height, sin(angle) * ring)
 		mi.scale = Vector3(disc, disc, disc)
-	_puff_mats[i].albedo_color.a = puff_peak_alpha * (1.0 - t)
+	_puff_mats[i].albedo_color.a = puff_peak_alpha * (1.0 - t * t)
 
 
 func _build_pools() -> void:
@@ -347,11 +383,12 @@ func make_decal_texture() -> Texture2D:
 	var res: int = 64
 	var img := Image.create(res, res, false, Image.FORMAT_RGBA8)
 	var half := Vector2(0.30 / decal_size_m.x, 0.34 / decal_size_m.z) * 0.5 * float(res)
+	var corner: float = 11.0
 	for y in res:
 		for x in res:
-			var p := Vector2(x + 0.5 - res * 0.5, y + 0.5 - res * 0.5).abs() - half + Vector2(6, 6)
-			var dist: float = Vector2(maxf(p.x, 0.0), maxf(p.y, 0.0)).length() + minf(maxf(p.x, p.y), 0.0) - 6.0
-			var a: float = 1.0 - smoothstep(0.0, 8.0, dist)
+			var p := Vector2(x + 0.5 - res * 0.5, y + 0.5 - res * 0.5).abs() - half + Vector2(corner, corner)
+			var dist: float = Vector2(maxf(p.x, 0.0), maxf(p.y, 0.0)).length() + minf(maxf(p.x, p.y), 0.0) - corner
+			var a: float = 1.0 - smoothstep(-2.0, 8.0, dist)
 			img.set_pixel(x, y, Color(decal_color.r, decal_color.g, decal_color.b, a * decal_peak_alpha))
 	return ImageTexture.create_from_image(img)
 

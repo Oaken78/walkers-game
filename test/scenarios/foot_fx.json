@@ -1,7 +1,7 @@
 {
  "scene": "res://scenes/test/gait_course.tscn",
  "seed": 1234,
- "timeout_frames": 3000,
+ "timeout_frames": 4000,
  "steps": [
   {
    "wait_frames": 5
@@ -175,6 +175,14 @@
   {
    "assert_prop": {
     "node": "Walker/FootFx",
+    "prop": "decals_expired",
+    "op": ">",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
     "prop": "decal_ticks_min",
     "op": ">=",
     "value": 119
@@ -193,7 +201,7 @@
     "node": "Walker/FootFx",
     "prop": "peak_live_decals",
     "op": "<=",
-    "value": 64
+    "value": 80
    }
   },
   {
@@ -267,8 +275,8 @@
     "node": ".",
     "method": "use_orbit_camera",
     "args": [
-     15.0,
-     7.0,
+     20.0,
+     9.0,
      -55.0
     ]
    }
@@ -284,7 +292,7 @@
    }
   },
   {
-   "wait_frames": 420
+   "wait_frames": 300
   },
   {
    "screenshot": "climb"
@@ -317,7 +325,15 @@
   {
    "assert_prop": {
     "node": "Walker/FootFx",
-    "prop": "max_align_err_deg",
+    "prop": "ledge_plants",
+    "op": ">=",
+    "value": 2
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "ledge_align_err_deg",
     "op": "<",
     "value": 0.5
    }
@@ -327,7 +343,205 @@
     "node": "Walker/FootFx",
     "prop": "peak_live_decals",
     "op": "<=",
-    "value": 64
+    "value": 80
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     false
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "scout"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     25.0,
+     6.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "wait_frames": 4
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "arm_freeze_after_plant",
+    "args": [
+     0.05
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "demo_row",
+    "args": [
+     14,
+     -4.0,
+     0.7,
+     2.5
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "screenshot": "puff_row"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "release_freeze",
+    "args": []
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_build",
+    "args": [
+     "crawler"
+    ]
+   }
+  },
+  {
+   "wait_frames": 2
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "spawn_at",
+    "args": [
+     "flat"
+    ]
+   }
+  },
+  {
+   "wait_frames": 30
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "reset_counts",
+    "args": []
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "use_orbit_camera",
+    "args": [
+     20.0,
+     8.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "call": {
+    "node": ".",
+    "method": "hold_action",
+    "args": [
+     "move_forward",
+     true
+    ]
+   }
+  },
+  {
+   "wait_frames": 150
+  },
+  {
+   "metrics": {
+    "name": "foot_fx",
+    "frames": 120
+   }
+  },
+  {
+   "screenshot": "crawler"
+  },
+  {
+   "call": {
+    "node": "Walker/FootFx",
+    "method": "report",
+    "args": [
+     "foot_fx crawler flat"
+    ]
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "unaccounted_plants",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "plants_ignored",
+    "op": "==",
+    "value": 0
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "peak_live_decals",
+    "op": "<=",
+    "value": 80
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "decal_ticks_min",
+    "op": ">=",
+    "value": 119
+   }
+  },
+  {
+   "assert_prop": {
+    "node": "Walker/FootFx",
+    "prop": "decal_ticks_max",
+    "op": "<=",
+    "value": 121
    }
   },
   {
