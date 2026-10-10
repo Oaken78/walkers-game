@@ -3,12 +3,14 @@
 Numbers, not adjectives. References in `design/refs/`. Defaults below are for the M0 "Scout" build
 (medium chassis, 6 medium legs, 1 pulse cannon) unless stated.
 
-## 1. One-liner and player fantasy
+## 1. One-liner, player fantasy, story and main goal
 - Store line: Build a spider-legged walking machine from salvage, then stride into a hostile wasteland to scavenge
   parts for a better one.
 - Fantasy: I am an inventor-explorer. The machine under me is my own design, and I can feel every choice I made in
   how it walks. "Building and feeling like an inventor is in the very core of the game" (Klas); exploring is what
   pays for the next idea.
+- Story and main goal: open (Klas, 2026-10-10: "there must be a larger reason for exploring"; Decisions log,
+  section 18).
 
 ## 2. Pillars (max 3)
 1. **Your build is your feel.** Building and feeling like an inventor is the core of the game. Each part change
